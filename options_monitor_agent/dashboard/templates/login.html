@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In — Options Monitor Agent</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:#0f1117;color:#e2e8f0;font-family:Inter,Arial,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+    .card{background:#1e293b;border-radius:16px;padding:48px 40px;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+    .brand{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+    .brand-icon{font-size:1.8rem}
+    .brand-name{font-size:1.3rem;font-weight:800;color:#3b82f6}
+    .tagline{color:#64748b;font-size:.875rem;margin-bottom:32px}
+    label{display:block;font-size:.8rem;color:#94a3b8;margin-bottom:6px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+    input[type=email]{width:100%;padding:14px 16px;background:#0f172a;border:2px solid #1e293b;border-radius:10px;color:#e2e8f0;font-size:1rem;outline:none;transition:border-color .2s}
+    input[type=email]:focus{border-color:#3b82f6}
+    .btn{width:100%;padding:14px;background:linear-gradient(135deg,#3b82f6,#6366f1);color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;margin-top:16px;transition:opacity .2s}
+    .btn:hover{opacity:.9}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .msg{margin-top:14px;padding:12px 16px;border-radius:8px;font-size:.875rem;display:none}
+    .msg.error{background:#450a0a;border:1px solid #ef4444;color:#fca5a5}
+    .msg.success{background:#052e16;border:1px solid #22c55e;color:#86efac}
+    .msg.warn{background:#1e3a5f;border:1px solid #3b82f6;color:#93c5fd}
+    .footer{margin-top:24px;text-align:center;color:#475569;font-size:.8rem}
+    .footer a{color:#3b82f6;text-decoration:none}
+    {% if error %}.server-error{background:#450a0a;border:1px solid #ef4444;color:#fca5a5;padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:.875rem}{% endif %}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand"><span class="brand-icon">&#127942;</span><span class="brand-name">Options Monitor</span></div>
+    <p class="tagline">Secure access via magic link</p>
+    {% if error %}<div class="server-error">&#9888; {{ error }}</div>{% endif %}
+    <label for="email">Your email address</label>
+    <input type="email" id="email" placeholder="you@example.com" autocomplete="email">
+    <div id="msg" class="msg"></div>
+    <button class="btn" id="btn" onclick="sendLink()">&#9889; Send Magic Link</button>
+    <div class="footer">
+      <span>&#128274; No password needed &mdash; one-time secure link, expires in 15 min.</span>
+      <br><br>
+      <a href="/subscribe">Subscribe for €0.95/mo</a> &nbsp;·&nbsp; <a href="/account">My Account</a>
+    </div>
+  </div>
+  <script>
+    async function sendLink() {
+      const email = document.getElementById('email').value.trim();
+      const btn   = document.getElementById('btn');
+      const msg   = document.getElementById('msg');
+      if (!email || !email.includes('@')) {
+        showMsg('Please enter a valid email address.', 'error'); return;
+      }
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+      msg.style.display = 'none';
+      try {
+        const res  = await fetch('/auth/request', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({email})
+        });
+        const data = await res.json();
+        if (data.ok) {
+          showMsg('\u2713 Magic link sent! Check your inbox (and spam folder).', 'success');
+          btn.textContent = '\u2713 Email Sent';
+        } else if (data.not_subscribed) {
+          showMsg('No active subscription for this email. Redirecting to subscribe page...', 'warn');
+          btn.textContent = '\u2192 Subscribe';
+          btn.disabled = false;
+          setTimeout(() => { window.location = '/subscribe?email=' + encodeURIComponent(email); }, 2000);
+        } else {
+          showMsg('\u26a0 ' + (data.error || 'Something went wrong.'), 'error');
+          btn.disabled = false;
+          btn.textContent = '\u26a1 Send Magic Link';
+        }
+      } catch(e) {
+        showMsg('\u26a0 Network error. Please try again.', 'error');
+        btn.disabled = false;
+        btn.textContent = '\u26a1 Send Magic Link';
+      }
+    }
+    function showMsg(text, type) {
+      const el = document.getElementById('msg');
+      el.textContent = text;
+      el.className = 'msg ' + type;
+      el.style.display = 'block';
+    }
+    document.getElementById('email').addEventListener('keydown', e => {
+      if (e.key === 'Enter') sendLink();
+    });
+  </script>
+</body>
+</html>

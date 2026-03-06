@@ -1,0 +1,173 @@
+""" Herramienta: Obtener datos de opciones usando yfinance """
+import yfinance as yf
+import pandas as pd
+import numpy as np
+import requests
+from datetime import datetime, timedelta
+from config import AGENT_CONFIG
+
+def get_options_data(ticker: str) -> dict:
+    """Obtiene datos de opciones (calls y puts) para un ticker dado."""
+    try:
+        # Normalizar ticker para yfinance (ej: ENG.MC)
+        stock = yf.Ticker(ticker)
+        info = stock.info
+        current_price = info.get("currentPrice") or info.get("regularMarketPrice", 0)
+
+        stock_data = {
+            "market_cap": info.get("market_cap", 0),
+            "pe_ratio": info.get("trailingPE", 0),
+            "52w_high": info.get("fiftyTwoWeekHigh", 0),
+            "52w_low": info.get("fiftyTwoWeekLow", 0),
+            "avg_volume": info.get("averageVolume", 0),
+            "dividend_yield": info.get("dividendYield", 0),
+            "beta": info.get("beta", 0),
+        }
+
+        hist = stock.history(period="30d")
+        historical_volatility = 0
+        if len(hist) > 1:
+            log_returns = np.log(hist["Close"] / hist["Close"].shift(1)).dropna()
+            historical_volatility = float(log_returns.std() * np.sqrt(252) * 100)
+
+        expirations = stock.options
+
+        # Fallback para tickers europeos si stock.options devuelve vacio
+        if not expirations and ticker.endswith(".MC"):
+             print(f" [!] Intento de fallback para {ticker}...")
+             expirations = _fetch_expirations_from_yahoo_web(ticker)
+
+        if not expirations:
+            # Para tickers europeos sin opciones (ej: .MC), devolver datos del stock sin error de opciones
+            if ticker.endswith(".MC") or any(ticker.endswith(f".{sfx}") for sfx in ["L", "PA", "AS", "MI", "DE", "SW", "HE", "ST", "CO"]):
+                return {
+                    "ticker": ticker,
+                    "current_price": current_price,
+                    "timestamp": datetime.now().isoformat(),
+                    "stock_data": stock_data,
+                    "historical_volatility": round(historical_volatility, 2),
+                    "expirations_analyzed": [],
+                    "calls": [],
+                    "puts": [],
+                    "calls_count": 0,
+                    "puts_count": 0,
+                    "put_call_ratio": 0,
+                    "status": "no_options",
+                    "note": f"No hay opciones disponibles en Yahoo Finance para {ticker} (mercado europeo)"
+                }
+            return {"error": f"No options found for {ticker}", "ticker": ticker, "status": "error", "timestamp": datetime.now().isoformat()}
+
+        max_date = datetime.now() + timedelta(weeks=AGENT_CONFIG["expiration_range_weeks"])
+        valid_expirations = [
+            exp for exp in expirations
+            if datetime.strptime(exp, "%Y-%m-%d") <= max_date
+        ]
+
+        if not valid_expirations:
+            valid_expirations = [expirations[0]]
+
+        all_calls = []
+        all_puts = []
+
+        for exp_date in valid_expirations:
+            try:
+                opt_chain = stock.option_chain(exp_date)
+                calls = opt_chain.calls.copy()
+                calls["expiration"] = exp_date
+                calls["type"] = "CALL"
+                calls["daysToExpiry"] = (datetime.strptime(exp_date, "%Y-%m-%d") - datetime.now()).days
+                all_calls.append(calls)
+
+                puts = opt_chain.puts.copy()
+                puts["expiration"] = exp_date
+                puts["type"] = "PUT"
+                puts["daysToExpiry"] = (datetime.strptime(exp_date, "%Y-%m-%d") - datetime.now()).days
+                all_puts.append(puts)
+            except Exception as e:
+                print(f" Error fetching chain for {exp_date}: {e}")
+
+        if not all_calls and not all_puts:
+             return {"error": f"Options chains empty for {ticker}", "ticker": ticker, "status": "error", "timestamp": datetime.now().isoformat()}
+
+        calls_df = pd.concat(all_calls, ignore_index=True) if all_calls else pd.DataFrame()
+        puts_df = pd.concat(all_puts, ignore_index=True) if all_puts else pd.DataFrame()
+
+        price_range = current_price * 0.15
+        def filter_near_money(df, price):
+            if df.empty: return df
+            return df[
+                (df["strike"] >= price - price_range) &
+                (df["strike"] <= price + price_range)
+            ]
+
+        calls_filtered = filter_near_money(calls_df, current_price)
+        puts_filtered = filter_near_money(puts_df, current_price)
+
+        return {
+            "ticker": ticker,
+            "current_price": current_price,
+            "timestamp": datetime.now().isoformat(),
+            "stock_data": stock_data,
+            "historical_volatility": round(historical_volatility, 2),
+            "expirations_analyzed": valid_expirations,
+            "calls": _df_to_detailed(calls_filtered),
+            "puts": _df_to_detailed(puts_filtered),
+            "calls_raw_df": calls_filtered,
+            "puts_raw_df": puts_filtered,
+            "calls_count": len(calls_filtered),
+            "puts_count": len(puts_filtered),
+            "put_call_ratio": len(puts_filtered) / max(len(calls_filtered), 1),
+            "status": "success"
+        }
+    except Exception as e:
+        return {
+            "ticker": ticker,
+            "error": str(e),
+            "status": "error",
+            "timestamp": datetime.now().isoformat()
+        }
+
+def _fetch_expirations_from_yahoo_web(ticker: str) -> list:
+    """Intenta obtener fechas de expiracion directamente de Yahoo Finance web."""
+    url = f"https://query1.finance.yahoo.com/v7/finance/options/{ticker}"
+    headers = {'User-Agent': 'Mozilla/5.0'}
+    try:
+        r = requests.get(url, headers=headers, timeout=10)
+        data = r.json()
+        timestamps = data['optionChain']['result'][0]['expirationDates']
+        return [datetime.fromtimestamp(ts).strftime('%Y-%m-%d') for ts in timestamps]
+    except Exception as e:
+        print(f" Fallback failed: {e}")
+        return []
+
+def _df_to_detailed(df: pd.DataFrame) -> list:
+    """Convierte DataFrame a lista de diccionarios."""
+    if df.empty: return []
+    columns = [
+        "contractSymbol", "strike", "lastPrice", "bid", "ask",
+        "change", "percentChange", "volume", "openInterest",
+        "impliedVolatility", "inTheMoney", "expiration", "type", "daysToExpiry"
+    ]
+    available_cols = [c for c in columns if c in df.columns]
+    summary = df[available_cols].head(30)
+    result = []
+    for _, row in summary.iterrows():
+        entry = {}
+        for col in available_cols:
+            val = row[col]
+            if pd.isna(val): entry[col] = None
+            elif isinstance(val, bool): entry[col] = bool(val)
+            elif isinstance(val, (np.integer,)): entry[col] = int(val)
+            elif isinstance(val, (np.floating, float)): entry[col] = round(float(val), 4)
+            else: entry[col] = str(val)
+        result.append(entry)
+    return result
+
+def get_multiple_options(tickers: list) -> list:
+    """Obtiene datos de opciones para multiples tickers."""
+    results = []
+    for ticker in tickers:
+        print(f" 📡 Obteniendo opciones de {ticker}...")
+        data = get_options_data(ticker)
+        results.append(data)
+    return results

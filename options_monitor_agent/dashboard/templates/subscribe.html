@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Subscribe — Options Monitor</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:#0f1117;color:#e2e8f0;font-family:Inter,Arial,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+    .card{background:#1e293b;border-radius:16px;padding:48px 40px;max-width:480px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+    .badge{background:#3b82f6;color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;letter-spacing:1px;text-transform:uppercase;display:inline-block;margin-bottom:16px}
+    h1{font-size:2rem;font-weight:800;margin-bottom:8px}    
+    .price{font-size:3.5rem;font-weight:900;color:#3b82f6;line-height:1;margin:24px 0 4px}
+    .price span{font-size:1.2rem;color:#94a3b8;font-weight:400}
+    .period{color:#64748b;margin-bottom:32px}
+    .features{text-align:left;list-style:none;margin:0 0 32px;padding:0}
+    .features li{padding:10px 0;border-bottom:1px solid #0f172a;color:#cbd5e1;display:flex;align-items:center;gap:12px}
+    .features li:last-child{border-bottom:none}
+    .features li::before{content:'✓';color:#22c55e;font-weight:700;font-size:1.1rem;flex-shrink:0}
+    .btn{display:block;width:100%;padding:16px;background:linear-gradient(135deg,#3b82f6,#6366f1);color:#fff;text-decoration:none;border-radius:10px;font-size:1.1rem;font-weight:700;transition:opacity .2s;cursor:pointer;border:none}
+    .btn:hover{opacity:.9}
+    .login-link{margin-top:20px;color:#64748b;font-size:.9rem}
+    .login-link a{color:#3b82f6;text-decoration:none}
+    .note{margin-top:16px;color:#475569;font-size:.8rem}
+    .alert{background:#1e3a5f;border:1px solid #3b82f6;border-radius:8px;padding:12px 16px;margin-bottom:24px;color:#93c5fd;font-size:.9rem}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge">Options Monitor</div>
+    {% if request.args.get('cancelled') %}
+    <div class="alert">Your subscription has been cancelled. We hope to see you again!</div>
+    {% endif %}
+    <h1>&#9889; Get Access</h1>
+    <p style="color:#94a3b8;margin-top:8px">Real-time options flow, alerts & AI analysis</p>
+    <div class="price">0.95<span>€</span></div>
+    <div class="period">per month &nbsp;·&nbsp; cancel anytime</div>
+    <ul class="features">
+      <li>Live options flow &amp; unusual activity</li>
+      <li>AI-powered market analysis (Claude)</li>
+      <li>Premium spike alerts</li>
+      <li>Full options chain viewer</li>
+      <li>Backtesting signals</li>
+      <li>Magic-link login — no password needed</li>
+    </ul>
+    <a href="/payment" class="btn">&#9889; Subscribe for €0.95/month</a>
+    <div class="login-link">Already subscribed? <a href="/login">Sign in</a></div>
+    <div class="note">Cancel anytime. No hidden fees. Experimental project.</div>
+  </div>
+</body>
+</html>

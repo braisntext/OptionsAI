@@ -1,0 +1,2396 @@
+[
+  {
+    "timestamp": "2026-02-22T06:52:55.100671",
+    "analysis": {
+      "timestamp": "2026-02-22T06:52:54.898228",
+      "tickers_analyzed": [],
+      "alerts": [
+        {
+          "type": "ERROR",
+          "ticker": "ACX",
+          "message": "Expecting value: line 1 column 1 (char 0)",
+          "severity": "high"
+        },
+        {
+          "type": "ERROR",
+          "ticker": "ENG",
+          "message": "Expecting value: line 1 column 1 (char 0)",
+          "severity": "high"
+        },
+        {
+          "type": "ERROR",
+          "ticker": "KVUE",
+          "message": "Expecting value: line 1 column 1 (char 0)",
+          "severity": "high"
+        },
+        {
+          "type": "ERROR",
+          "ticker": "NTGY",
+          "message": "Expecting value: line 1 column 1 (char 0)",
+          "severity": "high"
+        },
+        {
+          "type": "ERROR",
+          "ticker": "O",
+          "message": "Expecting value: line 1 column 1 (char 0)",
+          "severity": "high"
+        },
+        {
+          "type": "ERROR",
+          "ticker": "VIS",
+          "message": "Expecting value: line 1 column 1 (char 0)",
+          "severity": "high"
+        }
+      ],
+      "summary": {},
+      "market_sentiment": "BULLISH \ud83d\udc02",
+      "unusual_activity": [],
+      "greeks_summary": {},
+      "overall_put_call_ratio": 0.0,
+      "total_call_volume": 0,
+      "total_put_volume": 0
+    }
+  },
+  {
+    "timestamp": "2026-02-22T08:12:32.227306",
+    "analysis": {
+      "timestamp": "2026-02-22T08:12:29.032840",
+      "tickers_analyzed": [
+        "KVUE",
+        "O"
+      ],
+      "alerts": [
+        {
+          "type": "ERROR",
+          "ticker": "ACX.MC",
+          "message": "No options found for ACX.MC",
+          "severity": "high"
+        },
+        {
+          "type": "ERROR",
+          "ticker": "ENG.MC",
+          "message": "No options found for ENG.MC",
+          "severity": "high"
+        },
+        {
+          "type": "HIGH_IV",
+          "ticker": "KVUE",
+          "message": "IV alta - Calls: 75.8%, Puts: 68.0%",
+          "severity": "medium"
+        },
+        {
+          "type": "LOW_PUT_CALL_RATIO",
+          "ticker": "KVUE",
+          "message": "P/C ratio bajo: 0.05 - Sentimiento alcista fuerte",
+          "severity": "medium"
+        },
+        {
+          "type": "IV_PREMIUM",
+          "ticker": "KVUE",
+          "message": "IV >> HV: IV=71.9% vs HV=18.6% (ratio: 3.86)",
+          "severity": "medium"
+        },
+        {
+          "type": "ERROR",
+          "ticker": "NTGY.MC",
+          "message": "No options found for NTGY.MC",
+          "severity": "high"
+        },
+        {
+          "type": "LOW_PUT_CALL_RATIO",
+          "ticker": "O",
+          "message": "P/C ratio bajo: 0.17 - Sentimiento alcista fuerte",
+          "severity": "medium"
+        },
+        {
+          "type": "IV_SKEW",
+          "ticker": "O",
+          "message": "IV Skew: 19.0% (Puts mas caros)",
+          "severity": "medium"
+        },
+        {
+          "type": "IV_PREMIUM",
+          "ticker": "O",
+          "message": "IV >> HV: IV=36.1% vs HV=16.3% (ratio: 2.22)",
+          "severity": "medium"
+        },
+        {
+          "type": "ERROR",
+          "ticker": "VIS.MC",
+          "message": "No options found for VIS.MC",
+          "severity": "high"
+        }
+      ],
+      "summary": {
+        "KVUE": {
+          "current_price": 18.72,
+          "historical_volatility": 18.64,
+          "stock_data": {
+            "market_cap": 35867226112,
+            "pe_ratio": 24.631578,
+            "52w_high": 25.17,
+            "52w_low": 14.02,
+            "avg_volume": 45586750,
+            "dividend_yield": 4.43,
+            "beta": 0.551
+          },
+          "call_volume": 9236.0,
+          "put_volume": 481.0,
+          "total_volume": 9717.0,
+          "call_open_interest": 134592.0,
+          "put_open_interest": 14478.0,
+          "put_call_ratio_volume": 0.05207882200086618,
+          "put_call_ratio_oi": 0.10756954350927246,
+          "avg_call_iv": 75.8,
+          "avg_put_iv": 68.05,
+          "max_call_iv": 198.83,
+          "max_put_iv": 220.9,
+          "iv_skew": -7.75,
+          "expirations": [
+            "2026-02-27",
+            "2026-03-06",
+            "2026-03-13",
+            "2026-03-20",
+            "2026-03-27",
+            "2026-04-02"
+          ],
+          "most_active_call": {
+            "strike": 19.0,
+            "lastPrice": 0.35,
+            "volume": 6455.0,
+            "openInterest": 25512.0,
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.2627
+          },
+          "most_active_put": {
+            "strike": 18.5,
+            "lastPrice": 0.09,
+            "volume": 118.0,
+            "openInterest": "525",
+            "expiration": "2026-02-27",
+            "impliedVolatility": 0.3125
+          },
+          "highest_oi_call": {
+            "strike": 20.0,
+            "lastPrice": 0.08,
+            "volume": 105.0,
+            "openInterest": 51793.0,
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.2305
+          },
+          "highest_oi_put": {
+            "strike": 16.0,
+            "lastPrice": 0.21,
+            "volume": 12.0,
+            "openInterest": "89",
+            "expiration": "2026-03-06",
+            "impliedVolatility": 0.8242
+          },
+          "greeks": {
+            "avg_delta_calls": 0.5445,
+            "avg_delta_puts": 0.0,
+            "avg_gamma": 0.168492,
+            "avg_theta": 0.0,
+            "avg_vega": 0.0115
+          }
+        },
+        "O": {
+          "current_price": 66.14,
+          "historical_volatility": 16.27,
+          "stock_data": {
+            "market_cap": 60723515392,
+            "pe_ratio": 61.81308,
+            "52w_high": 66.74,
+            "52w_low": 50.71,
+            "avg_volume": 6532858,
+            "dividend_yield": 4.9,
+            "beta": 0.801
+          },
+          "call_volume": 3838.0,
+          "put_volume": 671.0,
+          "total_volume": 4509.0,
+          "call_open_interest": 26962.0,
+          "put_open_interest": 7439.0,
+          "put_call_ratio_volume": 0.17483064095883272,
+          "put_call_ratio_oi": 0.2759068318374008,
+          "avg_call_iv": 26.63,
+          "avg_put_iv": 45.63,
+          "max_call_iv": 47.36,
+          "max_put_iv": 144.19,
+          "iv_skew": 19.0,
+          "expirations": [
+            "2026-03-20"
+          ],
+          "most_active_call": {
+            "strike": 65.0,
+            "lastPrice": 2.02,
+            "volume": 2405.0,
+            "openInterest": "3826",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.2051
+          },
+          "most_active_put": {
+            "strike": 57.5,
+            "lastPrice": 0.11,
+            "volume": "77",
+            "openInterest": "1672",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.334
+          },
+          "highest_oi_call": {
+            "strike": 62.5,
+            "lastPrice": 4.05,
+            "volume": 294.0,
+            "openInterest": "7491",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.2427
+          },
+          "highest_oi_put": {
+            "strike": 67.5,
+            "lastPrice": 2.19,
+            "volume": "118",
+            "openInterest": "50",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.2468
+          },
+          "greeks": {
+            "avg_delta_calls": 0.5445,
+            "avg_delta_puts": 0.0,
+            "avg_gamma": 0.055416,
+            "avg_theta": 0.0,
+            "avg_vega": 0.0454
+          }
+        }
+      },
+      "market_sentiment": "BULLISH \ud83d\udc02",
+      "unusual_activity": [
+        {
+          "ticker": "KVUE",
+          "type": "CALL",
+          "strike": 17.0,
+          "expiration": "2026-03-06",
+          "volume": 13.0,
+          "open_interest": 1.0,
+          "vol_oi_ratio": 13.0,
+          "last_price": 1.77,
+          "implied_volatility": 117.68
+        },
+        {
+          "ticker": "KVUE",
+          "type": "CALL",
+          "strike": 19.0,
+          "expiration": "2026-02-27",
+          "volume": 1626.0,
+          "open_interest": 372.0,
+          "vol_oi_ratio": 4.37,
+          "last_price": 0.13,
+          "implied_volatility": 26.56
+        }
+      ],
+      "greeks_summary": {},
+      "overall_put_call_ratio": 0.088,
+      "total_call_volume": 13074.0,
+      "total_put_volume": 1152.0
+    }
+  },
+  {
+    "timestamp": "2026-02-22T08:44:40.245872",
+    "analysis": {
+      "timestamp": "2026-02-22T08:44:37.825867",
+      "tickers_analyzed": [
+        "KVUE",
+        "O"
+      ],
+      "alerts": [
+        {
+          "type": "ERROR",
+          "ticker": "ACX.MC",
+          "message": "No options found for ACX.MC",
+          "severity": "high"
+        },
+        {
+          "type": "ERROR",
+          "ticker": "ENG.MC",
+          "message": "No options found for ENG.MC",
+          "severity": "high"
+        },
+        {
+          "type": "HIGH_IV",
+          "ticker": "KVUE",
+          "message": "IV alta - Calls: 75.8%, Puts: 68.0%",
+          "severity": "medium"
+        },
+        {
+          "type": "LOW_PUT_CALL_RATIO",
+          "ticker": "KVUE",
+          "message": "P/C ratio bajo: 0.05 - Sentimiento alcista fuerte",
+          "severity": "medium"
+        },
+        {
+          "type": "IV_PREMIUM",
+          "ticker": "KVUE",
+          "message": "IV >> HV: IV=71.9% vs HV=18.6% (ratio: 3.86)",
+          "severity": "medium"
+        },
+        {
+          "type": "ERROR",
+          "ticker": "NTGY.MC",
+          "message": "No options found for NTGY.MC",
+          "severity": "high"
+        },
+        {
+          "type": "LOW_PUT_CALL_RATIO",
+          "ticker": "O",
+          "message": "P/C ratio bajo: 0.17 - Sentimiento alcista fuerte",
+          "severity": "medium"
+        },
+        {
+          "type": "IV_SKEW",
+          "ticker": "O",
+          "message": "IV Skew: 19.0% (Puts mas caros)",
+          "severity": "medium"
+        },
+        {
+          "type": "IV_PREMIUM",
+          "ticker": "O",
+          "message": "IV >> HV: IV=36.1% vs HV=16.3% (ratio: 2.22)",
+          "severity": "medium"
+        },
+        {
+          "type": "ERROR",
+          "ticker": "VIS.MC",
+          "message": "No options found for VIS.MC",
+          "severity": "high"
+        }
+      ],
+      "summary": {
+        "KVUE": {
+          "current_price": 18.72,
+          "historical_volatility": 18.64,
+          "stock_data": {
+            "market_cap": 35867226112,
+            "pe_ratio": 24.631578,
+            "52w_high": 25.17,
+            "52w_low": 14.02,
+            "avg_volume": 45586750,
+            "dividend_yield": 4.43,
+            "beta": 0.551
+          },
+          "call_volume": 9236.0,
+          "put_volume": 481.0,
+          "total_volume": 9717.0,
+          "call_open_interest": 134592.0,
+          "put_open_interest": 14478.0,
+          "put_call_ratio_volume": 0.05207882200086618,
+          "put_call_ratio_oi": 0.10756954350927246,
+          "avg_call_iv": 75.8,
+          "avg_put_iv": 68.05,
+          "max_call_iv": 198.83,
+          "max_put_iv": 220.9,
+          "iv_skew": -7.75,
+          "expirations": [
+            "2026-02-27",
+            "2026-03-06",
+            "2026-03-13",
+            "2026-03-20",
+            "2026-03-27",
+            "2026-04-02"
+          ],
+          "most_active_call": {
+            "strike": 19.0,
+            "lastPrice": 0.35,
+            "volume": 6455.0,
+            "openInterest": 25512.0,
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.2627
+          },
+          "most_active_put": {
+            "strike": 18.5,
+            "lastPrice": 0.09,
+            "volume": 118.0,
+            "openInterest": "525",
+            "expiration": "2026-02-27",
+            "impliedVolatility": 0.3125
+          },
+          "highest_oi_call": {
+            "strike": 20.0,
+            "lastPrice": 0.08,
+            "volume": 105.0,
+            "openInterest": 51793.0,
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.2305
+          },
+          "highest_oi_put": {
+            "strike": 16.0,
+            "lastPrice": 0.21,
+            "volume": 12.0,
+            "openInterest": "89",
+            "expiration": "2026-03-06",
+            "impliedVolatility": 0.8242
+          },
+          "greeks": {
+            "avg_delta_calls": 0.5445,
+            "avg_delta_puts": 0.0,
+            "avg_gamma": 0.168492,
+            "avg_theta": 0.0,
+            "avg_vega": 0.0115
+          }
+        },
+        "O": {
+          "current_price": 66.14,
+          "historical_volatility": 16.27,
+          "stock_data": {
+            "market_cap": 60723515392,
+            "pe_ratio": 61.81308,
+            "52w_high": 66.74,
+            "52w_low": 50.71,
+            "avg_volume": 6532858,
+            "dividend_yield": 4.9,
+            "beta": 0.801
+          },
+          "call_volume": 3838.0,
+          "put_volume": 671.0,
+          "total_volume": 4509.0,
+          "call_open_interest": 26962.0,
+          "put_open_interest": 7439.0,
+          "put_call_ratio_volume": 0.17483064095883272,
+          "put_call_ratio_oi": 0.2759068318374008,
+          "avg_call_iv": 26.63,
+          "avg_put_iv": 45.63,
+          "max_call_iv": 47.36,
+          "max_put_iv": 144.19,
+          "iv_skew": 19.0,
+          "expirations": [
+            "2026-03-20"
+          ],
+          "most_active_call": {
+            "strike": 65.0,
+            "lastPrice": 2.02,
+            "volume": 2405.0,
+            "openInterest": "3826",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.2051
+          },
+          "most_active_put": {
+            "strike": 57.5,
+            "lastPrice": 0.11,
+            "volume": "77",
+            "openInterest": "1672",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.334
+          },
+          "highest_oi_call": {
+            "strike": 62.5,
+            "lastPrice": 4.05,
+            "volume": 294.0,
+            "openInterest": "7491",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.2427
+          },
+          "highest_oi_put": {
+            "strike": 67.5,
+            "lastPrice": 2.19,
+            "volume": "118",
+            "openInterest": "50",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.2468
+          },
+          "greeks": {
+            "avg_delta_calls": 0.5445,
+            "avg_delta_puts": 0.0,
+            "avg_gamma": 0.055416,
+            "avg_theta": 0.0,
+            "avg_vega": 0.0454
+          }
+        }
+      },
+      "market_sentiment": "BULLISH \ud83d\udc02",
+      "unusual_activity": [
+        {
+          "ticker": "KVUE",
+          "type": "CALL",
+          "strike": 17.0,
+          "expiration": "2026-03-06",
+          "volume": 13.0,
+          "open_interest": 1.0,
+          "vol_oi_ratio": 13.0,
+          "last_price": 1.77,
+          "implied_volatility": 117.68
+        },
+        {
+          "ticker": "KVUE",
+          "type": "CALL",
+          "strike": 19.0,
+          "expiration": "2026-02-27",
+          "volume": 1626.0,
+          "open_interest": 372.0,
+          "vol_oi_ratio": 4.37,
+          "last_price": 0.13,
+          "implied_volatility": 26.56
+        }
+      ],
+      "greeks_summary": {},
+      "overall_put_call_ratio": 0.088,
+      "total_call_volume": 13074.0,
+      "total_put_volume": 1152.0
+    }
+  },
+  {
+    "timestamp": "2026-02-22T12:09:06.522864",
+    "analysis": {
+      "timestamp": "2026-02-22T12:09:01.020152",
+      "tickers_analyzed": [
+        "KVUE",
+        "O"
+      ],
+      "alerts": [
+        {
+          "type": "ERROR",
+          "ticker": "ACX.MC",
+          "message": "No options found for ACX.MC",
+          "severity": "high"
+        },
+        {
+          "type": "ERROR",
+          "ticker": "ENG.MC",
+          "message": "No options found for ENG.MC",
+          "severity": "high"
+        },
+        {
+          "type": "HIGH_IV",
+          "ticker": "KVUE",
+          "message": "IV alta - Calls: 75.8%, Puts: 68.0%",
+          "severity": "medium"
+        },
+        {
+          "type": "LOW_PUT_CALL_RATIO",
+          "ticker": "KVUE",
+          "message": "P/C ratio bajo: 0.05 - Sentimiento alcista fuerte",
+          "severity": "medium"
+        },
+        {
+          "type": "IV_PREMIUM",
+          "ticker": "KVUE",
+          "message": "IV >> HV: IV=71.9% vs HV=18.6% (ratio: 3.86)",
+          "severity": "medium"
+        },
+        {
+          "type": "ERROR",
+          "ticker": "NTGY.MC",
+          "message": "No options found for NTGY.MC",
+          "severity": "high"
+        },
+        {
+          "type": "LOW_PUT_CALL_RATIO",
+          "ticker": "O",
+          "message": "P/C ratio bajo: 0.17 - Sentimiento alcista fuerte",
+          "severity": "medium"
+        },
+        {
+          "type": "IV_SKEW",
+          "ticker": "O",
+          "message": "IV Skew: 19.0% (Puts mas caros)",
+          "severity": "medium"
+        },
+        {
+          "type": "IV_PREMIUM",
+          "ticker": "O",
+          "message": "IV >> HV: IV=36.1% vs HV=16.3% (ratio: 2.22)",
+          "severity": "medium"
+        },
+        {
+          "type": "ERROR",
+          "ticker": "VIS.MC",
+          "message": "No options found for VIS.MC",
+          "severity": "high"
+        }
+      ],
+      "summary": {
+        "KVUE": {
+          "current_price": 18.72,
+          "historical_volatility": 18.64,
+          "stock_data": {
+            "market_cap": 0,
+            "pe_ratio": 24.631578,
+            "52w_high": 25.17,
+            "52w_low": 14.02,
+            "avg_volume": 45586750,
+            "dividend_yield": 4.43,
+            "beta": 0.551
+          },
+          "call_volume": 9236.0,
+          "put_volume": 481.0,
+          "total_volume": 9717.0,
+          "call_open_interest": 134592.0,
+          "put_open_interest": 14478.0,
+          "put_call_ratio_volume": 0.05207882200086618,
+          "put_call_ratio_oi": 0.10756954350927246,
+          "avg_call_iv": 75.8,
+          "avg_put_iv": 68.05,
+          "max_call_iv": 198.83,
+          "max_put_iv": 220.9,
+          "iv_skew": -7.75,
+          "expirations": [
+            "2026-02-27",
+            "2026-03-06",
+            "2026-03-13",
+            "2026-03-20",
+            "2026-03-27",
+            "2026-04-02"
+          ],
+          "most_active_call": {
+            "strike": 19.0,
+            "lastPrice": 0.35,
+            "volume": 6455.0,
+            "openInterest": 25512.0,
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.2627
+          },
+          "most_active_put": {
+            "strike": 18.5,
+            "lastPrice": 0.09,
+            "volume": 118.0,
+            "openInterest": "525",
+            "expiration": "2026-02-27",
+            "impliedVolatility": 0.3125
+          },
+          "highest_oi_call": {
+            "strike": 20.0,
+            "lastPrice": 0.08,
+            "volume": 105.0,
+            "openInterest": 51793.0,
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.2305
+          },
+          "highest_oi_put": {
+            "strike": 16.0,
+            "lastPrice": 0.21,
+            "volume": 12.0,
+            "openInterest": "89",
+            "expiration": "2026-03-06",
+            "impliedVolatility": 0.8242
+          },
+          "greeks": {
+            "avg_delta_calls": 0.5445,
+            "avg_delta_puts": 0.0,
+            "avg_gamma": 0.168492,
+            "avg_theta": 0.0,
+            "avg_vega": 0.0115
+          }
+        },
+        "O": {
+          "current_price": 66.14,
+          "historical_volatility": 16.27,
+          "stock_data": {
+            "market_cap": 0,
+            "pe_ratio": 61.81308,
+            "52w_high": 66.74,
+            "52w_low": 50.71,
+            "avg_volume": 6532858,
+            "dividend_yield": 4.9,
+            "beta": 0.801
+          },
+          "call_volume": 3838.0,
+          "put_volume": 671.0,
+          "total_volume": 4509.0,
+          "call_open_interest": 26962.0,
+          "put_open_interest": 7439.0,
+          "put_call_ratio_volume": 0.17483064095883272,
+          "put_call_ratio_oi": 0.2759068318374008,
+          "avg_call_iv": 26.63,
+          "avg_put_iv": 45.63,
+          "max_call_iv": 47.36,
+          "max_put_iv": 144.19,
+          "iv_skew": 19.0,
+          "expirations": [
+            "2026-03-20"
+          ],
+          "most_active_call": {
+            "strike": 65.0,
+            "lastPrice": 2.02,
+            "volume": 2405.0,
+            "openInterest": "3826",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.2051
+          },
+          "most_active_put": {
+            "strike": 57.5,
+            "lastPrice": 0.11,
+            "volume": "77",
+            "openInterest": "1672",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.334
+          },
+          "highest_oi_call": {
+            "strike": 62.5,
+            "lastPrice": 4.05,
+            "volume": 294.0,
+            "openInterest": "7491",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.2427
+          },
+          "highest_oi_put": {
+            "strike": 67.5,
+            "lastPrice": 2.19,
+            "volume": "118",
+            "openInterest": "50",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.2468
+          },
+          "greeks": {
+            "avg_delta_calls": 0.5445,
+            "avg_delta_puts": 0.0,
+            "avg_gamma": 0.055416,
+            "avg_theta": 0.0,
+            "avg_vega": 0.0454
+          }
+        }
+      },
+      "market_sentiment": "BULLISH \ud83d\udc02",
+      "unusual_activity": [
+        {
+          "ticker": "KVUE",
+          "type": "CALL",
+          "strike": 17.0,
+          "expiration": "2026-03-06",
+          "volume": 13.0,
+          "open_interest": 1.0,
+          "vol_oi_ratio": 13.0,
+          "last_price": 1.77,
+          "implied_volatility": 117.68
+        },
+        {
+          "ticker": "KVUE",
+          "type": "CALL",
+          "strike": 19.0,
+          "expiration": "2026-02-27",
+          "volume": 1626.0,
+          "open_interest": 372.0,
+          "vol_oi_ratio": 4.37,
+          "last_price": 0.13,
+          "implied_volatility": 26.56
+        }
+      ],
+      "greeks_summary": {},
+      "overall_put_call_ratio": 0.088,
+      "total_call_volume": 13074.0,
+      "total_put_volume": 1152.0
+    }
+  },
+  {
+    "timestamp": "2026-02-23T08:53:54.432749",
+    "analysis": {
+      "timestamp": "2026-02-23T08:53:51.533009",
+      "tickers_analyzed": [
+        "KVUE",
+        "O"
+      ],
+      "alerts": [
+        {
+          "type": "INFO",
+          "ticker": "ACX.MC",
+          "message": "No hay opciones disponibles en Yahoo Finance para ACX.MC (mercado europeo)",
+          "severity": "low"
+        },
+        {
+          "type": "INFO",
+          "ticker": "ENG.MC",
+          "message": "No hay opciones disponibles en Yahoo Finance para ENG.MC (mercado europeo)",
+          "severity": "low"
+        },
+        {
+          "type": "LOW_PUT_CALL_RATIO",
+          "ticker": "KVUE",
+          "message": "P/C ratio bajo: 0.19 - Sentimiento alcista fuerte",
+          "severity": "medium"
+        },
+        {
+          "type": "INFO",
+          "ticker": "NTGY.MC",
+          "message": "No hay opciones disponibles en Yahoo Finance para NTGY.MC (mercado europeo)",
+          "severity": "low"
+        },
+        {
+          "type": "LOW_PUT_CALL_RATIO",
+          "ticker": "O",
+          "message": "P/C ratio bajo: 0.17 - Sentimiento alcista fuerte",
+          "severity": "medium"
+        },
+        {
+          "type": "IV_SKEW",
+          "ticker": "O",
+          "message": "IV Skew: 27.9% (Puts mas caros)",
+          "severity": "medium"
+        },
+        {
+          "type": "INFO",
+          "ticker": "VIS.MC",
+          "message": "No hay opciones disponibles en Yahoo Finance para VIS.MC (mercado europeo)",
+          "severity": "low"
+        }
+      ],
+      "summary": {
+        "KVUE": {
+          "current_price": 18.72,
+          "historical_volatility": 18.64,
+          "stock_data": {
+            "market_cap": 0,
+            "pe_ratio": 24.631578,
+            "52w_high": 25.17,
+            "52w_low": 14.02,
+            "avg_volume": 45586750,
+            "dividend_yield": 4.43,
+            "beta": 0.551
+          },
+          "call_volume": 2568.0,
+          "put_volume": 478.0,
+          "total_volume": 3046.0,
+          "call_open_interest": 0.0,
+          "put_open_interest": 0.0,
+          "put_call_ratio_volume": 0.18613707165109034,
+          "put_call_ratio_oi": 0.0,
+          "avg_call_iv": 9.86,
+          "avg_put_iv": 13.38,
+          "max_call_iv": 25.0,
+          "max_put_iv": 25.0,
+          "iv_skew": 3.53,
+          "expirations": [
+            "2026-02-27",
+            "2026-03-06",
+            "2026-03-13",
+            "2026-03-20",
+            "2026-03-27",
+            "2026-04-02"
+          ],
+          "most_active_call": {
+            "strike": 19.0,
+            "lastPrice": 0.13,
+            "volume": 1626.0,
+            "openInterest": "0",
+            "expiration": "2026-02-27",
+            "impliedVolatility": 0.0313
+          },
+          "most_active_put": {
+            "strike": 18.5,
+            "lastPrice": 0.09,
+            "volume": 118.0,
+            "openInterest": "0",
+            "expiration": "2026-02-27",
+            "impliedVolatility": 0.0313
+          },
+          "highest_oi_call": {
+            "strike": 16.5,
+            "lastPrice": 2.46,
+            "volume": 1.0,
+            "openInterest": "0",
+            "expiration": "2026-02-27",
+            "impliedVolatility": 0.0
+          },
+          "highest_oi_put": {
+            "strike": 16.0,
+            "lastPrice": 0.01,
+            "volume": 15.0,
+            "openInterest": "0",
+            "expiration": "2026-02-27",
+            "impliedVolatility": 0.25
+          },
+          "greeks": {
+            "avg_delta_calls": 0.005,
+            "avg_delta_puts": 0.0,
+            "avg_gamma": 0.030094,
+            "avg_theta": 0.0,
+            "avg_vega": 0.0005
+          }
+        },
+        "O": {
+          "current_price": 66.14,
+          "historical_volatility": 16.27,
+          "stock_data": {
+            "market_cap": 0,
+            "pe_ratio": 61.81308,
+            "52w_high": 66.74,
+            "52w_low": 50.71,
+            "avg_volume": 6532858,
+            "dividend_yield": 4.9,
+            "beta": 0.801
+          },
+          "call_volume": 3838.0,
+          "put_volume": 671.0,
+          "total_volume": 4509.0,
+          "call_open_interest": 0.0,
+          "put_open_interest": 1.0,
+          "put_call_ratio_volume": 0.17483064095883272,
+          "put_call_ratio_oi": 1.0,
+          "avg_call_iv": 6.77,
+          "avg_put_iv": 34.7,
+          "max_call_iv": 12.5,
+          "max_put_iv": 146.92,
+          "iv_skew": 27.93,
+          "expirations": [
+            "2026-03-20"
+          ],
+          "most_active_call": {
+            "strike": 65.0,
+            "lastPrice": 2.02,
+            "volume": 2405.0,
+            "openInterest": "0",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.0
+          },
+          "most_active_put": {
+            "strike": 57.5,
+            "lastPrice": 0.11,
+            "volume": "77",
+            "openInterest": "0",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.125
+          },
+          "highest_oi_call": {
+            "strike": 57.5,
+            "lastPrice": 8.83,
+            "volume": 58.0,
+            "openInterest": "0",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.0
+          },
+          "highest_oi_put": {
+            "strike": 75.0,
+            "lastPrice": 18.06,
+            "volume": "1",
+            "openInterest": "1",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 1.4692
+          },
+          "greeks": {
+            "avg_delta_calls": 0.0003,
+            "avg_delta_puts": 0.0,
+            "avg_gamma": 0.002537,
+            "avg_theta": 0.0,
+            "avg_vega": 0.0224
+          }
+        }
+      },
+      "market_sentiment": "BULLISH \ud83d\udc02",
+      "unusual_activity": [],
+      "greeks_summary": {},
+      "overall_put_call_ratio": 0.179,
+      "total_call_volume": 6406.0,
+      "total_put_volume": 1149.0
+    }
+  },
+  {
+    "timestamp": "2026-02-23T15:04:45.694991",
+    "analysis": {
+      "timestamp": "2026-02-23T15:04:42.423785",
+      "tickers_analyzed": [
+        "KVUE",
+        "O"
+      ],
+      "alerts": [
+        {
+          "type": "INFO",
+          "ticker": "ACX.MC",
+          "message": "No hay opciones disponibles en Yahoo Finance para ACX.MC (mercado europeo)",
+          "severity": "low"
+        },
+        {
+          "type": "INFO",
+          "ticker": "ENG.MC",
+          "message": "No hay opciones disponibles en Yahoo Finance para ENG.MC (mercado europeo)",
+          "severity": "low"
+        },
+        {
+          "type": "IV_SKEW",
+          "ticker": "KVUE",
+          "message": "IV Skew: -12.0% (Calls mas caros)",
+          "severity": "medium"
+        },
+        {
+          "type": "IV_PREMIUM",
+          "ticker": "KVUE",
+          "message": "IV >> HV: IV=31.2% vs HV=18.3% (ratio: 1.71)",
+          "severity": "medium"
+        },
+        {
+          "type": "INFO",
+          "ticker": "NTGY.MC",
+          "message": "No hay opciones disponibles en Yahoo Finance para NTGY.MC (mercado europeo)",
+          "severity": "low"
+        },
+        {
+          "type": "HIGH_IV",
+          "ticker": "O",
+          "message": "IV alta - Calls: 26.2%, Puts: 54.0%",
+          "severity": "medium"
+        },
+        {
+          "type": "HIGH_PUT_CALL_RATIO",
+          "ticker": "O",
+          "message": "P/C ratio alto: 2.00 - Sentimiento bajista fuerte",
+          "severity": "high"
+        },
+        {
+          "type": "IV_SKEW",
+          "ticker": "O",
+          "message": "IV Skew: 27.8% (Puts mas caros)",
+          "severity": "medium"
+        },
+        {
+          "type": "IV_PREMIUM",
+          "ticker": "O",
+          "message": "IV >> HV: IV=40.1% vs HV=16.2% (ratio: 2.47)",
+          "severity": "medium"
+        },
+        {
+          "type": "INFO",
+          "ticker": "VIS.MC",
+          "message": "No hay opciones disponibles en Yahoo Finance para VIS.MC (mercado europeo)",
+          "severity": "low"
+        }
+      ],
+      "summary": {
+        "KVUE": {
+          "current_price": 18.9,
+          "historical_volatility": 18.27,
+          "stock_data": {
+            "market_cap": 0,
+            "pe_ratio": 24.868422,
+            "52w_high": 25.17,
+            "52w_low": 14.02,
+            "avg_volume": 45586750,
+            "dividend_yield": 4.43,
+            "beta": 0.551
+          },
+          "call_volume": 1178.0,
+          "put_volume": 480.0,
+          "total_volume": 1658.0,
+          "call_open_interest": 123164.0,
+          "put_open_interest": 11980.0,
+          "put_call_ratio_volume": 0.4074702886247878,
+          "put_call_ratio_oi": 0.09726868240719691,
+          "avg_call_iv": 37.18,
+          "avg_put_iv": 25.14,
+          "max_call_iv": 126.95,
+          "max_put_iv": 82.42,
+          "iv_skew": -12.04,
+          "expirations": [
+            "2026-02-27",
+            "2026-03-06",
+            "2026-03-13",
+            "2026-03-20",
+            "2026-03-27",
+            "2026-04-02"
+          ],
+          "most_active_call": {
+            "strike": 18.5,
+            "lastPrice": 0.38,
+            "volume": 295.0,
+            "openInterest": "377",
+            "expiration": "2026-02-27",
+            "impliedVolatility": 0.6016
+          },
+          "most_active_put": {
+            "strike": 18.0,
+            "lastPrice": 0.2,
+            "volume": 131.0,
+            "openInterest": "1314",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.4473
+          },
+          "highest_oi_call": {
+            "strike": 19.0,
+            "lastPrice": 0.13,
+            "volume": 6.0,
+            "openInterest": "996",
+            "expiration": "2026-02-27",
+            "impliedVolatility": 0.2109
+          },
+          "highest_oi_put": {
+            "strike": 20.0,
+            "lastPrice": 1.65,
+            "volume": 3.0,
+            "openInterest": "863",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.0
+          },
+          "greeks": {
+            "avg_delta_calls": 0.3108,
+            "avg_delta_puts": 0.0,
+            "avg_gamma": 0.186955,
+            "avg_theta": 0.0,
+            "avg_vega": 0.0077
+          }
+        },
+        "O": {
+          "current_price": 66.8501,
+          "historical_volatility": 16.24,
+          "stock_data": {
+            "market_cap": 0,
+            "pe_ratio": 62.476723,
+            "52w_high": 67.15,
+            "52w_low": 50.71,
+            "avg_volume": 6532858,
+            "dividend_yield": 4.9,
+            "beta": 0.801
+          },
+          "call_volume": 281.0,
+          "put_volume": 561.0,
+          "total_volume": 842.0,
+          "call_open_interest": 28875.0,
+          "put_open_interest": 7865.0,
+          "put_call_ratio_volume": 1.99644128113879,
+          "put_call_ratio_oi": 0.2723809523809524,
+          "avg_call_iv": 26.19,
+          "avg_put_iv": 53.97,
+          "max_call_iv": 43.9,
+          "max_put_iv": 152.44,
+          "iv_skew": 27.78,
+          "expirations": [
+            "2026-03-20"
+          ],
+          "most_active_call": {
+            "strike": 60.0,
+            "lastPrice": 6.3,
+            "volume": 153.0,
+            "openInterest": "6527",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.3721
+          },
+          "most_active_put": {
+            "strike": 57.5,
+            "lastPrice": 0.11,
+            "volume": "77",
+            "openInterest": "1695",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.3848
+          },
+          "highest_oi_call": {
+            "strike": 62.5,
+            "lastPrice": 4.55,
+            "volume": 11.0,
+            "openInterest": "7502",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.2471
+          },
+          "highest_oi_put": {
+            "strike": 65.0,
+            "lastPrice": 1.1,
+            "volume": "296",
+            "openInterest": "2215",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.2688
+          },
+          "greeks": {
+            "avg_delta_calls": 0.5796,
+            "avg_delta_puts": 0.0,
+            "avg_gamma": 0.05383,
+            "avg_theta": 0.0,
+            "avg_vega": 0.0459
+          }
+        }
+      },
+      "market_sentiment": "BULLISH \ud83d\udc02",
+      "unusual_activity": [],
+      "greeks_summary": {},
+      "overall_put_call_ratio": 0.714,
+      "total_call_volume": 1459.0,
+      "total_put_volume": 1041.0
+    }
+  },
+  {
+    "timestamp": "2026-02-23T15:26:47.464487",
+    "analysis": {
+      "timestamp": "2026-02-23T15:26:44.768390",
+      "tickers_analyzed": [
+        "ENG.MC",
+        "KVUE",
+        "O",
+        "VIS.MC"
+      ],
+      "alerts": [
+        {
+          "type": "INFO",
+          "ticker": "ACX.MC",
+          "message": "No hay opciones disponibles en Yahoo Finance para ACX.MC (mercado europeo)",
+          "severity": "low"
+        },
+        {
+          "type": "HIGH_IV",
+          "ticker": "KVUE",
+          "message": "IV alta - Calls: 52.8%, Puts: 59.9%",
+          "severity": "medium"
+        },
+        {
+          "type": "LOW_PUT_CALL_RATIO",
+          "ticker": "KVUE",
+          "message": "P/C ratio bajo: 0.26 - Sentimiento alcista fuerte",
+          "severity": "medium"
+        },
+        {
+          "type": "IV_PREMIUM",
+          "ticker": "KVUE",
+          "message": "IV >> HV: IV=56.3% vs HV=18.2% (ratio: 3.09)",
+          "severity": "medium"
+        },
+        {
+          "type": "INFO",
+          "ticker": "NTGY.MC",
+          "message": "No hay opciones disponibles en Yahoo Finance para NTGY.MC (mercado europeo)",
+          "severity": "low"
+        },
+        {
+          "type": "LOW_PUT_CALL_RATIO",
+          "ticker": "O",
+          "message": "P/C ratio bajo: 0.35 - Sentimiento alcista fuerte",
+          "severity": "medium"
+        },
+        {
+          "type": "IV_SKEW",
+          "ticker": "O",
+          "message": "IV Skew: 17.9% (Puts mas caros)",
+          "severity": "medium"
+        },
+        {
+          "type": "IV_PREMIUM",
+          "ticker": "O",
+          "message": "IV >> HV: IV=36.7% vs HV=16.2% (ratio: 2.26)",
+          "severity": "medium"
+        }
+      ],
+      "summary": {
+        "ENG.MC": {
+          "current_price": 15.08,
+          "historical_volatility": 16.91,
+          "stock_data": {
+            "market_cap": 0,
+            "pe_ratio": 0,
+            "52w_high": 15.365,
+            "52w_low": 12.1,
+            "avg_volume": 1117960,
+            "dividend_yield": 6.71,
+            "beta": 0.415
+          },
+          "call_volume": 0.0,
+          "put_volume": 0,
+          "total_volume": 0.0,
+          "call_open_interest": 0.0,
+          "put_open_interest": 0,
+          "put_call_ratio_volume": 0.0,
+          "put_call_ratio_oi": 0.0,
+          "avg_call_iv": 0.0,
+          "avg_put_iv": 0.0,
+          "max_call_iv": 0,
+          "max_put_iv": 0,
+          "iv_skew": 0.0,
+          "expirations": [
+            "20/03/2026",
+            "17/04/2026",
+            "15/05/2026",
+            "19/06/2026",
+            "18/09/2026",
+            "18/12/2026",
+            "20/03/2026",
+            "17/04/2026",
+            "15/05/2026",
+            "19/06/2026",
+            "18/09/2026",
+            "18/12/2026",
+            "20/03/2026",
+            "17/04/2026",
+            "15/05/2026",
+            "19/06/2026",
+            "18/09/2026",
+            "18/12/2026",
+            "19/03/2027",
+            "21/12/2029",
+            "20/03/2026",
+            "17/04/2026",
+            "15/05/2026",
+            "19/06/2026",
+            "18/09/2026",
+            "18/12/2026",
+            "No hay vencimientos"
+          ],
+          "most_active_call": {
+            "strike": 9.25,
+            "lastPrice": 5.66,
+            "volume": null,
+            "openInterest": null,
+            "expiration": "20/03/2026",
+            "impliedVolatility": null
+          },
+          "most_active_put": {},
+          "highest_oi_call": {
+            "strike": 9.25,
+            "lastPrice": 5.66,
+            "volume": null,
+            "openInterest": null,
+            "expiration": "20/03/2026",
+            "impliedVolatility": null
+          },
+          "highest_oi_put": {},
+          "greeks": {
+            "avg_delta_calls": 0.0,
+            "avg_delta_puts": 0.0,
+            "avg_gamma": 0.0,
+            "avg_theta": 0.0,
+            "avg_vega": 0.0
+          }
+        },
+        "KVUE": {
+          "current_price": 18.845,
+          "historical_volatility": 18.22,
+          "stock_data": {
+            "market_cap": 0,
+            "pe_ratio": 24.796053,
+            "52w_high": 25.17,
+            "52w_low": 14.02,
+            "avg_volume": 45586750,
+            "dividend_yield": 4.43,
+            "beta": 0.551
+          },
+          "call_volume": 1232.0,
+          "put_volume": 320.0,
+          "total_volume": 1552.0,
+          "call_open_interest": 123164.0,
+          "put_open_interest": 11980.0,
+          "put_call_ratio_volume": 0.2597402597402597,
+          "put_call_ratio_oi": 0.09726868240719691,
+          "avg_call_iv": 52.75,
+          "avg_put_iv": 59.93,
+          "max_call_iv": 138.67,
+          "max_put_iv": 161.91,
+          "iv_skew": 7.18,
+          "expirations": [
+            "2026-02-27",
+            "2026-03-06",
+            "2026-03-13",
+            "2026-03-20",
+            "2026-03-27",
+            "2026-04-02"
+          ],
+          "most_active_call": {
+            "strike": 19.0,
+            "lastPrice": 0.18,
+            "volume": 309.0,
+            "openInterest": "996",
+            "expiration": "2026-02-27",
+            "impliedVolatility": 0.2832
+          },
+          "most_active_put": {
+            "strike": 18.0,
+            "lastPrice": 0.18,
+            "volume": 132.0,
+            "openInterest": "1314",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.2568
+          },
+          "highest_oi_call": {
+            "strike": 19.0,
+            "lastPrice": 0.18,
+            "volume": 309.0,
+            "openInterest": "996",
+            "expiration": "2026-02-27",
+            "impliedVolatility": 0.2832
+          },
+          "highest_oi_put": {
+            "strike": 20.0,
+            "lastPrice": 1.65,
+            "volume": 3.0,
+            "openInterest": "863",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.4941
+          },
+          "greeks": {
+            "avg_delta_calls": 0.5205,
+            "avg_delta_puts": 0.0,
+            "avg_gamma": 0.197467,
+            "avg_theta": 0.0,
+            "avg_vega": 0.011
+          }
+        },
+        "O": {
+          "current_price": 66.85,
+          "historical_volatility": 16.24,
+          "stock_data": {
+            "market_cap": 0,
+            "pe_ratio": 62.47663,
+            "52w_high": 67.15,
+            "52w_low": 50.71,
+            "avg_volume": 6532858,
+            "dividend_yield": 4.9,
+            "beta": 0.801
+          },
+          "call_volume": 607.0,
+          "put_volume": 215.0,
+          "total_volume": 822.0,
+          "call_open_interest": 28875.0,
+          "put_open_interest": 7865.0,
+          "put_call_ratio_volume": 0.3542009884678748,
+          "put_call_ratio_oi": 0.2723809523809524,
+          "avg_call_iv": 27.8,
+          "avg_put_iv": 45.68,
+          "max_call_iv": 47.46,
+          "max_put_iv": 152.37,
+          "iv_skew": 17.88,
+          "expirations": [
+            "2026-03-20"
+          ],
+          "most_active_call": {
+            "strike": 67.5,
+            "lastPrice": 1.1,
+            "volume": 211.0,
+            "openInterest": "5024",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.2031
+          },
+          "most_active_put": {
+            "strike": 57.5,
+            "lastPrice": 0.05,
+            "volume": "7",
+            "openInterest": "1695",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.3604
+          },
+          "highest_oi_call": {
+            "strike": 62.5,
+            "lastPrice": 4.75,
+            "volume": 45.0,
+            "openInterest": "7502",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.2725
+          },
+          "highest_oi_put": {
+            "strike": 65.0,
+            "lastPrice": 0.7,
+            "volume": "35",
+            "openInterest": "2215",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.2134
+          },
+          "greeks": {
+            "avg_delta_calls": 0.5778,
+            "avg_delta_puts": 0.0,
+            "avg_gamma": 0.054144,
+            "avg_theta": 0.0,
+            "avg_vega": 0.0435
+          }
+        },
+        "VIS.MC": {
+          "current_price": 58.4,
+          "historical_volatility": 11.63,
+          "stock_data": {
+            "market_cap": 0,
+            "pe_ratio": 16.78161,
+            "52w_high": 68.7,
+            "52w_low": 48.35,
+            "avg_volume": 73476,
+            "dividend_yield": 5.46,
+            "beta": 0.163
+          },
+          "call_volume": 0.0,
+          "put_volume": 0,
+          "total_volume": 0.0,
+          "call_open_interest": 0.0,
+          "put_open_interest": 0,
+          "put_call_ratio_volume": 0.0,
+          "put_call_ratio_oi": 0.0,
+          "avg_call_iv": 0.0,
+          "avg_put_iv": 0.0,
+          "max_call_iv": 0,
+          "max_put_iv": 0,
+          "iv_skew": 0.0,
+          "expirations": [
+            "20/03/2026",
+            "17/04/2026",
+            "15/05/2026",
+            "19/06/2026",
+            "18/09/2026",
+            "18/12/2026",
+            "20/03/2026",
+            "17/04/2026",
+            "15/05/2026",
+            "19/06/2026",
+            "18/09/2026",
+            "18/12/2026",
+            "20/03/2026",
+            "No hay vencimientos"
+          ],
+          "most_active_call": {
+            "strike": 37.39,
+            "lastPrice": 20.77,
+            "volume": null,
+            "openInterest": null,
+            "expiration": "20/03/2026",
+            "impliedVolatility": null
+          },
+          "most_active_put": {},
+          "highest_oi_call": {
+            "strike": 37.39,
+            "lastPrice": 20.77,
+            "volume": null,
+            "openInterest": null,
+            "expiration": "20/03/2026",
+            "impliedVolatility": null
+          },
+          "highest_oi_put": {},
+          "greeks": {
+            "avg_delta_calls": 0.0,
+            "avg_delta_puts": 0.0,
+            "avg_gamma": 0.0,
+            "avg_theta": 0.0,
+            "avg_vega": 0.0
+          }
+        }
+      },
+      "market_sentiment": "BULLISH \ud83d\udc02",
+      "unusual_activity": [],
+      "greeks_summary": {},
+      "overall_put_call_ratio": 0.291,
+      "total_call_volume": 1839.0,
+      "total_put_volume": 535.0
+    }
+  },
+  {
+    "timestamp": "2026-02-24T11:15:07.677891",
+    "analysis": {
+      "timestamp": "2026-02-24T11:15:04.418781",
+      "tickers_analyzed": [
+        "KVUE",
+        "NTGY.MC",
+        "O"
+      ],
+      "alerts": [
+        {
+          "type": "INFO",
+          "ticker": "ACX.MC",
+          "message": "No hay opciones disponibles en Yahoo Finance para ACX.MC (mercado europeo)",
+          "severity": "low"
+        },
+        {
+          "type": "INFO",
+          "ticker": "ENG.MC",
+          "message": "No hay opciones disponibles en Yahoo Finance para ENG.MC (mercado europeo)",
+          "severity": "low"
+        },
+        {
+          "type": "LOW_PUT_CALL_RATIO",
+          "ticker": "KVUE",
+          "message": "P/C ratio bajo: 0.05 - Sentimiento alcista fuerte",
+          "severity": "medium"
+        },
+        {
+          "type": "HIGH_IV",
+          "ticker": "NTGY.MC",
+          "message": "IV alta - Calls: 65.8%, Puts: 0.0%",
+          "severity": "medium"
+        },
+        {
+          "type": "IV_SKEW",
+          "ticker": "NTGY.MC",
+          "message": "IV Skew: -65.8% (Calls mas caros)",
+          "severity": "medium"
+        },
+        {
+          "type": "IV_PREMIUM",
+          "ticker": "NTGY.MC",
+          "message": "IV >> HV: IV=32.9% vs HV=14.7% (ratio: 2.23)",
+          "severity": "medium"
+        },
+        {
+          "type": "IV_SKEW",
+          "ticker": "O",
+          "message": "IV Skew: 30.9% (Puts mas caros)",
+          "severity": "medium"
+        },
+        {
+          "type": "INFO",
+          "ticker": "VIS.MC",
+          "message": "No hay opciones disponibles en Yahoo Finance para VIS.MC (mercado europeo)",
+          "severity": "low"
+        }
+      ],
+      "summary": {
+        "KVUE": {
+          "current_price": 18.95,
+          "historical_volatility": 18.36,
+          "stock_data": {
+            "market_cap": 0,
+            "pe_ratio": 24.934212,
+            "52w_high": 25.17,
+            "52w_low": 14.02,
+            "avg_volume": 45586750,
+            "dividend_yield": 4.38,
+            "beta": 0.551
+          },
+          "call_volume": 17750.0,
+          "put_volume": 801.0,
+          "total_volume": 18551.0,
+          "call_open_interest": 0.0,
+          "put_open_interest": 0.0,
+          "put_call_ratio_volume": 0.04512676056338028,
+          "put_call_ratio_oi": 0.0,
+          "avg_call_iv": 7.94,
+          "avg_put_iv": 12.19,
+          "max_call_iv": 25.0,
+          "max_put_iv": 25.0,
+          "iv_skew": 4.25,
+          "expirations": [
+            "2026-02-27",
+            "2026-03-06",
+            "2026-03-13",
+            "2026-03-20",
+            "2026-03-27",
+            "2026-04-02"
+          ],
+          "most_active_call": {
+            "strike": 19.5,
+            "lastPrice": 0.1,
+            "volume": 7784.0,
+            "openInterest": "0",
+            "expiration": "2026-02-27",
+            "impliedVolatility": 0.0625
+          },
+          "most_active_put": {
+            "strike": 17.0,
+            "lastPrice": 0.13,
+            "volume": 263.0,
+            "openInterest": "0",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.125
+          },
+          "highest_oi_call": {
+            "strike": 16.5,
+            "lastPrice": 2.46,
+            "volume": 1.0,
+            "openInterest": "0",
+            "expiration": "2026-02-27",
+            "impliedVolatility": 0.0
+          },
+          "highest_oi_put": {
+            "strike": 16.5,
+            "lastPrice": 0.01,
+            "volume": 10.0,
+            "openInterest": "0",
+            "expiration": "2026-02-27",
+            "impliedVolatility": 0.25
+          },
+          "greeks": {
+            "avg_delta_calls": 0.096,
+            "avg_delta_puts": 0.0,
+            "avg_gamma": 1.488778,
+            "avg_theta": 0.0,
+            "avg_vega": 0.0036
+          }
+        },
+        "NTGY.MC": {
+          "current_price": 25.98,
+          "historical_volatility": 14.74,
+          "stock_data": {
+            "market_cap": 0,
+            "pe_ratio": 11.755655,
+            "52w_high": 27.9,
+            "52w_low": 23.3,
+            "avg_volume": 1542523,
+            "dividend_yield": 9.3,
+            "beta": 0.479
+          },
+          "call_volume": 0.0,
+          "put_volume": 0,
+          "total_volume": 0.0,
+          "call_open_interest": 0.0,
+          "put_open_interest": 0,
+          "put_call_ratio_volume": 0.0,
+          "put_call_ratio_oi": 0.0,
+          "avg_call_iv": 65.83,
+          "avg_put_iv": 0.0,
+          "max_call_iv": 263.52,
+          "max_put_iv": 0,
+          "iv_skew": -65.83,
+          "expirations": [
+            "20/03/2026",
+            "17/04/2026",
+            "15/05/2026",
+            "19/06/2026",
+            "18/09/2026",
+            "18/12/2026",
+            "20/03/2026",
+            "17/04/2026",
+            "15/05/2026",
+            "19/06/2026",
+            "18/09/2026",
+            "18/12/2026",
+            "No hay vencimientos"
+          ],
+          "most_active_call": {
+            "strike": 16.0,
+            "lastPrice": null,
+            "volume": null,
+            "openInterest": null,
+            "expiration": "20/03/2026",
+            "impliedVolatility": 0.0
+          },
+          "most_active_put": {},
+          "highest_oi_call": {
+            "strike": 16.0,
+            "lastPrice": null,
+            "volume": null,
+            "openInterest": null,
+            "expiration": "20/03/2026",
+            "impliedVolatility": 0.0
+          },
+          "highest_oi_put": {},
+          "greeks": {
+            "avg_delta_calls": 0.5329,
+            "avg_delta_puts": 0.0,
+            "avg_gamma": 0.079735,
+            "avg_theta": 0.0,
+            "avg_vega": 0.0163
+          }
+        },
+        "O": {
+          "current_price": 66.68,
+          "historical_volatility": 16.17,
+          "stock_data": {
+            "market_cap": 0,
+            "pe_ratio": 62.317753,
+            "52w_high": 67.15,
+            "52w_low": 50.71,
+            "avg_volume": 6532858,
+            "dividend_yield": 4.86,
+            "beta": 0.801
+          },
+          "call_volume": 2173.0,
+          "put_volume": 1399.0,
+          "total_volume": 3572.0,
+          "call_open_interest": 0.0,
+          "put_open_interest": 1.0,
+          "put_call_ratio_volume": 0.6438104003681546,
+          "put_call_ratio_oi": 1.0,
+          "avg_call_iv": 6.77,
+          "avg_put_iv": 37.69,
+          "max_call_iv": 12.5,
+          "max_put_iv": 154.08,
+          "iv_skew": 30.92,
+          "expirations": [
+            "2026-03-20"
+          ],
+          "most_active_call": {
+            "strike": 67.5,
+            "lastPrice": 1.0,
+            "volume": 882.0,
+            "openInterest": "0",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.0156
+          },
+          "most_active_put": {
+            "strike": 57.5,
+            "lastPrice": 0.09,
+            "volume": "74",
+            "openInterest": "0",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.125
+          },
+          "highest_oi_call": {
+            "strike": 57.5,
+            "lastPrice": 9.26,
+            "volume": 32.0,
+            "openInterest": "0",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.0
+          },
+          "highest_oi_put": {
+            "strike": 75.0,
+            "lastPrice": 18.06,
+            "volume": "1",
+            "openInterest": "1",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 1.5408
+          },
+          "greeks": {
+            "avg_delta_calls": 0.0028,
+            "avg_delta_puts": 0.0,
+            "avg_gamma": 0.011741,
+            "avg_theta": 0.0,
+            "avg_vega": 0.0118
+          }
+        }
+      },
+      "market_sentiment": "BULLISH \ud83d\udc02",
+      "unusual_activity": [],
+      "greeks_summary": {},
+      "overall_put_call_ratio": 0.11,
+      "total_call_volume": 19923.0,
+      "total_put_volume": 2200.0
+    }
+  },
+  {
+    "timestamp": "2026-02-25T16:09:32.144975",
+    "analysis": {
+      "timestamp": "2026-02-25T16:09:27.766483",
+      "tickers_analyzed": [
+        "ACX.MC",
+        "ENG.MC",
+        "KVUE",
+        "NTGY.MC",
+        "O",
+        "VIS.MC"
+      ],
+      "alerts": [
+        {
+          "type": "HIGH_IV",
+          "ticker": "ACX.MC",
+          "message": "IV alta - Calls: 91.2%, Puts: 0.0%",
+          "severity": "medium"
+        },
+        {
+          "type": "IV_SKEW",
+          "ticker": "ACX.MC",
+          "message": "IV Skew: -91.2% (Calls mas caros)",
+          "severity": "medium"
+        },
+        {
+          "type": "HIGH_IV",
+          "ticker": "ENG.MC",
+          "message": "IV alta - Calls: 67.3%, Puts: 0.0%",
+          "severity": "medium"
+        },
+        {
+          "type": "IV_SKEW",
+          "ticker": "ENG.MC",
+          "message": "IV Skew: -67.3% (Calls mas caros)",
+          "severity": "medium"
+        },
+        {
+          "type": "IV_PREMIUM",
+          "ticker": "ENG.MC",
+          "message": "IV >> HV: IV=33.6% vs HV=15.8% (ratio: 2.14)",
+          "severity": "medium"
+        },
+        {
+          "type": "HIGH_IV",
+          "ticker": "KVUE",
+          "message": "IV alta - Calls: 65.7%, Puts: 53.9%",
+          "severity": "medium"
+        },
+        {
+          "type": "LOW_PUT_CALL_RATIO",
+          "ticker": "KVUE",
+          "message": "P/C ratio bajo: 0.23 - Sentimiento alcista fuerte",
+          "severity": "medium"
+        },
+        {
+          "type": "IV_SKEW",
+          "ticker": "KVUE",
+          "message": "IV Skew: -11.8% (Calls mas caros)",
+          "severity": "medium"
+        },
+        {
+          "type": "IV_PREMIUM",
+          "ticker": "KVUE",
+          "message": "IV >> HV: IV=59.8% vs HV=19.2% (ratio: 3.11)",
+          "severity": "medium"
+        },
+        {
+          "type": "HIGH_IV",
+          "ticker": "NTGY.MC",
+          "message": "IV alta - Calls: 57.7%, Puts: 0.0%",
+          "severity": "medium"
+        },
+        {
+          "type": "IV_SKEW",
+          "ticker": "NTGY.MC",
+          "message": "IV Skew: -57.7% (Calls mas caros)",
+          "severity": "medium"
+        },
+        {
+          "type": "IV_PREMIUM",
+          "ticker": "NTGY.MC",
+          "message": "IV >> HV: IV=28.8% vs HV=14.6% (ratio: 1.98)",
+          "severity": "medium"
+        },
+        {
+          "type": "LOW_PUT_CALL_RATIO",
+          "ticker": "O",
+          "message": "P/C ratio bajo: 0.22 - Sentimiento alcista fuerte",
+          "severity": "medium"
+        },
+        {
+          "type": "IV_SKEW",
+          "ticker": "O",
+          "message": "IV Skew: 11.9% (Puts mas caros)",
+          "severity": "medium"
+        },
+        {
+          "type": "IV_PREMIUM",
+          "ticker": "O",
+          "message": "IV >> HV: IV=28.3% vs HV=16.7% (ratio: 1.70)",
+          "severity": "medium"
+        },
+        {
+          "type": "HIGH_IV",
+          "ticker": "VIS.MC",
+          "message": "IV alta - Calls: 66.9%, Puts: 0.0%",
+          "severity": "medium"
+        },
+        {
+          "type": "IV_SKEW",
+          "ticker": "VIS.MC",
+          "message": "IV Skew: -66.9% (Calls mas caros)",
+          "severity": "medium"
+        },
+        {
+          "type": "IV_PREMIUM",
+          "ticker": "VIS.MC",
+          "message": "IV >> HV: IV=33.5% vs HV=11.4% (ratio: 2.93)",
+          "severity": "medium"
+        }
+      ],
+      "summary": {
+        "ACX.MC": {
+          "current_price": 13.19,
+          "historical_volatility": 35.59,
+          "stock_data": {
+            "market_cap": 0,
+            "pe_ratio": 47.10714,
+            "52w_high": 14.1,
+            "52w_low": 8.3,
+            "avg_volume": 1132824,
+            "dividend_yield": 4.7,
+            "beta": 1.017
+          },
+          "call_volume": 0.0,
+          "put_volume": 0,
+          "total_volume": 0.0,
+          "call_open_interest": 0.0,
+          "put_open_interest": 0,
+          "put_call_ratio_volume": 0.0,
+          "put_call_ratio_oi": 0.0,
+          "avg_call_iv": 91.23,
+          "avg_put_iv": 0.0,
+          "max_call_iv": 301.85,
+          "max_put_iv": 0,
+          "iv_skew": -91.23,
+          "expirations": [
+            "20/03/2026",
+            "17/04/2026",
+            "15/05/2026",
+            "19/06/2026",
+            "18/09/2026",
+            "18/12/2026",
+            "19/03/2027",
+            "18/06/2027",
+            "17/09/2027",
+            "17/12/2027",
+            "17/03/2028",
+            "16/06/2028",
+            "20/03/2026",
+            "17/04/2026",
+            "15/05/2026",
+            "19/06/2026",
+            "18/09/2026",
+            "18/12/2026",
+            "19/03/2027",
+            "18/06/2027",
+            "17/09/2027",
+            "17/12/2027",
+            "17/03/2028",
+            "16/06/2028",
+            "No hay vencimientos"
+          ],
+          "most_active_call": {
+            "strike": 6.0,
+            "lastPrice": 7.19,
+            "volume": null,
+            "openInterest": null,
+            "expiration": "20/03/2026",
+            "impliedVolatility": 0.3
+          },
+          "most_active_put": {},
+          "highest_oi_call": {
+            "strike": 6.0,
+            "lastPrice": 7.19,
+            "volume": null,
+            "openInterest": null,
+            "expiration": "20/03/2026",
+            "impliedVolatility": 0.3
+          },
+          "highest_oi_put": {},
+          "greeks": {
+            "avg_delta_calls": 0.6368,
+            "avg_delta_puts": 0.0,
+            "avg_gamma": 0.120959,
+            "avg_theta": 0.0,
+            "avg_vega": 0.0111
+          }
+        },
+        "ENG.MC": {
+          "current_price": 15.185,
+          "historical_volatility": 15.75,
+          "stock_data": {
+            "market_cap": 0,
+            "pe_ratio": 0,
+            "52w_high": 15.365,
+            "52w_low": 12.1,
+            "avg_volume": 1117960,
+            "dividend_yield": 6.61,
+            "beta": 0.415
+          },
+          "call_volume": 0.0,
+          "put_volume": 0,
+          "total_volume": 0.0,
+          "call_open_interest": 0.0,
+          "put_open_interest": 0,
+          "put_call_ratio_volume": 0.0,
+          "put_call_ratio_oi": 0.0,
+          "avg_call_iv": 67.26,
+          "avg_put_iv": 0.0,
+          "max_call_iv": 251.49,
+          "max_put_iv": 0,
+          "iv_skew": -67.26,
+          "expirations": [
+            "20/03/2026",
+            "17/04/2026",
+            "15/05/2026",
+            "19/06/2026",
+            "18/09/2026",
+            "18/12/2026",
+            "20/03/2026",
+            "17/04/2026",
+            "15/05/2026",
+            "19/06/2026",
+            "18/09/2026",
+            "18/12/2026",
+            "20/03/2026",
+            "17/04/2026",
+            "15/05/2026",
+            "19/06/2026",
+            "18/09/2026",
+            "18/12/2026",
+            "21/12/2029",
+            "20/03/2026",
+            "17/04/2026",
+            "15/05/2026",
+            "19/06/2026",
+            "18/09/2026",
+            "18/12/2026",
+            "No hay vencimientos"
+          ],
+          "most_active_call": {
+            "strike": 9.25,
+            "lastPrice": null,
+            "volume": null,
+            "openInterest": null,
+            "expiration": "20/03/2026",
+            "impliedVolatility": 0.0
+          },
+          "most_active_put": {},
+          "highest_oi_call": {
+            "strike": 9.25,
+            "lastPrice": null,
+            "volume": null,
+            "openInterest": null,
+            "expiration": "20/03/2026",
+            "impliedVolatility": 0.0
+          },
+          "highest_oi_put": {},
+          "greeks": {
+            "avg_delta_calls": 0.5409,
+            "avg_delta_puts": 0.0,
+            "avg_gamma": 0.171777,
+            "avg_theta": 0.0,
+            "avg_vega": 0.0114
+          }
+        },
+        "KVUE": {
+          "current_price": 18.7,
+          "historical_volatility": 19.25,
+          "stock_data": {
+            "market_cap": 0,
+            "pe_ratio": 24.605265,
+            "52w_high": 25.17,
+            "52w_low": 14.02,
+            "avg_volume": 45586750,
+            "dividend_yield": 4.37,
+            "beta": 0.551
+          },
+          "call_volume": 1579.0,
+          "put_volume": 358.0,
+          "total_volume": 1937.0,
+          "call_open_interest": 39427.0,
+          "put_open_interest": 14857.0,
+          "put_call_ratio_volume": 0.22672577580747308,
+          "put_call_ratio_oi": 0.37682298932203817,
+          "avg_call_iv": 65.74,
+          "avg_put_iv": 53.93,
+          "max_call_iv": 141.8,
+          "max_put_iv": 121.88,
+          "iv_skew": -11.82,
+          "expirations": [
+            "2026-02-27",
+            "2026-03-06",
+            "2026-03-13",
+            "2026-03-20",
+            "2026-03-27",
+            "2026-04-02"
+          ],
+          "most_active_call": {
+            "strike": 19.5,
+            "lastPrice": 0.01,
+            "volume": 1064.0,
+            "openInterest": "5190",
+            "expiration": "2026-02-27",
+            "impliedVolatility": 0.2813
+          },
+          "most_active_put": {
+            "strike": 19.0,
+            "lastPrice": 0.37,
+            "volume": 125.0,
+            "openInterest": "3",
+            "expiration": "2026-03-13",
+            "impliedVolatility": 0.293
+          },
+          "highest_oi_call": {
+            "strike": 20.0,
+            "lastPrice": 0.08,
+            "volume": 3.0,
+            "openInterest": "6",
+            "expiration": "2026-03-13",
+            "impliedVolatility": 0.5293
+          },
+          "highest_oi_put": {
+            "strike": 20.0,
+            "lastPrice": 1.65,
+            "volume": 3.0,
+            "openInterest": "863",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.3164
+          },
+          "greeks": {
+            "avg_delta_calls": 0.5349,
+            "avg_delta_puts": 0.0,
+            "avg_gamma": 0.223332,
+            "avg_theta": 0.0,
+            "avg_vega": 0.008
+          }
+        },
+        "NTGY.MC": {
+          "current_price": 25.9,
+          "historical_volatility": 14.55,
+          "stock_data": {
+            "market_cap": 0,
+            "pe_ratio": 11.719457,
+            "52w_high": 27.9,
+            "52w_low": 23.3,
+            "avg_volume": 1542523,
+            "dividend_yield": 9.3,
+            "beta": 0.479
+          },
+          "call_volume": 0.0,
+          "put_volume": 0,
+          "total_volume": 0.0,
+          "call_open_interest": 0.0,
+          "put_open_interest": 0,
+          "put_call_ratio_volume": 0.0,
+          "put_call_ratio_oi": 0.0,
+          "avg_call_iv": 57.67,
+          "avg_put_iv": 0.0,
+          "max_call_iv": 237.58,
+          "max_put_iv": 0,
+          "iv_skew": -57.67,
+          "expirations": [
+            "20/03/2026",
+            "17/04/2026",
+            "15/05/2026",
+            "19/06/2026",
+            "18/09/2026",
+            "18/12/2026",
+            "20/03/2026",
+            "17/04/2026",
+            "15/05/2026",
+            "19/06/2026",
+            "18/09/2026",
+            "18/12/2026",
+            "No hay vencimientos"
+          ],
+          "most_active_call": {
+            "strike": 16.0,
+            "lastPrice": null,
+            "volume": null,
+            "openInterest": null,
+            "expiration": "20/03/2026",
+            "impliedVolatility": 0.0
+          },
+          "most_active_put": {},
+          "highest_oi_call": {
+            "strike": 16.0,
+            "lastPrice": null,
+            "volume": null,
+            "openInterest": null,
+            "expiration": "20/03/2026",
+            "impliedVolatility": 0.0
+          },
+          "highest_oi_put": {},
+          "greeks": {
+            "avg_delta_calls": 0.5928,
+            "avg_delta_puts": 0.0,
+            "avg_gamma": 0.077492,
+            "avg_theta": 0.0,
+            "avg_vega": 0.0152
+          }
+        },
+        "O": {
+          "current_price": 65.86,
+          "historical_volatility": 16.68,
+          "stock_data": {
+            "market_cap": 0,
+            "pe_ratio": 61.5514,
+            "52w_high": 66.74,
+            "52w_low": 50.71,
+            "avg_volume": 6532858,
+            "dividend_yield": 4.87,
+            "beta": 0.801
+          },
+          "call_volume": 2699.0,
+          "put_volume": 603.0,
+          "total_volume": 3302.0,
+          "call_open_interest": 29657.0,
+          "put_open_interest": 8516.0,
+          "put_call_ratio_volume": 0.2234160800296406,
+          "put_call_ratio_oi": 0.2871497454226658,
+          "avg_call_iv": 22.37,
+          "avg_put_iv": 34.29,
+          "max_call_iv": 38.67,
+          "max_put_iv": 65.09,
+          "iv_skew": 11.92,
+          "expirations": [
+            "2026-03-20"
+          ],
+          "most_active_call": {
+            "strike": 65.0,
+            "lastPrice": 1.35,
+            "volume": "49",
+            "openInterest": "5639",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.167
+          },
+          "most_active_put": {
+            "strike": 57.5,
+            "lastPrice": 0.05,
+            "volume": "8",
+            "openInterest": "1694",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.3184
+          },
+          "highest_oi_call": {
+            "strike": 75.0,
+            "lastPrice": 0.03,
+            "volume": "18",
+            "openInterest": "762",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.2637
+          },
+          "highest_oi_put": {
+            "strike": 67.5,
+            "lastPrice": 2.55,
+            "volume": "54",
+            "openInterest": "262",
+            "expiration": "2026-03-20",
+            "impliedVolatility": 0.2503
+          },
+          "greeks": {
+            "avg_delta_calls": 0.4902,
+            "avg_delta_puts": 0.0,
+            "avg_gamma": 0.062177,
+            "avg_theta": 0.0,
+            "avg_vega": 0.0389
+          }
+        },
+        "VIS.MC": {
+          "current_price": 58.5,
+          "historical_volatility": 11.43,
+          "stock_data": {
+            "market_cap": 0,
+            "pe_ratio": 16.810345,
+            "52w_high": 68.7,
+            "52w_low": 48.35,
+            "avg_volume": 73476,
+            "dividend_yield": 5.43,
+            "beta": 0.163
+          },
+          "call_volume": 0.0,
+          "put_volume": 0,
+          "total_volume": 0.0,
+          "call_open_interest": 0.0,
+          "put_open_interest": 0,
+          "put_call_ratio_volume": 0.0,
+          "put_call_ratio_oi": 0.0,
+          "avg_call_iv": 66.92,
+          "avg_put_iv": 0.0,
+          "max_call_iv": 239.28,
+          "max_put_iv": 0,
+          "iv_skew": -66.92,
+          "expirations": [
+            "20/03/2026",
+            "17/04/2026",
+            "15/05/2026",
+            "19/06/2026",
+            "18/09/2026",
+            "18/12/2026",
+            "20/03/2026",
+            "17/04/2026",
+            "15/05/2026",
+            "19/06/2026",
+            "18/09/2026",
+            "18/12/2026",
+            "20/03/2026",
+            "No hay vencimientos"
+          ],
+          "most_active_call": {
+            "strike": 37.39,
+            "lastPrice": 21.06,
+            "volume": null,
+            "openInterest": null,
+            "expiration": "20/03/2026",
+            "impliedVolatility": 0.0
+          },
+          "most_active_put": {},
+          "highest_oi_call": {
+            "strike": 37.39,
+            "lastPrice": 21.06,
+            "volume": null,
+            "openInterest": null,
+            "expiration": "20/03/2026",
+            "impliedVolatility": 0.0
+          },
+          "highest_oi_put": {},
+          "greeks": {
+            "avg_delta_calls": 0.532,
+            "avg_delta_puts": 0.0,
+            "avg_gamma": 0.034815,
+            "avg_theta": 0.0,
+            "avg_vega": 0.04
+          }
+        }
+      },
+      "market_sentiment": "BULLISH \ud83d\udc02",
+      "unusual_activity": [
+        {
+          "ticker": "KVUE",
+          "type": "PUT",
+          "strike": 19.0,
+          "expiration": "2026-03-13",
+          "volume": 125.0,
+          "open_interest": 3.0,
+          "vol_oi_ratio": 41.67,
+          "last_price": 0.37,
+          "implied_volatility": 29.3
+        }
+      ],
+      "greeks_summary": {},
+      "overall_put_call_ratio": 0.225,
+      "total_call_volume": 4278.0,
+      "total_put_volume": 961.0
+    }
+  }
+]

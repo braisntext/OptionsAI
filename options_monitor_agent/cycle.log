@@ -1,0 +1,127 @@
+/home/braisn/.local/lib/python3.10/site-packages/matplotlib/projections/__init__.py:63: UserWarning: Unable to import Axes3D. This may be due to multiple versions of Matplotlib being installed (e.g. as a system package and as a pip package). As a result, the 3D projection is not available.
+  warnings.warn("Unable to import Axes3D. This may be due to multiple versions of "
+
+ 🔄 CYCLE #1 
+2026-02-27 10:25:05
+
+🔭 PHASE 1: OBSERVING...
+ Monitoring: ACX.MC, ENG.MC, KVUE, NTGY.MC, O, VIS.MC
+ Got: 6//6 | Sin opciones: 0
+
+📐 PHASE 2: GREEKS...
+ ✅ Greeks for ACX.MC
+ ✅ Greeks for ENG.MC
+ ✅ Greeks for KVUE
+ ✅ Greeks for NTGY.MC
+ ✅ Greeks for O
+ ✅ Greeks for VIS.MC
+
+📊 PHASE 3: ANALYZING...
+ 🔄 Changes detected: 16
+
+🧠 PHASE 4: THINKING (Claude)...
+Error with Claude: Error code: 401 - {'type': 'error', 'error': {'type': 
+'authentication_error', 'message': 'invalid x-api-key'}, 'request_id': 
+'req_011CYYR27Ux7p5rxJCHYD79K'}
+
+📢 PHASE 5: REPORTING...
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║ 📊 MONITOR DE OPCIONES - REPORTE                                             ║
+║ 2026-02-27T10:27:33.037379                                                   ║
+║ Sentimiento: BULLISH 🐂                                                      ║
+║ P/C Ratio: 0.08                                                              ║
+║ Vol Total - Calls: 13,929.0 | Puts: 1,119.0                                  ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+                               Resumen por Ticker                               
+╭────────┬────────┬────────┬────────┬────────┬────────┬────────┬───────┬───────╮
+│        │        │   Call │    Put │  P/C   │   Call │    Put │       │  IV   │
+│ Ticker │ Precio │    Vol │    Vol │  Vol   │    IV% │    IV% │   HV% │ Skew  │
+├────────┼────────┼────────┼────────┼────────┼────────┼────────┼───────┼───────┤
+│ ACX.MC │ $13.28 │    0.0 │      0 │ 0.00🐂 │  91.7% │   0.0% │ 35.5% │ -91.7 │
+├────────┼────────┼────────┼────────┼────────┼────────┼────────┼───────┼───────┤
+│ ENG.MC │ $15.19 │    0.0 │      0 │ 0.00🐂 │  68.2% │   0.0% │ 15.3% │ -68.2 │
+├────────┼────────┼────────┼────────┼────────┼────────┼────────┼───────┼───────┤
+│  KVUE  │ $19.00 │ 12,03… │  762.0 │ 0.06🐂 │  10.7% │  14.8% │ 19.1% │ +4.1  │
+├────────┼────────┼────────┼────────┼────────┼────────┼────────┼───────┼───────┤
+│ NTGY.… │ $26.24 │    0.0 │      0 │ 0.00🐂 │  63.8% │   0.0% │ 14.3% │ -63.8 │
+├────────┼────────┼────────┼────────┼────────┼────────┼────────┼───────┼───────┤
+│   O    │ $66.60 │ 1,894… │  357.0 │ 0.19🐂 │   6.8% │   8.6% │ 16.1% │ +1.8  │
+├────────┼────────┼────────┼────────┼────────┼────────┼────────┼───────┼───────┤
+│ VIS.MC │ $58.80 │    0.0 │      0 │ 0.00🐂 │   5.8% │   0.0% │ 11.7% │ -5.8  │
+╰────────┴────────┴────────┴────────┴────────┴────────┴────────┴───────┴───────╯
+                        📐 Greeks Promedio                         
+╭─────────┬─────────────┬────────────┬──────────┬────────┬────────╮
+│ Ticker  │ Delta Calls │ Delta Puts │    Gamma │  Theta │   Vega │
+├─────────┼─────────────┼────────────┼──────────┼────────┼────────┤
+│ ACX.MC  │      0.6600 │     0.0000 │ 0.122795 │ 0.0000 │ 0.0108 │
+│ ENG.MC  │      0.5384 │     0.0000 │ 0.178939 │ 0.0000 │ 0.0109 │
+│ KVUE    │      0.4284 │     0.0000 │ 7.249489 │ 0.0001 │ 0.0006 │
+│ NTGY.MC │      0.5407 │     0.0000 │ 0.097729 │ 0.0000 │ 0.0167 │
+│ O       │      0.0009 │     0.0000 │ 0.003028 │ 0.0000 │ 0.0003 │
+│ VIS.MC  │      0.8764 │     0.0000 │ 0.054285 │ 0.0000 │ 0.1727 │
+╰─────────┴─────────────┴────────────┴──────────┴────────┴────────╯
+
+⚠️ ALERTAS:
+ 🟡 [ACX.MC] IV alta - Calls: 91.7%, Puts: 0.0%
+ 🟡 [ACX.MC] IV Skew: -91.7% (Calls mas caros)
+ 🟡 [ENG.MC] IV alta - Calls: 68.2%, Puts: 0.0%
+ 🟡 [ENG.MC] IV Skew: -68.2% (Calls mas caros)
+ 🟡 [ENG.MC] IV >> HV: IV=34.1% vs HV=15.3% (ratio: 2.22)
+ 🟡 [KVUE] P/C ratio bajo: 0.06 - Sentimiento alcista fuerte
+ 🟡 [NTGY.MC] IV alta - Calls: 63.8%, Puts: 0.0%
+ 🟡 [NTGY.MC] IV Skew: -63.8% (Calls mas caros)
+ 🟡 [NTGY.MC] IV >> HV: IV=31.9% vs HV=14.3% (ratio: 2.24)
+ 🟡 [O] P/C ratio bajo: 0.19 - Sentimiento alcista fuerte
+
+📈 Grafico: reports/options_report_20260227_102733.png
+
+============================================================
+🤖 AGENT ANALYSIS (Claude) - Cycle #1
+============================================================
+Error with Claude: Error code: 401 - {'type': 'error', 'error': {'type': 
+'authentication_error', 'message': 'invalid x-api-key'}, 'request_id': 
+'req_011CYYR27Ux7p5rxJCHYD79K'}
+============================================================
+
+📬 PHASE 6: NOTIFYING...
+
+💾 PHASE 7: STORING...
+ ✅ Saved to SQLite + JSON
+
+📈 PHASE 8: BACKTESTING...
+[run_cycle] Starting at 2026-02-27 10:24:52
+ 📡 Obteniendo opciones de ACX.MC...
+ [!] Intento de fallback para ACX.MC...
+ Fallback failed: 'optionChain'
+ [MEFF] Intentando MEFF para ACX.MC...
+ [MEFF] OK: 506 calls de MEFF
+[MEFF] Pausa 20s entre tickers MEFF para evitar rate-limit...
+ 📡 Obteniendo opciones de ENG.MC...
+ [!] Intento de fallback para ENG.MC...
+ Fallback failed: 'optionChain'
+ [MEFF] Intentando MEFF para ENG.MC...
+ [MEFF] JSON error for ENG.MC (attempt 1): '<html>\n<head><title>500 Internal Server Error</title></head>'
+ [MEFF] OK: 465 calls de MEFF
+ 📡 Obteniendo opciones de KVUE...
+[MEFF] Pausa 20s entre tickers MEFF para evitar rate-limit...
+ 📡 Obteniendo opciones de NTGY.MC...
+ [!] Intento de fallback para NTGY.MC...
+ Fallback failed: 'optionChain'
+ [MEFF] Intentando MEFF para NTGY.MC...
+ [MEFF] OK: 254 calls de MEFF
+ 📡 Obteniendo opciones de O...
+[MEFF] Pausa 20s entre tickers MEFF para evitar rate-limit...
+ 📡 Obteniendo opciones de VIS.MC...
+ [!] Intento de fallback para VIS.MC...
+ Fallback failed: 'optionChain'
+ [MEFF] Intentando MEFF para VIS.MC...
+ [MEFF] JSON error for VIS.MC (attempt 1): '<html>\n<head><title>500 Internal Server Error</title></head>'
+ [MEFF] OK: 11 calls de MEFF
+  📧 Email deshabilitado
+  📱 Telegram deshabilitado
+  📝 7 signals recorded for backtesting
+
+✅ Cycle #1 done in 150.8s
+
+[run_cycle] Completed: completed in 163.4s at 2026-02-27 10:27:36

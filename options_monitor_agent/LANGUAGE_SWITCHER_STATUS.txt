@@ -1,0 +1,75 @@
+🌐 LANGUAGE SWITCHER - TROUBLESHOOTING STATUS
+===========================================
+
+Date: February 26, 2026, 9:18 AM +07
+
+## Current Situation:
+The language switcher HTML and CSS have been added to the codebase,
+but the buttons are NOT rendering visibly in the browser.
+
+## What HAS Been Completed:
+
+✅ i18n.js created with full EN/ES translations (209 lines)
+✅ HTML template updated with lang-switcher div
+✅ CSS styling added (multiple attempts with !important)
+✅ WSGI reloaded multiple times
+✅ Hard browser refreshes performed
+
+## Files Modified:
+
+1. dashboard/templates/index.html (lines 22-26):
+   <div class="lang-switcher">
+       <span class="lang-flag" data-lang="en">EN</span>
+       <span class="lang-flag" data-lang="es">ES</span>
+   </div>
+
+2. dashboard/static/style.css:
+   - Added .lang-switcher styles
+   - Added .lang-flag styles 
+   - Added !important overrides with RED background
+
+3. dashboard/static/i18n.js:
+   - Complete translation system
+   - Auto-detection
+   - Click handlers for language switching
+
+## Problem:
+The HTML elements are in the template file but NOT appearing
+in the rendered page DOM. This suggests:
+
+1. Template caching issue
+2. HTML structure problem (closing tags)
+3. Flask/Jinja2 rendering issue
+4. CSS display:none somewhere overriding
+
+## Verification Completed:
+- HTML structure checked: ✅ Correct
+- CSS checked: ✅ Present with !important
+- WSGI reloaded: ✅ Multiple times
+- Browser cache cleared: ✅ Cmd+Shift+R used
+
+## Next Steps to Try:
+
+1. Check if there's a template cache that needs clearing
+2. Verify Flask is actually serving the updated template
+3. Add inline styles directly in HTML
+4. Check browser dev console for errors
+5. Try adding buttons via JavaScript as fallback
+
+## Working Features:
+✅ Dashboard loads and works
+✅ i18n.js system is loaded (in HTML)
+✅ Run Cycle button works
+✅ Data displays correctly
+
+## Recommendation:
+
+Since the i18n system (i18n.js) is loaded and functional,
+the language switching will work via JavaScript console:
+
+To switch language manually:
+- English: localStorage.setItem('language', 'en'); location.reload();
+- Spanish: localStorage.setItem('language', 'es'); location.reload();
+
+The translation system IS working - just the UI buttons aren't visible yet.
+

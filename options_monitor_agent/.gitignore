@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+venv/
+.venv/
+.env
+*.sqlite3
+reports/
+backtest_results/
+memory/history.json
+memory/*.db
+logs/
+.DS_Store
+Thumbs.db

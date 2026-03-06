@@ -1,0 +1,293 @@
+43
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🤖 <span data-i18n="title">Options Monitor Agent</span></title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-title">
+                <h1>🤖 <span data-i18n="title"><span data-i18n="title">Options Monitor Agent</span></span></h1>
+                <p class="subtitle"><span data-i18n="subtitle"><span data-i18n="subtitle">Real-time Options Analytics | Powered by Claude AI</span></span></p>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="refreshData()"><span data-i18n="refresh" data-i18n="refresh">Refresh</span></button>
+                <button id="btn-run-cycle" class="btn btn-success" onclick="runCycle()"><span data-i18n="runCycle" data-i18n="runCycle">Run Cycle</span></button>
+                <span data-i18n="last">Last:</span> <span id="last-update" class="last-update">-</span></div>
+        </header>
+
+        <div class="stats-bar">
+            <div class="stat-card"><div class="stat-label">
+                    <div data-i18n="sentiment"><span data-i18n="sentiment" data-i18n="sentiment">SENTIMENT</span></div></div><div class="stat-value" id="sentiment-value">-</div></div>
+            <div class="stat-card"><div class="stat-label">
+                    <div data-i18n="pcRatio"><span data-i18n="pcRatio" data-i18n="pcRatio">P/C RATIO</span></div></div><div class="stat-value" id="pcr-value">-</div></div>
+            <div class="stat-card"><div class="stat-label">
+                    <div data-i18n="tickers" data-i18n="tickers">TICKERS</div></div><div class="stat-value" id="tickers-count">-</div></div>
+            <div class="stat-card"><div class="stat-label">
+                    <div data-i18n="snapshots" data-i18n="snapshots">SNAPSHOTS</div></div><div class="stat-value" id="snapshots-count">-</div></div>
+            <div class="stat-card"><div class="stat-label">
+                    <div data-i18n="alerts" data-i18n="alerts">ALERTS</div></div><div class="stat-value" id="alerts-count">-</div></div>
+            <div class="stat-card"><div class="stat-label">
+                    <div data-i18n="btAccuracy" data-i18n="btAccuracy">BT ACCURACY</div></div><div class="stat-value" id="accuracy-value">-</div></div>
+        </div>
+
+        <div class="main-grid">
+            <div class="card full-width">
+                <h2 class="card-title">📋 <span data-i18n="watchlist"><span data-i18n="watchlist">Watchlist</span></span></h2>
+                <div class="table-container">
+                    <table id="tickers-table">
+                        <thead><tr><th><span data-i18n="ticker" data-i18n="ticker">TICKER</span></th><th><span data-i18n="price">PRICE</span></th><th>
+                    <div data-i18n="pcRatio"><span data-i18n="pcRatio" data-i18n="pcRatio">P/C RATIO</span></div></th><th><span data-i18n="callIV">CALL IV%</span></th><th><span data-i18n="putIV">PUT IV%</span></th><th><span data-i18n="ivSkew">IV SKEW</span></th><th>
+                    <div data-i18n="sentiment"><span data-i18n="sentiment" data-i18n="sentiment">SENTIMENT</span></div></th><th><span data-i18n="updated">UPDATED</span></th></tr></thead>
+                        <tbody id="tickers-body"><tr><td colspan="8" class="loading"><span data-i18n="loading">Loading...</span></td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+                        <!-- Options Chain Section -->
+            <div id="options-chain-section" class="card full-width" style="display:none;">
+                <h2 class="card-title">📊 Options Chain for <span id="selected-ticker"></span></h2>
+                <button class="btn btn-secondary" style="margin-bottom: 1rem;" onclick="closeOptionsChain()">✖️ Close</button>
+
+                <div class="table-container">
+                    <h3>Call Options</h3>
+                    <table id="calls-table">
+                        <thead>
+                            <tr>
+                                <th>Expiration</th>
+                                <th><span data-i18n="strike" data-i18n="strike">STRIKE</span></th>
+                                <th>Last Price</th>
+                                <th>Bid</th>
+                                <th>Ask</th>
+                                <th><span data-i18n="volume">VOLUME</span></th>
+                                <th>Open Interest</th>
+                                <th>IV%</th>
+                            </tr>
+                        </thead>
+                        <tbody id="calls-body">
+                            <tr><td colspan="8" class="loading"><span data-i18n="loading">Loading...</span></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="table-container" style="margin-top: 2rem;">
+                    <h3>Put Options</h3>
+                    <table id="puts-table">
+                        <thead>
+                            <tr>
+                                <th>Expiration</th>
+                                <th><span data-i18n="strike" data-i18n="strike">STRIKE</span></th>
+                                <th>Last Price</th>
+                                <th>Bid</th>
+                                <th>Ask</th>
+                                <th><span data-i18n="volume">VOLUME</span></th>
+                                <th>Open Interest</th>
+                                <th>IV%</th>
+                            </tr>
+                        </thead>
+                        <tbody id="puts-body">
+                            <tr><td colspan="8" class="loading"><span data-i18n="loading">Loading...</span></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card"><h2 class="card-title">📊 <span data-i18n="impliedVolatility"><span data-i18n="impliedVolatility">Implied Volatility</span></span></h2><canvas id="iv-chart"></canvas></div>
+            <div class="card"><h2 class="card-title">📈 <span data-i18n="putCallRatio"><span data-i18n="putCallRatio">Put/Call Ratio</span></span></h2><canvas id="pcr-chart"></canvas></div>
+
+            <div class="card"><h2 class="card-title">⚠️ <span data-i18n="alertsSection">Alerts</span></h2><div id="alerts-container" class="alerts-list"><p class="loading"><span data-i18n="loading">Loading...</span></p></div></div>
+            <div class="card"><h2 class="card-title">🔥 <span data-i18n="unusualActivity">Unusual Activity</span></h2><div id="unusual-container" class="alerts-list"><p class="loading"><span data-i18n="loading">Loading...</span></p></div></div>
+
+            <div class="card full-width">
+                <h2 class="card-title">📈 <span data-i18n="history">History</span> <select id="ticker-select" onchange="loadTickerHistory()"><option value="">Select...</option></select></h2>
+                <canvas id="history-chart"></canvas>
+            </div>
+
+            <div class="card full-width">
+                <h2 class="card-title">🤖 <span data-i18n="askAgent"><span data-i18n="askAgent">Ask the Agent</span></span></h2>
+                <div class="chat-container">
+                    <div id="chat-messages" class="chat-messages">
+                        <div class="chat-msg bot"><span data-i18n="askAgentPlaceholder">Hi! Ask me about options data.</span></div>
+                    </div>
+                    <div class="chat-input-container">
+                        <input type="text" id="chat-input" placeholder="Ask about options..." data-i18n="askPlaceholder" onkeypress="if(event.key==='Enter')sendChat()">
+                        <button class="btn btn-primary" onclick="sendChat()"><span data-i18n="send" data-i18n="send">Send</span></button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card full-width">
+                <h2 class="card-title">📊 <span data-i18n="backtestResults"><span data-i18n="backtestResults">Backtest Results</span></span></h2>
+                <div id="backtest-container"><p class="loading"><span data-i18n="loading">Loading...</span></p></div>
+            </div>
+        </div>
+
+        <footer class="footer"><p><span data-i18n="footerText"><span data-i18n="title">Options Monitor Agent</span> v2.0 | Claude AI | Yahoo Finance</span></p></footer>
+    </div>
+
+            <script>
+        // Options Chain functionality
+        function showOptionsChain(ticker) {
+            document.getElementById('selected-ticker').textContent = ticker;
+            document.getElementById('options-chain-section').style.display = 'block';
+
+            // Scroll to options chain section
+            document.getElementById('options-chain-section').scrollIntoView({ behavior: 'smooth' });
+
+            // Fetch options data
+            fetch(`/api/options-chain?ticker=${ticker}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        populateOptionsTable(data.calls || [], data.puts || []);
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to load options data');
+                });
+        }
+
+        function populateOptionsTable(calls, puts) {
+            const callsBody = document.getElementById('calls-body');
+            const putsBody = document.getElementById('puts-body');
+
+            callsBody.innerHTML = '';
+            putsBody.innerHTML = '';
+
+            // calls and puts already separated
+            
+
+            if (calls.length === 0) {
+                callsBody.innerHTML = '<tr><td colspan="8">No call options available</td></tr>';
+            } else {
+                calls.forEach(opt => {
+                    const row = `<tr>
+                        <td>${opt.expiration}</td>
+                        <td>$${opt.strike.toFixed(2)}</td>
+                        <td>$${opt.lastPrice.toFixed(2)}</td>
+                        <td>$${opt.bid.toFixed(2)}</td>
+                        <td>$${opt.ask.toFixed(2)}</td>
+                        <td>${opt.volume}</td>
+                        <td>${opt.openInterest}</td>
+                        <td>${opt.impliedVolatility.toFixed(2)}%</td>
+                    </tr>`;
+                    callsBody.innerHTML += row;
+                });
+            }
+
+            if (puts.length === 0) {
+                putsBody.innerHTML = '<tr><td colspan="8">No put options available</td></tr>';
+            } else {
+                puts.forEach(opt => {
+                    const row = `<tr>
+                        <td>${opt.expiration}</td>
+                        <td>$${opt.strike.toFixed(2)}</td>
+                        <td>$${opt.lastPrice.toFixed(2)}</td>
+                        <td>$${opt.bid.toFixed(2)}</td>
+                        <td>$${opt.ask.toFixed(2)}</td>
+                        <td>${opt.volume}</td>
+                        <td>${opt.openInterest}</td>
+                        <td>${opt.impliedVolatility.toFixed(2)}%</td>
+                    </tr>`;
+                    putsBody.innerHTML += row;
+                });
+            }
+        }
+
+        function closeOptionsChain() {
+            document.getElementById('options-chain-section').style.display = 'none';
+        }
+
+        // Add click handlers to ticker rows
+        function addTickerClickHandlers() {
+            const tbody = document.getElementById('tickers-body');
+            if (tbody) {
+                tbody.addEventListener('click', function(e) {
+                    const row = e.target.closest('tr');
+                    if (row && row.cells.length > 0) {
+                        const ticker = row.cells[0].textContent;
+                        if (ticker && ticker !== 'Loading...') {
+                            showOptionsChain(ticker);
+                        }
+                    }
+                });
+            }
+        }
+
+        // Initialize click handlers when page loads
+        document.addEventListener('DOMContentLoaded', addTickerClickHandlers);
+    </script><script src="/static/app.js?v=5"></script>
+
+<!-- PREMIUM SPIKE ALERTS SECTION -->
+<div class="card" id="spike-alerts-section" style="margin-top:20px">
+  <h2 class="card-title">&#9889; Premium Spike Alerts <span id="spike-count" style="font-size:0.7em;color:#aaa"></span></h2>
+  <p style="color:#aaa;font-size:0.85em;margin:0 0 12px"><span data-i18n="spikeAlertsDesc">Options where premium jumped >25% vs previous cycle. Sent to iPhone + Email.</span> &gt;25% vs previous cycle. Sent to iPhone + Email.</p>
+  <table style="width:100%;border-collapse:collapse">
+    <thead>
+      <tr style="color:#00d4ff;font-size:0.8em;text-transform:uppercase">
+        <th style="padding:8px;text-align:left"><span data-i18n="time" data-i18n="time">TIME</span></th>
+        <th style="padding:8px;text-align:left"><span data-i18n="ticker" data-i18n="ticker">TICKER</span></th>
+        <th style="padding:8px;text-align:left"><span data-i18n="type" data-i18n="type">TYPE</span></th>
+        <th style="padding:8px;text-align:left"><span data-i18n="strike" data-i18n="strike">STRIKE</span></th>
+        <th style="padding:8px;text-align:left"><span data-i18n="expiry" data-i18n="expiry">EXPIRY</span></th>
+        <th style="padding:8px;text-align:left"><span data-i18n="prev" data-i18n="prev">PREV</span></th>
+        <th style="padding:8px;text-align:left"><span data-i18n="curr" data-i18n="curr">CURR</span></th>
+        <th style="padding:8px;text-align:left"><span data-i18n="change" data-i18n="change">CHANGE</span></th>
+      </tr>
+    </thead>
+    <tbody id="spike-alerts-body">
+      <tr><td colspan="8" style="padding:12px;color:#666;text-align:center"><span data-i18n="noSpikeAlerts">No spike alerts yet. Run a cycle to detect.</span>. Run a cycle to detect.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+async function loadSpikeAlerts() {
+  try {
+    const r = await fetch(API + "/api/spike-alerts?hours=48");
+    const d = await r.json();
+    const tbody = document.getElementById("spike-alerts-body");
+    const countEl = document.getElementById("spike-count");
+    if (!tbody) return;
+    if (!d.data || d.data.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="8" style="padding:12px;color:#666;text-align:center">No spike alerts in the last 48h. Run a cycle to detect.</td></tr>`;
+      if (countEl) countEl.textContent = "(0)";
+      return;
+    }
+    if (countEl) countEl.textContent = `(${d.data.length})`;
+    tbody.innerHTML = d.data.map(s => {
+      const pct = parseFloat(s.pct_change);
+      const color = pct >= 0 ? "#00ff88" : "#ff4444";
+      const arrow = pct >= 0 ? "⬆" : "⬇";
+      const sign = pct >= 0 ? "+" : "";
+      const time = s.timestamp ? s.timestamp.split(" ")[1] : "";
+      return `<tr style="border-bottom:1px solid #1e2a3a">
+        <td style="padding:7px;color:#aaa;font-size:0.85em">${time}</td>
+        <td style="padding:7px;font-weight:bold">${s.ticker}</td>
+        <td style="padding:7px;color:${s.option_type==='CALL'?'#00d4ff':'#ff9900'}">${s.option_type}</td>
+        <td style="padding:7px">$${s.strike}</td>
+        <td style="padding:7px;color:#aaa;font-size:0.85em">${s.expiration}</td>
+        <td style="padding:7px;color:#aaa">$${parseFloat(s.prev_mid).toFixed(2)}</td>
+        <td style="padding:7px;color:${color};font-weight:bold">$${parseFloat(s.curr_mid).toFixed(2)}</td>
+        <td style="padding:7px;color:${color};font-weight:bold;font-size:1.1em">${sign}${pct.toFixed(1)}% ${arrow}</td>
+      </tr>`;
+    }).join("");
+  } catch(e) { console.error("spike-alerts:", e); }
+}
+document.addEventListener("DOMContentLoaded", () => {
+  loadSpikeAlerts();
+  setInterval(loadSpikeAlerts, 60000);
+});
+</script>
+    <script src="{{ url_for('static', filename='i18n.js') }}"></script>
+<script src="{{ url_for('static', filename='i18n.js') }}"></script>
+</body>
+</html>
