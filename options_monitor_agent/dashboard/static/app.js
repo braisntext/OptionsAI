@@ -3,7 +3,7 @@ const API="";
 
 document.addEventListener("DOMContentLoaded",()=>{refreshData();setInterval(refreshData,60000)});
 
-async function fetchJSON(u){try{const r=await fetch(u);return await r.json()}catch(e){return{status:"error"}}}
+async function fetchJSON(u){try{const r=await fetch(u);if(r.redirected||r.status===401||r.status===403){window.location.href='/login';return{status:'error'};}return await r.json()}catch(e){return{status:"error"}}}
 
 async function refreshData(){
     document.getElementById("last-update").textContent="Last: "+new Date().toLocaleTimeString();

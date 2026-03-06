@@ -396,8 +396,8 @@ def get_multiple_options(tickers: list) -> list:
     meff_done = 0
     for ticker in tickers:
         if ticker.endswith(".MC") and ticker in MEFF_TICKERS and meff_done > 0:
-            print(f"[MEFF] Pausa 20s entre tickers MEFF para evitar rate-limit...")
-            time.sleep(20)
+            print(f"[MEFF] Pausa 5s entre tickers MEFF para evitar rate-limit...")
+            time.sleep(5)
         print(f" 📡 Obteniendo opciones de {ticker}...")
         data = get_options_data(ticker)
         if ticker.endswith(".MC") and ticker in MEFF_TICKERS:

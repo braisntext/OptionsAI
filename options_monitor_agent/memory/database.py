@@ -88,9 +88,15 @@ class OptionsDatabase:
     def __init__(self):
         self.engine = create_engine(DATABASE_URL, echo=False)
         Base.metadata.create_all(self.engine)
-        Session = sessionmaker(bind=self.engine)
-        self.session = Session()
+        self._Session = sessionmaker(bind=self.engine)
+        self.session = self._Session()
         self.cycle_count = self._get_cycle_count()
+
+    def _refresh(self):
+        """Close the current session so the next query opens a fresh transaction
+        and sees rows committed by external processes (e.g. run_cycle.py subprocess)."""
+        self.session.close()
+        self.session = self._Session()
 
     def _get_cycle_count(self):
         last = self.session.query(func.max(AgentLog.cycle_number)).scalar()
@@ -114,6 +120,7 @@ class OptionsDatabase:
         self.session.commit()
 
     def get_ticker_history(self, ticker, days=30):
+        self._refresh()
         cutoff = datetime.utcnow() - timedelta(days=days)
         snaps = self.session.query(OptionsSnapshot).filter(
             OptionsSnapshot.ticker == ticker, OptionsSnapshot.timestamp >= cutoff
@@ -125,6 +132,7 @@ class OptionsDatabase:
                  "hv": s.historical_volatility, "iv_skew": s.iv_skew} for s in snaps]
 
     def get_all_tickers_latest(self):
+        self._refresh()
         subq = self.session.query(
             OptionsSnapshot.ticker, func.max(OptionsSnapshot.timestamp).label("max_ts")
         ).group_by(OptionsSnapshot.ticker).subquery()
@@ -144,6 +152,7 @@ class OptionsDatabase:
         self.session.commit()
 
     def get_recent_alerts(self, hours=24):
+        self._refresh()
         cutoff = datetime.utcnow() - timedelta(hours=hours)
         alerts = self.session.query(AlertRecord).filter(
             AlertRecord.timestamp >= cutoff).order_by(AlertRecord.timestamp.desc()).all()
@@ -163,6 +172,7 @@ class OptionsDatabase:
         self.session.commit()
 
     def get_unusual_history(self, ticker=None, days=7):
+        self._refresh()
         cutoff = datetime.utcnow() - timedelta(days=days)
         q = self.session.query(UnusualActivity).filter(UnusualActivity.timestamp >= cutoff)
         if ticker:
@@ -203,6 +213,7 @@ class OptionsDatabase:
             self.session.commit()
 
     def get_backtest_signals(self, ticker=None, days=30):
+        self._refresh()
         cutoff = datetime.utcnow() - timedelta(days=days)
         q = self.session.query(BacktestSignal).filter(BacktestSignal.timestamp >= cutoff)
         if ticker:
@@ -216,6 +227,7 @@ class OptionsDatabase:
                  "details": json.loads(s.details) if s.details else {}} for s in sigs]
 
     def get_database_stats(self):
+        self._refresh()
         return {
             "total_snapshots": self.session.query(OptionsSnapshot).count(),
             "total_alerts": self.session.query(AlertRecord).count(),

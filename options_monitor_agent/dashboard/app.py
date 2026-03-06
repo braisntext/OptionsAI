@@ -1,9 +1,9 @@
 import os
 import sys
 import time
+import json
 import threading
-import subprocess
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 # ── Path setup (run from any working directory) ───────────────────────────────
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -17,9 +17,7 @@ from auth import auth_bp, login_required
 from flask import Flask, render_template, jsonify, request, session, redirect, url_for
 
 # ── Constants ─────────────────────────────────────────────────────────────────
-PYTHON_BIN   = sys.executable  # Use the same Python that runs the dashboard
-RUN_CYCLE_PY = os.path.join(BASE_DIR, "run_cycle.py")
-CYCLE_LOG    = os.path.join(BASE_DIR, "cycle.log")
+CYCLE_LOG = os.path.join(BASE_DIR, "cycle.log")
 
 
 def _make_error(msg, **kwargs):
@@ -41,7 +39,6 @@ def create_app(database=None, agent=None):
         "result":       None,
         "error":        None,
         "completed_at": None,
-        "process":      None,      # subprocess.Popen – never serialised
     }
 
     # ── Lazy agent initialisation ─────────────────────────────────────────────
@@ -220,63 +217,103 @@ def create_app(database=None, agent=None):
     @app.route("/api/cycle-status")
     @login_required
     def api_cycle_status():
-        """Poll subprocess state on every call – survives WSGI restarts."""
-        proc = cycle_status["process"]
-        if proc is not None and cycle_status["running"]:
-            rc = proc.poll()            # None = still running
-            if rc is not None:
-                cycle_status["running"]      = False
-                cycle_status["completed_at"] = time.time()
-                cycle_status["result"]       = {"status": "ok"} if rc == 0 else None
-                cycle_status["error"]        = None if rc == 0 else f"Exit code {rc}"
-        safe = {k: v for k, v in cycle_status.items() if k != "process"}
+        safe = {k: v for k, v in cycle_status.items() if k != "_thread"}
         return jsonify({"status": "ok", "cycle": safe})
 
     @app.route("/api/run-cycle", methods=["POST"])
     @login_required
     def api_run_cycle():
-        """Launch run_cycle.py as a detached subprocess."""
-        # Check if already running (poll the real process)
-        proc = cycle_status["process"]
-        if cycle_status["running"] and proc and proc.poll() is None:
+        """Run a fast in-process refresh cycle in a background thread."""
+        if cycle_status["running"]:
             return jsonify({"status": "ok", "message": "Cycle already running"})
 
-        # Reset stale state
-        cycle_status["running"] = False
+        def _fast_cycle():
+            """Quick cycle: scrape → greeks → analyze → save.  Skips Claude/email."""
+            t0 = time.time()
+            log_lines = []
+            def _log(msg):
+                log_lines.append(msg)
+                print(f"[fast-cycle] {msg}")
 
-        try:
-            new_proc = subprocess.Popen(
-                [PYTHON_BIN, RUN_CYCLE_PY],
-                stdout=open(CYCLE_LOG, "w"),
-                stderr=subprocess.STDOUT,
-                close_fds=True,
-                cwd=BASE_DIR,
-            )
-            cycle_status.update({
-                "running":      True,
-                "process":      new_proc,
-                "result":       None,
-                "error":        None,
-                "completed_at": None,
-            })
+            try:
+                from config import WATCHLIST
+                from tools.options_scraper import get_options_data, MEFF_TICKERS, MEFF_CACHE_DIR
+                from tools.analysis_tool import analyze_options_data
+                from tools.greeks_calculator import GreeksCalculator
 
-            # Background watcher – updates status when process exits.
-            # daemon=True means it won't block app shutdown.
-            def _watch():
-                new_proc.wait()
+                greeks = GreeksCalculator()
+
+                # ── Phase 1: Scrape (use MEFF cache for .MC, yfinance for US) ──
+                _log(f"Phase 1: Scraping {len(WATCHLIST)} tickers...")
+                raw_data = []
+                for ticker in WATCHLIST:
+                    # For .MC tickers: try MEFF cache first (instant) before slow scrape
+                    if ticker.endswith(".MC") and ticker in MEFF_TICKERS:
+                        cache_file = os.path.join(MEFF_CACHE_DIR, f"{ticker.replace('.', '_')}.json")
+                        if os.path.exists(cache_file):
+                            try:
+                                with open(cache_file) as f:
+                                    cached = json.load(f)
+                                cached['timestamp'] = datetime.now().isoformat()
+                                cached['note'] = 'MEFF cache (fast refresh)'
+                                raw_data.append(cached)
+                                _log(f"  {ticker}: MEFF cache ({cached.get('calls_count',0)} calls)")
+                                continue
+                            except Exception:
+                                pass
+                    # yfinance scrape (fast for US, slow for .MC without cache)
+                    data = get_options_data(ticker)
+                    _log(f"  {ticker}: {data.get('status','?')} ({data.get('calls_count',0)} calls)")
+                    raw_data.append(data)
+
+                # ── Phase 2: Greeks ──
+                _log("Phase 2: Computing Greeks...")
+                for i, data in enumerate(raw_data):
+                    if data.get("status") == "success":
+                        raw_data[i] = greeks.enrich_options_with_greeks(data)
+
+                # ── Phase 3: Analyze ──
+                _log("Phase 3: Analyzing...")
+                analysis = analyze_options_data(raw_data)
+
+                # ── Phase 4: Save to DB ──
+                _log("Phase 4: Saving to DB...")
+                db = _require_db()
+                db.save_snapshot(analysis)
+                db.save_alerts(analysis.get("alerts", []))
+                db.save_unusual_activity(analysis.get("unusual_activity", []))
+
+                elapsed = time.time() - t0
+                _log(f"Done in {elapsed:.1f}s")
+
                 cycle_status["running"]      = False
                 cycle_status["completed_at"] = time.time()
-                rc = new_proc.returncode
-                if rc == 0:
-                    cycle_status["result"] = {"status": "ok"}
-                else:
-                    cycle_status["error"]  = f"Exit code {rc}"
+                cycle_status["result"]       = {"status": "ok", "time": round(elapsed, 1)}
+                cycle_status["error"]        = None
 
-            threading.Thread(target=_watch, daemon=True, name="cycle-watcher").start()
-            return jsonify({"status": "ok", "message": "Cycle started"})
+            except Exception as exc:
+                elapsed = time.time() - t0
+                _log(f"ERROR: {exc}")
+                cycle_status["running"]      = False
+                cycle_status["completed_at"] = time.time()
+                cycle_status["error"]        = str(exc)
 
-        except Exception as exc:
-            return _make_error(str(exc)), 500
+            # Write log
+            try:
+                with open(CYCLE_LOG, "w") as f:
+                    f.write("\n".join(log_lines) + "\n")
+            except Exception:
+                pass
+
+        cycle_status.update({
+            "running":      True,
+            "result":       None,
+            "error":        None,
+            "completed_at": None,
+        })
+        t = threading.Thread(target=_fast_cycle, daemon=True, name="fast-cycle")
+        t.start()
+        return jsonify({"status": "ok", "message": "Cycle started"})
 
     @app.route("/api/cycle-log")
     @login_required

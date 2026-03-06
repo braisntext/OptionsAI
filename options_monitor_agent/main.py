@@ -31,7 +31,7 @@ def run_dashboard(agent):
         app = create_app(database=agent.db, agent=agent)
         console.print(f"  🌐 Dashboard: http://localhost:{DASHBOARD_CONFIG['port']}")
         app.run(host=DASHBOARD_CONFIG["host"], port=DASHBOARD_CONFIG["port"],
-                debug=False, threaded=False, use_reloader=False)
+                debug=False, threaded=True, use_reloader=False)
     except Exception as e:
         console.print(f"  [red]Dashboard error: {e}[/red]")
 
