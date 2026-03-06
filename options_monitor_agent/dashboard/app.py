@@ -3,17 +3,21 @@ import sys
 import time
 import threading
 import subprocess
-import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
-from auth import auth_bp, login_required
-from flask import Flask, render_template, jsonify, request
+from datetime import timedelta
 
 # ── Path setup (run from any working directory) ───────────────────────────────
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.dirname(_THIS_DIR)
+if _THIS_DIR not in sys.path:
+    sys.path.insert(0, _THIS_DIR)
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
+from auth import auth_bp, login_required
+from flask import Flask, render_template, jsonify, request, session, redirect, url_for
+
 # ── Constants ─────────────────────────────────────────────────────────────────
-PYTHON_BIN   = "/usr/local/bin/python3.10"
+PYTHON_BIN   = sys.executable  # Use the same Python that runs the dashboard
 RUN_CYCLE_PY = os.path.join(BASE_DIR, "run_cycle.py")
 CYCLE_LOG    = os.path.join(BASE_DIR, "cycle.log")
 
@@ -53,7 +57,6 @@ def create_app(database=None, agent=None):
     # ── Flask app ─────────────────────────────────────────────────────────────
     app = Flask(__name__, template_folder="templates", static_folder="static")
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "options-monitor-secret")
-    from datetime import timedelta
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
     app.config['SESSION_COOKIE_SECURE'] = False  # set True if using HTTPS
     app.config['SESSION_COOKIE_HTTPONLY'] = True
@@ -291,7 +294,7 @@ def create_app(database=None, agent=None):
     return app
 
 
-# ── Dev server entry-point ────────────────────────────────────────────────────
+# ── Dev server entry-point ────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     _app = create_app()
-    _app.run(host="0.0.0.0", port=5000, debug=True)
+    _app.run(host="127.0.0.1", port=5001, debug=True)

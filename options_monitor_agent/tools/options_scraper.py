@@ -1,4 +1,10 @@
 """ Herramienta: Obtener datos de opciones usando yfinance """
+import json
+import math
+import os
+import subprocess
+import time
+
 import yfinance as yf
 import pandas as pd
 import numpy as np
@@ -7,6 +13,9 @@ from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 from config import AGENT_CONFIG
 from tools.synthetic_options import generate_synthetic_options
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+MEFF_CACHE_DIR = os.path.join(BASE_DIR, "data", "meff_cache")
 
 
 # MEFF ticker map: Yahoo ticker -> MEFF URL slug
@@ -46,25 +55,23 @@ def get_meff_options(ticker: str, current_price: float, stock_data: dict, histor
     if not meff_slug:
         return None
     try:
-        import subprocess as _sp, json as _json
         url = f"https://api.allorigins.win/get?url=https://www.meff.es/esp/Derivados-Financieros/Ficha/{meff_slug}"
-        _res = _sp.run(["curl", "-s", "--max-time", "30", url], capture_output=True, text=True)
+        _res = subprocess.run(["curl", "-s", "--max-time", "30", url], capture_output=True, text=True)
         if _res.returncode != 0:
             print(f" [MEFF] curl failed: {_res.stderr}")
             return None
         # Retry up to 3 times with increasing delay (handles AllOrigins 522 rate limit)
-        import time as _time
         _html = ""
         for _attempt in range(3):
             _out = _res.stdout.strip() if _attempt == 0 else ""
             if _attempt > 0:
-                _time.sleep(5 * _attempt)
-                _res = _sp.run(["curl", "-s", "--max-time", "35", url], capture_output=True, text=True)
+                time.sleep(5 * _attempt)
+                _res = subprocess.run(["curl", "-s", "--max-time", "35", url], capture_output=True, text=True)
                 _out = _res.stdout.strip()
             if not _out:
                 continue
             try:
-                _parsed = _json.loads(_out)
+                _parsed = json.loads(_out)
                 _c = _parsed.get("contents", "")
                 if _c and len(_c) > 1000:  # valid HTML page
                     _html = _c
@@ -72,7 +79,7 @@ def get_meff_options(ticker: str, current_price: float, stock_data: dict, histor
                 elif _parsed.get("status", {}).get("http_code", 0) >= 400:
                     print(f" [MEFF] AllOrigins error {_parsed.get('status')} for {ticker} (attempt {_attempt+1})")
                     continue
-            except _json.JSONDecodeError:
+            except json.JSONDecodeError:
                 print(f" [MEFF] JSON error for {ticker} (attempt {_attempt+1}): {repr(_out[:60])}")
                 continue
         if not _html:
@@ -125,17 +132,14 @@ def get_meff_options(ticker: str, current_price: float, stock_data: dict, histor
             _days_to_expiry = 30
             if _exp_str:
                 try:
-                    from datetime import datetime as _dt
-                    # MEFF format: "20/03/2026"
-                    _exp_dt = _dt.strptime(_exp_str, "%d/%m/%Y")
-                    _days_to_expiry = max(1, (_exp_dt - _dt.now()).days)
-                except:
+                    _exp_dt = datetime.strptime(_exp_str, "%d/%m/%Y")
+                    _days_to_expiry = max(1, (_exp_dt - datetime.now()).days)
+                except Exception:
                     pass
             # Black-Scholes IV solver (Newton-Raphson)
             _iv = 0.0
             if mid_price and mid_price > 0 and current_price > 0 and strike > 0:
                 try:
-                    import math as _math
                     from scipy.stats import norm as _norm
                     _S = current_price
                     _K = strike
@@ -143,10 +147,10 @@ def get_meff_options(ticker: str, current_price: float, stock_data: dict, histor
                     _r = 0.03  # risk-free rate
                     _sigma = 0.3  # initial guess
                     for _ in range(50):
-                        _d1 = (_math.log(_S/_K) + (_r + 0.5*_sigma**2)*_T) / (_sigma*_math.sqrt(_T))
-                        _d2 = _d1 - _sigma*_math.sqrt(_T)
-                        _price = _S*_norm.cdf(_d1) - _K*_math.exp(-_r*_T)*_norm.cdf(_d2)
-                        _vega = _S*_norm.pdf(_d1)*_math.sqrt(_T)
+                        _d1 = (math.log(_S/_K) + (_r + 0.5*_sigma**2)*_T) / (_sigma*math.sqrt(_T))
+                        _d2 = _d1 - _sigma*math.sqrt(_T)
+                        _price = _S*_norm.cdf(_d1) - _K*math.exp(-_r*_T)*_norm.cdf(_d2)
+                        _vega = _S*_norm.pdf(_d1)*math.sqrt(_T)
                         if _vega < 1e-10:
                             break
                         _diff = _price - mid_price
@@ -230,32 +234,28 @@ def get_options_data(ticker: str) -> dict:
                 meff_result = get_meff_options(ticker, current_price, stock_data, historical_volatility)
                 if meff_result:
                     print(f" [MEFF] OK: {meff_result['calls_count']} calls de MEFF")
-                    # Guardar en cache local para fallback
+                    # Save to local cache for fallback
                     try:
-                        import os as _os_mc, json as _json_mc
-                        _meff_cache_dir = "/home/braisn/options_monitor_agent/data/meff_cache"
-                        _os_mc.makedirs(_meff_cache_dir, exist_ok=True)
-                        _meff_cf = f"{_meff_cache_dir}/{ticker.replace('.', '_')}.json"
+                        os.makedirs(MEFF_CACHE_DIR, exist_ok=True)
+                        _meff_cf = os.path.join(MEFF_CACHE_DIR, f"{ticker.replace('.', '_')}.json")
                         with open(_meff_cf, 'w') as _mcf:
-                            _json_mc.dump(meff_result, _mcf)
+                            json.dump(meff_result, _mcf)
                     except Exception:
                         pass
                     return meff_result
                 print(f" [MEFF] Sin datos MEFF para {ticker}")
-                # Intentar cache local si AllOrigins fallo
+                # Try local cache if AllOrigins failed
                 try:
-                    import os as _os_mc2, json as _json_mc2
-                    _meff_cf2 = f"/home/braisn/options_monitor_agent/data/meff_cache/{ticker.replace('.', '_')}.json"
-                    if _os_mc2.path.exists(_meff_cf2):
+                    _meff_cf2 = os.path.join(MEFF_CACHE_DIR, f"{ticker.replace('.', '_')}.json")
+                    if os.path.exists(_meff_cf2):
                         with open(_meff_cf2) as _mcf2:
-                            _cached_meff = _json_mc2.load(_mcf2)
-                        import datetime as _dt_mc
-                        _cached_meff['timestamp'] = _dt_mc.datetime.now().isoformat()
+                            _cached_meff = json.load(_mcf2)
+                        _cached_meff['timestamp'] = datetime.now().isoformat()
                         _cached_meff['note'] = 'MEFF datos desde cache local'
                         print(f" [MEFF] Usando cache para {ticker}: {_cached_meff.get('calls_count',0)} calls")
                         return _cached_meff
                 except Exception as _ce_mc:
-                    print(f" [MEFF] Error cache: {_ce_mc}")
+                    print(f" [MEFF] Cache error: {_ce_mc}")
             # Para tickers europeos sin opciones (ej: .MC), devolver datos del stock sin error de opciones
             if ticker.endswith(".MC") or any(ticker.endswith(f".{sfx}") for sfx in ["L", "PA", "AS", "MI", "DE", "SW", "HE", "ST", "CO"]):
                 # Generate synthetic options for European stocks without real data
@@ -392,13 +392,12 @@ def _df_to_detailed(df: pd.DataFrame) -> list:
 
 def get_multiple_options(tickers: list) -> list:
     """Obtiene datos de opciones para multiples tickers."""
-    import time as _tmeff
     results = []
     meff_done = 0
     for ticker in tickers:
         if ticker.endswith(".MC") and ticker in MEFF_TICKERS and meff_done > 0:
             print(f"[MEFF] Pausa 20s entre tickers MEFF para evitar rate-limit...")
-            _tmeff.sleep(20)
+            time.sleep(20)
         print(f" 📡 Obteniendo opciones de {ticker}...")
         data = get_options_data(ticker)
         if ticker.endswith(".MC") and ticker in MEFF_TICKERS:

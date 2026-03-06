@@ -2,6 +2,9 @@
 🚀 Options Monitor Agent v2.0 - Main Entry Point
 """
 
+import os
+os.environ.setdefault("MPLBACKEND", "Agg")  # Prevent matplotlib GUI segfault
+
 import schedule, time, sys, threading
 from rich.console import Console
 from agent import OptionsMonitorAgent
@@ -25,10 +28,10 @@ def show_banner():
 def run_dashboard(agent):
     try:
         from dashboard.app import create_app
-        app, socketio = create_app(database=agent.db, agent=agent)
+        app = create_app(database=agent.db, agent=agent)
         console.print(f"  🌐 Dashboard: http://localhost:{DASHBOARD_CONFIG['port']}")
-        socketio.run(app, host=DASHBOARD_CONFIG["host"], port=DASHBOARD_CONFIG["port"],
-                     debug=False, allow_unsafe_werkzeug=True, use_reloader=False)
+        app.run(host=DASHBOARD_CONFIG["host"], port=DASHBOARD_CONFIG["port"],
+                debug=False, threaded=False, use_reloader=False)
     except Exception as e:
         console.print(f"  [red]Dashboard error: {e}[/red]")
 

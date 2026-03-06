@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 DB_PATH = os.path.join(os.path.dirname(__file__), 'subscribers.db')
 
-SUPERUSERS = {'braisnatural@gmail.com'}
+SUPERUSERS = {'braisnatural@gmail.com', 'braisontour@gmail.com'}
 
 def _conn():
     c = sqlite3.connect(DB_PATH)

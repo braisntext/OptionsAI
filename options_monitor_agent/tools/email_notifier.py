@@ -1,25 +1,40 @@
 """
-Herramienta: Notificaciones por Email
+Herramienta: Notificaciones por Email (Brevo API)
 """
 
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.mime.image import MIMEImage
 from datetime import datetime
 import os
-from config import (EMAIL_ADDRESS, EMAIL_PASSWORD, EMAIL_SMTP_SERVER,
-                    EMAIL_SMTP_PORT, EMAIL_RECIPIENTS, NOTIFICATION_CONFIG)
+from config import (BREVO_API_KEY, BREVO_SENDER_EMAIL, BREVO_SENDER_NAME,
+                    NOTIFICATION_CONFIG)
 
 
 class EmailNotifier:
     def __init__(self):
-        self.enabled = NOTIFICATION_CONFIG["enable_email"]
-        self.sender = EMAIL_ADDRESS
-        self.password = EMAIL_PASSWORD
-        self.smtp_server = EMAIL_SMTP_SERVER
-        self.smtp_port = EMAIL_SMTP_PORT
-        self.recipients = [r.strip() for r in EMAIL_RECIPIENTS if r.strip()]
+        self.enabled = bool(BREVO_API_KEY and BREVO_SENDER_EMAIL)
+        self.api_key = BREVO_API_KEY
+        self.sender_email = BREVO_SENDER_EMAIL
+        self.sender_name = BREVO_SENDER_NAME
+
+    def _send_via_brevo(self, subject, html_body):
+        """Send email using Brevo transactional API."""
+        try:
+            import sib_api_v3_sdk
+            configuration = sib_api_v3_sdk.Configuration()
+            configuration.api_key['api-key'] = self.api_key
+            api_instance = sib_api_v3_sdk.TransactionalEmailsApi(
+                sib_api_v3_sdk.ApiClient(configuration)
+            )
+            send_email = sib_api_v3_sdk.SendSmtpEmail(
+                to=[{'email': self.sender_email}],
+                sender={'name': self.sender_name, 'email': self.sender_email},
+                subject=subject,
+                html_content=html_body,
+            )
+            api_instance.send_transac_email(send_email)
+            return True
+        except Exception as e:
+            print(f"  ❌ Brevo error: {e}")
+            return False
 
     def send_report(self, analysis, chart_path=""):
         if not self.enabled:
@@ -28,24 +43,10 @@ class EmailNotifier:
         try:
             subject = f"📊 Options Report - {analysis.get('market_sentiment', 'N/A')} - {datetime.now().strftime('%Y-%m-%d %H:%M')}"
             html_body = self._build_html(analysis)
-            msg = MIMEMultipart("related")
-            msg["Subject"] = subject
-            msg["From"] = self.sender
-            msg["To"] = ", ".join(self.recipients)
-            msg.attach(MIMEText(html_body, "html"))
-
-            if chart_path and os.path.exists(chart_path):
-                with open(chart_path, "rb") as f:
-                    img = MIMEImage(f.read())
-                    img.add_header("Content-Disposition", "attachment", filename=os.path.basename(chart_path))
-                    msg.attach(img)
-
-            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
-                server.starttls()
-                server.login(self.sender, self.password)
-                server.sendmail(self.sender, self.recipients, msg.as_string())
-            print(f"  📧 Email enviado a {len(self.recipients)} destinatarios")
-            return True
+            result = self._send_via_brevo(subject, html_body)
+            if result:
+                print(f"  📧 Email report sent via Brevo")
+            return result
         except Exception as e:
             print(f"  ❌ Error email: {e}")
             return False
@@ -61,15 +62,8 @@ class EmailNotifier:
             for a in high:
                 body += f"<li><strong>[{a['ticker']}]</strong> {a['message']}</li>"
             body += "</ul>"
-            msg = MIMEText(body, "html")
-            msg["Subject"] = f"🚨 OPTIONS ALERT - {len(high)} alertas"
-            msg["From"] = self.sender
-            msg["To"] = ", ".join(self.recipients)
-            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
-                server.starttls()
-                server.login(self.sender, self.password)
-                server.sendmail(self.sender, self.recipients, msg.as_string())
-            return True
+            subject = f"🚨 OPTIONS ALERT - {len(high)} alertas"
+            return self._send_via_brevo(subject, body)
         except Exception as e:
             print(f"  ❌ Error alert email: {e}")
             return False

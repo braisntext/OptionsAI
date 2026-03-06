@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.10
+#!/usr/bin/env python3
 """
 Standalone cycle runner - launched as a subprocess by the web dashboard.
 
@@ -9,6 +9,7 @@ Exit codes:
 """
 import sys
 import os
+os.environ.setdefault("MPLBACKEND", "Agg")  # Prevent matplotlib GUI segfault
 import time
 import traceback
 from datetime import datetime

@@ -75,8 +75,8 @@ DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{BASE_DIR}/memory/options_m
 # DASHBOARD CONFIG
 # ============================================================
 DASHBOARD_CONFIG = {
-    "host": "0.0.0.0",
-    "port": 5000,
+    "host": "127.0.0.1",
+    "port": 5001,
     "debug": False,
 }
 
@@ -88,6 +88,13 @@ BACKTEST_CONFIG = {
     "signal_types": ["HIGH_IV", "HIGH_PUT_CALL_RATIO", "LOW_PUT_CALL_RATIO", "UNUSUAL_VOLUME"],
     "results_dir": "backtest_results",
 }
+
+# ============================================================
+# BREVO (Transactional Email API)
+# ============================================================
+BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
+BREVO_SENDER_EMAIL = os.getenv("BREVO_SENDER_EMAIL", "")
+BREVO_SENDER_NAME = os.getenv("BREVO_SENDER_NAME", "Options Monitor")
 
 # ============================================================
 # PATHS
@@ -117,10 +124,7 @@ SPIKE_MAX_EXPIRY_DAYS = 60
 # 3. In the ntfy app: tap '+' and subscribe to this topic
 NTFY_TOPIC = "braisn-options-alerts-7k2m"  # Subscribe to this in ntfy app
 
-# --- Email (Gmail with App Password) ---
-# 1. Enable 2FA on Gmail, then create an App Password:
-#    myaccount.google.com > Security > App Passwords
-# 2. Fill in your details below
-NOTIFY_EMAIL_TO = ""        # Where to receive alerts (your email)
-NOTIFY_EMAIL_FROM = ""      # Gmail address to send FROM
-NOTIFY_EMAIL_PASSWORD = ""  # Gmail App Password (16 chars, no spaces)
+# --- Legacy email notification vars (used by ntfy_notifier) ---
+NOTIFY_EMAIL_TO = os.getenv("NOTIFY_EMAIL_TO", "")
+NOTIFY_EMAIL_FROM = os.getenv("NOTIFY_EMAIL_FROM", "")
+NOTIFY_EMAIL_PASSWORD = os.getenv("NOTIFY_EMAIL_PASSWORD", "")

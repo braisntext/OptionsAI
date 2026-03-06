@@ -1,30 +1,25 @@
 """
-Notification Tool — ntfy.sh (iPhone push) + Email (Gmail SMTP)
+Notification Tool — ntfy.sh (iPhone push) + Brevo (transactional email)
 
 Setup:
   ntfy.sh  : Install free ntfy app on iPhone, subscribe to your topic.
              Set NTFY_TOPIC in config.py (e.g. "braisn-options-abc123")
-  Email    : Set NOTIFY_EMAIL_TO, NOTIFY_EMAIL_FROM, NOTIFY_EMAIL_PASSWORD
-             in config.py. Uses Gmail SMTP with App Password.
+  Email    : Set BREVO_API_KEY and BREVO_SENDER_EMAIL in .env
 """
 import os
-import smtplib
 import urllib.request
 import urllib.parse
-import json
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 
 # ---- Read config safely ----
 try:
     import sys
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from config import NTFY_TOPIC, NOTIFY_EMAIL_TO, NOTIFY_EMAIL_FROM, NOTIFY_EMAIL_PASSWORD
+    from config import NTFY_TOPIC, BREVO_API_KEY, BREVO_SENDER_EMAIL, BREVO_SENDER_NAME
 except ImportError:
     NTFY_TOPIC = ""
-    NOTIFY_EMAIL_TO = ""
-    NOTIFY_EMAIL_FROM = ""
-    NOTIFY_EMAIL_PASSWORD = ""
+    BREVO_API_KEY = ""
+    BREVO_SENDER_EMAIL = ""
+    BREVO_SENDER_NAME = "Options Monitor"
 
 
 def send_ntfy(title, message, priority="high", tags="chart_with_upwards_trend"):
@@ -61,29 +56,32 @@ def send_ntfy(title, message, priority="high", tags="chart_with_upwards_trend"):
 
 
 def send_email(subject, body_html, body_text=None):
-    """Send email alert via Gmail SMTP."""
-    to_addr = NOTIFY_EMAIL_TO or os.getenv("NOTIFY_EMAIL_TO", "")
-    from_addr = NOTIFY_EMAIL_FROM or os.getenv("NOTIFY_EMAIL_FROM", "")
-    password = NOTIFY_EMAIL_PASSWORD or os.getenv("NOTIFY_EMAIL_PASSWORD", "")
+    """Send email alert via Brevo transactional API."""
+    api_key = BREVO_API_KEY or os.getenv("BREVO_API_KEY", "")
+    sender_email = BREVO_SENDER_EMAIL or os.getenv("BREVO_SENDER_EMAIL", "")
+    sender_name = BREVO_SENDER_NAME or "Options Monitor"
 
-    if not all([to_addr, from_addr, password]):
-        print("[email] Email credentials not set, skipping")
+    if not api_key or not sender_email:
+        print("[email] Brevo credentials not set, skipping")
         return False
     try:
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = subject
-        msg["From"] = from_addr
-        msg["To"] = to_addr
-        if body_text:
-            msg.attach(MIMEText(body_text, "plain"))
-        msg.attach(MIMEText(body_html, "html"))
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=15) as server:
-            server.login(from_addr, password)
-            server.sendmail(from_addr, to_addr, msg.as_string())
-        print(f"[email] Sent: {subject}")
+        import sib_api_v3_sdk
+        configuration = sib_api_v3_sdk.Configuration()
+        configuration.api_key['api-key'] = api_key
+        api_instance = sib_api_v3_sdk.TransactionalEmailsApi(
+            sib_api_v3_sdk.ApiClient(configuration)
+        )
+        send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+            to=[{'email': sender_email}],
+            sender={'name': sender_name, 'email': sender_email},
+            subject=subject,
+            html_content=body_html,
+        )
+        api_instance.send_transac_email(send_smtp_email)
+        print(f"[email] Sent via Brevo: {subject}")
         return True
     except Exception as e:
-        print(f"[email] Error: {e}")
+        print(f"[email] Brevo error: {e}")
         return False
 
 

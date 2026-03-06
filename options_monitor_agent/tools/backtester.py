@@ -49,18 +49,18 @@ class Backtester:
                 if hist.empty:
                     continue
 
-                price_1d = price_3d = price_7d = None
+                prices = {"price_1d": None, "price_3d": None, "price_7d": None}
                 for days_check, attr in [(1, "price_1d"), (3, "price_3d"), (7, "price_7d")]:
                     if days_since >= days_check:
                         target = signal_time + timedelta(days=days_check)
                         tz = hist.index.tz
                         after = hist[hist.index >= pd.Timestamp(target, tz=tz)]
                         if not after.empty:
-                            locals()[attr] = float(after.iloc[0]["Close"])
+                            prices[attr] = float(after.iloc[0]["Close"])
 
-                price_1d = locals().get("price_1d")
-                price_3d = locals().get("price_3d")
-                price_7d = locals().get("price_7d")
+                price_1d = prices["price_1d"]
+                price_3d = prices["price_3d"]
+                price_7d = prices["price_7d"]
 
                 outcome = "PENDING"
                 check_price = price_7d or price_3d or price_1d

@@ -1,10 +1,7 @@
 import os
-import smtplib
 import secrets
 import sys
 from datetime import datetime, timedelta
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 from functools import wraps
 from flask import (
     Blueprint, redirect, render_template, request,
@@ -13,10 +10,11 @@ from flask import (
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 try:
-    from config import NOTIFY_EMAIL_FROM, NOTIFY_EMAIL_PASSWORD
+    from config import BREVO_API_KEY, BREVO_SENDER_EMAIL, BREVO_SENDER_NAME
 except ImportError:
-    NOTIFY_EMAIL_FROM = os.getenv('NOTIFY_EMAIL_FROM', '')
-    NOTIFY_EMAIL_PASSWORD = os.getenv('NOTIFY_EMAIL_PASSWORD', '')
+    BREVO_API_KEY = os.getenv('BREVO_API_KEY', '')
+    BREVO_SENDER_EMAIL = os.getenv('BREVO_SENDER_EMAIL', '')
+    BREVO_SENDER_NAME = os.getenv('BREVO_SENDER_NAME', 'Options Monitor')
 
 from subscribers import is_subscribed
 
@@ -44,12 +42,11 @@ def _is_allowed(email: str) -> bool:
     return email in ALLOWED_EMAILS
 
 def _send_magic_email(to_email: str, link: str) -> bool:
-    smtp_server = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
-    smtp_port   = int(os.getenv('SMTP_PORT', '587'))
-    sender      = os.getenv('NOTIFY_EMAIL_FROM', NOTIFY_EMAIL_FROM)
-    password    = os.getenv('NOTIFY_EMAIL_PASSWORD', NOTIFY_EMAIL_PASSWORD)
-    if not sender or not password:
-        print('[auth] ERROR: email credentials not configured.')
+    api_key = BREVO_API_KEY
+    sender_email = BREVO_SENDER_EMAIL
+    sender_name = BREVO_SENDER_NAME
+    if not api_key or not sender_email:
+        print('[auth] ERROR: Brevo API key or sender email not configured.')
         return False
     html = f"""
     <div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;padding:32px;background:#0f1117;color:#e2e8f0;border-radius:12px">
@@ -63,21 +60,24 @@ def _send_magic_email(to_email: str, link: str) -> bool:
       <p style="color:#475569;font-size:12px">If you didn't request this, ignore this email.</p>
     </div>
     """
-    msg = msg = MIMEMultipart('alternative')
-    msg['Subject'] = '\u26a1 Your Options Monitor Login Link'
-    msg['From']    = sender
-    msg['To']      = to_email
-    msg.attach(MIMEText(html, 'html'))
     try:
-        with smtplib.SMTP(smtp_server, smtp_port) as srv:
-            srv.ehlo()
-            srv.starttls()
-            srv.login(sender, password)
-            srv.sendmail(sender, [to_email], msg.as_string())
-        print(f'[auth] Magic link sent to {to_email}')
+        import sib_api_v3_sdk
+        configuration = sib_api_v3_sdk.Configuration()
+        configuration.api_key['api-key'] = api_key
+        api_instance = sib_api_v3_sdk.TransactionalEmailsApi(
+            sib_api_v3_sdk.ApiClient(configuration)
+        )
+        send_email = sib_api_v3_sdk.SendSmtpEmail(
+            to=[{'email': to_email}],
+            sender={'name': sender_name, 'email': sender_email},
+            subject='\u26a1 Your Options Monitor Login Link',
+            html_content=html,
+        )
+        api_instance.send_transac_email(send_email)
+        print(f'[auth] Magic link sent to {to_email} via Brevo')
         return True
     except Exception as e:
-        print(f'[auth] Failed to send email: {e}')
+        print(f'[auth] Failed to send email via Brevo: {e}')
         return False
 
 def login_required(f):
