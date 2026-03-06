@@ -1,0 +1,12 @@
+[
+  {
+    "id": 1772808106729,
+    "ticker": "KVUE",
+    "threshold": 50.0,
+    "option_type": "ALL",
+    "notify_push": true,
+    "notify_email": true,
+    "enabled": true,
+    "created": "2026-03-06T21:41:46.729755"
+  }
+]

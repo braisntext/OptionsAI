@@ -3,7 +3,7 @@ Base de datos SQLite con SQLAlchemy
 """
 
 from sqlalchemy import create_engine, Column, Integer, Float, String, DateTime, Text, Boolean, func
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.orm import sessionmaker, scoped_session, declarative_base
 from datetime import datetime, timedelta
 import json
 from config import DATABASE_URL
@@ -88,18 +88,21 @@ class OptionsDatabase:
     def __init__(self):
         self.engine = create_engine(DATABASE_URL, echo=False)
         Base.metadata.create_all(self.engine)
-        self._Session = sessionmaker(bind=self.engine)
-        self.session = self._Session()
+        self._Session = scoped_session(sessionmaker(bind=self.engine))
         self.cycle_count = self._get_cycle_count()
 
+    @property
+    def session(self):
+        """Return a thread-local session."""
+        return self._Session()
+
     def _refresh(self):
-        """Close the current session so the next query opens a fresh transaction
-        and sees rows committed by external processes (e.g. run_cycle.py subprocess)."""
-        self.session.close()
-        self.session = self._Session()
+        """Remove thread-local session so the next access gets a fresh one."""
+        self._Session.remove()
 
     def _get_cycle_count(self):
         last = self.session.query(func.max(AgentLog.cycle_number)).scalar()
+        self._Session.remove()
         return (last or 0)
 
     def save_snapshot(self, analysis):
@@ -118,6 +121,7 @@ class OptionsDatabase:
                 market_sentiment=analysis.get("market_sentiment", ""))
             self.session.add(s)
         self.session.commit()
+        self._Session.remove()
 
     def get_ticker_history(self, ticker, days=30):
         self._refresh()
@@ -125,11 +129,13 @@ class OptionsDatabase:
         snaps = self.session.query(OptionsSnapshot).filter(
             OptionsSnapshot.ticker == ticker, OptionsSnapshot.timestamp >= cutoff
         ).order_by(OptionsSnapshot.timestamp.asc()).all()
-        return [{"timestamp": s.timestamp.isoformat(), "price": s.current_price,
+        result = [{"timestamp": s.timestamp.isoformat(), "price": s.current_price,
                  "call_volume": s.call_volume, "put_volume": s.put_volume,
                  "pcr_volume": s.put_call_ratio_volume, "pcr_oi": s.put_call_ratio_oi,
                  "call_iv": s.avg_call_iv, "put_iv": s.avg_put_iv,
                  "hv": s.historical_volatility, "iv_skew": s.iv_skew} for s in snaps]
+        self._Session.remove()
+        return result
 
     def get_all_tickers_latest(self):
         self._refresh()
@@ -139,10 +145,12 @@ class OptionsDatabase:
         latest = self.session.query(OptionsSnapshot).join(
             subq, (OptionsSnapshot.ticker == subq.c.ticker) & (OptionsSnapshot.timestamp == subq.c.max_ts)
         ).all()
-        return [{"ticker": s.ticker, "timestamp": s.timestamp.isoformat(),
+        result = [{"ticker": s.ticker, "timestamp": s.timestamp.isoformat(),
                  "price": s.current_price, "pcr_volume": s.put_call_ratio_volume,
                  "call_iv": s.avg_call_iv, "put_iv": s.avg_put_iv,
                  "iv_skew": s.iv_skew, "sentiment": s.market_sentiment} for s in latest]
+        self._Session.remove()
+        return result
 
     def save_alerts(self, alerts):
         for a in alerts:
@@ -150,15 +158,18 @@ class OptionsDatabase:
                 ticker=a.get("ticker", ""), alert_type=a.get("type", ""),
                 message=a.get("message", ""), severity=a.get("severity", "medium")))
         self.session.commit()
+        self._Session.remove()
 
     def get_recent_alerts(self, hours=24):
         self._refresh()
         cutoff = datetime.utcnow() - timedelta(hours=hours)
         alerts = self.session.query(AlertRecord).filter(
             AlertRecord.timestamp >= cutoff).order_by(AlertRecord.timestamp.desc()).all()
-        return [{"id": a.id, "timestamp": a.timestamp.isoformat(), "ticker": a.ticker,
+        result = [{"id": a.id, "timestamp": a.timestamp.isoformat(), "ticker": a.ticker,
                  "type": a.alert_type, "message": a.message, "severity": a.severity,
                  "acknowledged": a.acknowledged} for a in alerts]
+        self._Session.remove()
+        return result
 
     def save_unusual_activity(self, activities):
         for act in activities:
@@ -170,6 +181,7 @@ class OptionsDatabase:
                 implied_volatility=act.get("implied_volatility", 0),
                 last_price=act.get("last_price", 0)))
         self.session.commit()
+        self._Session.remove()
 
     def get_unusual_history(self, ticker=None, days=7):
         self._refresh()
@@ -178,10 +190,12 @@ class OptionsDatabase:
         if ticker:
             q = q.filter(UnusualActivity.ticker == ticker)
         acts = q.order_by(UnusualActivity.timestamp.desc()).limit(50).all()
-        return [{"timestamp": a.timestamp.isoformat(), "ticker": a.ticker,
+        result = [{"timestamp": a.timestamp.isoformat(), "ticker": a.ticker,
                  "type": a.option_type, "strike": a.strike, "expiration": a.expiration,
                  "volume": a.volume, "oi": a.open_interest,
                  "vol_oi_ratio": a.vol_oi_ratio, "iv": a.implied_volatility} for a in acts]
+        self._Session.remove()
+        return result
 
     def save_agent_log(self, analysis, claude_response, exec_time):
         self.cycle_count += 1
@@ -193,6 +207,7 @@ class OptionsDatabase:
             market_sentiment=analysis.get("market_sentiment", ""),
             claude_analysis=claude_response[:5000], execution_time_seconds=exec_time))
         self.session.commit()
+        self._Session.remove()
 
     def save_backtest_signal(self, signal):
         r = BacktestSignal(
@@ -201,7 +216,9 @@ class OptionsDatabase:
             details=json.dumps(signal.get("details", {})))
         self.session.add(r)
         self.session.commit()
-        return r.id
+        rid = r.id
+        self._Session.remove()
+        return rid
 
     def update_backtest_outcome(self, signal_id, price_1d=None, price_3d=None, price_7d=None, outcome=None):
         s = self.session.query(BacktestSignal).filter_by(id=signal_id).first()
@@ -211,6 +228,7 @@ class OptionsDatabase:
             if price_7d is not None: s.price_after_7d = price_7d
             if outcome: s.outcome = outcome
             self.session.commit()
+        self._Session.remove()
 
     def get_backtest_signals(self, ticker=None, days=30):
         self._refresh()
@@ -219,16 +237,18 @@ class OptionsDatabase:
         if ticker:
             q = q.filter(BacktestSignal.ticker == ticker)
         sigs = q.order_by(BacktestSignal.timestamp.desc()).all()
-        return [{"id": s.id, "timestamp": s.timestamp.isoformat(), "ticker": s.ticker,
+        result_list = [{"id": s.id, "timestamp": s.timestamp.isoformat(), "ticker": s.ticker,
                  "signal_type": s.signal_type, "direction": s.direction,
                  "price_at_signal": s.price_at_signal, "price_after_1d": s.price_after_1d,
                  "price_after_3d": s.price_after_3d, "price_after_7d": s.price_after_7d,
                  "outcome": s.outcome,
                  "details": json.loads(s.details) if s.details else {}} for s in sigs]
+        self._Session.remove()
+        return result_list
 
     def get_database_stats(self):
         self._refresh()
-        return {
+        result = {
             "total_snapshots": self.session.query(OptionsSnapshot).count(),
             "total_alerts": self.session.query(AlertRecord).count(),
             "total_unusual": self.session.query(UnusualActivity).count(),
@@ -236,6 +256,8 @@ class OptionsDatabase:
             "total_signals": self.session.query(BacktestSignal).count(),
             "unique_tickers": self.session.query(func.count(func.distinct(OptionsSnapshot.ticker))).scalar() or 0,
         }
+        self._Session.remove()
+        return result
 
     def close(self):
-        self.session.close()
+        self._Session.remove()

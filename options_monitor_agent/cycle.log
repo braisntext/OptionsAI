@@ -1,11 +1,13 @@
-Phase 1: Scraping 6 tickers...
+Phase 1: Scraping 8 tickers (parallel)...
   ACX.MC: MEFF cache (355 calls)
   ENG.MC: MEFF cache (469 calls)
-  KVUE: success (48 calls)
   NTGY.MC: MEFF cache (260 calls)
-  O: success (13 calls)
   VIS.MC: MEFF cache (282 calls)
+  O: success (14 calls)
+  KVUE: success (50 calls)
+  AAPL: success (180 calls)
+  SAN.MC: success (51 calls)
 Phase 2: Computing Greeks...
 Phase 3: Analyzing...
 Phase 4: Saving to DB...
-Done in 2.1s
+Done in 68.5s

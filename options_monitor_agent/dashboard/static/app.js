@@ -7,35 +7,71 @@ async function fetchJSON(u){try{const r=await fetch(u);if(r.redirected||r.status
 
 async function refreshData(){
     document.getElementById("last-update").textContent="Last: "+new Date().toLocaleTimeString();
-    const[lat,alt,unu,sta,bt]=await Promise.all([fetchJSON("/api/latest"),fetchJSON("/api/alerts?hours=24"),fetchJSON("/api/unusual?days=7"),fetchJSON("/api/stats"),fetchJSON("/api/backtest")]);
-    if(lat.status==="ok"){updateTable(lat.data);updateCharts(lat.data);updateSelect(lat.data)}
+    const[lat,alt,unu,sta,bt,wl,qq]=await Promise.all([fetchJSON("/api/latest"),fetchJSON("/api/alerts?hours=24"),fetchJSON("/api/unusual?days=7"),fetchJSON("/api/stats"),fetchJSON("/api/backtest"),fetchJSON("/api/watchlist"),fetchJSON("/api/watchlist-quotes")]);
+    const watchlist=wl.status==="ok"?wl.watchlist:[];
+    const quotes=qq.status==="ok"?qq.quotes:{};
+    if(lat.status==="ok"){updateTable(lat.data,watchlist,quotes);updateCharts(lat.data,watchlist);updateSelect(lat.data,watchlist)}
+    if(typeof populateSpikeTickerSelect==="function")populateSpikeTickerSelect(watchlist);
     if(alt.status==="ok")updateAlerts(alt.data);
     if(unu.status==="ok")updateUnusual(unu.data);
     if(sta.status==="ok")document.getElementById("snapshots-count").textContent=(sta.data.total_snapshots||0).toLocaleString();
     if(bt.status==="ok")updateBacktest(bt.data);
+    // Load usage limits
+    fetchJSON("/api/usage").then(u=>{
+        if(u.status==="ok"){
+            const b=document.getElementById("usage-badge");
+            if(b){
+                if(u.superuser){b.textContent="⭐ Superuser";b.style.color="#f59e0b";}
+                else{b.textContent=`Queries: ${u.limits.ask_agent.remaining}/${u.limits.ask_agent.max} | Tickers: ${u.limits.watchlist.used}/${u.limits.watchlist.max}`;}
+            }
+        }
+    });
 }
 
-function updateTable(data){
+function updateTable(data,watchlist,quotes){
     const tb=document.getElementById("tickers-body");
-    if(!data||!data.length){tb.innerHTML='<tr><td colspan="8" class="loading">No data. Run a cycle.</td></tr>';return}
-    document.getElementById("tickers-count").textContent=data.length;
-    tb.innerHTML=data.map(d=>{
-        const p=d.pcr_volume||0,pc=p>1.2?"badge-bearish":p<0.8?"badge-bullish":"badge-neutral",pe=p>1.2?"🐻":p<0.8?"🐂":"😐";
-        const sc=d.sentiment?.includes("BEAR")?"badge-bearish":d.sentiment?.includes("BULL")?"badge-bullish":"badge-neutral";
-        return`<tr onclick="selectTicker('${d.ticker}')" style="cursor:pointer"><td><b>${d.ticker}</b></td><td>${(d.price||0).toLocaleString("en-US",{minimumFractionDigits:2})}</td><td><span class="badge ${pc}">${p.toFixed(2)} ${pe}</span></td><td>${(d.call_iv||0).toFixed(1)}%</td><td>${(d.put_iv||0).toFixed(1)}%</td><td>${(d.iv_skew||0).toFixed(1)}%</td><td><span class="badge ${sc}">${d.sentiment||"-"}</span></td><td class="alert-time">${d.timestamp?new Date(d.timestamp).toLocaleString():"-"}</td></tr>`
+    const dataMap={};
+    if(data)data.forEach(d=>{dataMap[d.ticker]=d});
+    quotes=quotes||{};
+    const allTickers=(watchlist&&watchlist.length)?watchlist:(data?data.map(d=>d.ticker):[]);
+    if(!allTickers.length){tb.innerHTML='<tr><td colspan="9" class="loading">No data. Add tickers and run a cycle.</td></tr>';return}
+    document.getElementById("tickers-count").textContent=allTickers.length;
+    tb.innerHTML=allTickers.map(ticker=>{
+        const d=dataMap[ticker];
+        const delBtn=`<button onclick="event.stopPropagation();removeTicker('${ticker}')" title="Remove ${ticker}" class="btn-delete-ticker">✖</button>`;
+        if(d){
+            const p=d.pcr_volume||0,pc=p>1.2?"badge-bearish":p<0.8?"badge-bullish":"badge-neutral",pe=p>1.2?"🐻":p<0.8?"🐂":"😐";
+            const sc=d.sentiment?.includes("BEAR")?"badge-bearish":d.sentiment?.includes("BULL")?"badge-bullish":"badge-neutral";
+            const price=d.price||quotes[ticker]||0;
+            return`<tr onclick="selectTicker('${d.ticker}')" style="cursor:pointer"><td><b>${d.ticker}</b></td><td>${price.toLocaleString("en-US",{minimumFractionDigits:2})}</td><td><span class="badge ${pc}">${p.toFixed(2)} ${pe}</span></td><td>${(d.call_iv||0).toFixed(1)}%</td><td>${(d.put_iv||0).toFixed(1)}%</td><td>${(d.iv_skew||0).toFixed(1)}%</td><td><span class="badge ${sc}">${d.sentiment||"-"}</span></td><td class="alert-time">${d.timestamp?new Date(d.timestamp).toLocaleString():"-"}</td><td>${delBtn}</td></tr>`;
+        }
+        const qp=quotes[ticker];
+        const priceCell=qp?qp.toLocaleString("en-US",{minimumFractionDigits:2}):'<span style="color:var(--text-secondary)">-</span>';
+        return`<tr onclick="selectTicker('${ticker}')" style="cursor:pointer"><td><b>${ticker}</b></td><td>${priceCell}</td><td colspan="5" style="color:var(--text-secondary);font-style:italic">Pending — run cycle for full data</td><td class="alert-time">-</td><td>${delBtn}</td></tr>`;
     }).join("")
 }
 
-function updateCharts(data){
-    if(!data||!data.length)return;
-    const t=data.map(d=>d.ticker),ci=data.map(d=>d.call_iv||0),pi=data.map(d=>d.put_iv||0),pc=data.map(d=>d.pcr_volume||0);
+function updateCharts(data,watchlist){
+    const dataMap={};
+    if(data)data.forEach(d=>{dataMap[d.ticker]=d});
+    const allTickers=(watchlist&&watchlist.length)?watchlist:(data?data.map(d=>d.ticker):[]);
+    if(!allTickers.length)return;
+    const t=[],ci=[],pi=[],pc=[];
+    allTickers.forEach(ticker=>{
+        const d=dataMap[ticker];
+        t.push(ticker);
+        ci.push(d?d.call_iv||0:0);
+        pi.push(d?d.put_iv||0:0);
+        pc.push(d?d.pcr_volume||0:0);
+    });
     const ctx1=document.getElementById("iv-chart").getContext("2d");
     if(ivChart)ivChart.destroy();
-    ivChart=new Chart(ctx1,{type:"bar",data:{labels:t,datasets:[{label:"Call IV%",data:ci,backgroundColor:"rgba(16,185,129,0.7)",borderRadius:6},{label:"Put IV%",data:pi,backgroundColor:"rgba(239,68,68,0.7)",borderRadius:6}]},options:{responsive:true,plugins:{legend:{labels:{color:"#94a3b8"}}},scales:{x:{ticks:{color:"#94a3b8"},grid:{color:"rgba(45,55,72,0.5)"}},y:{ticks:{color:"#94a3b8"},grid:{color:"rgba(45,55,72,0.5)"}}}}});
+    ivChart=new Chart(ctx1,{type:"bar",data:{labels:t,datasets:[{label:"Call IV%",data:ci,backgroundColor:"rgba(16,185,129,0.7)",borderRadius:6},{label:"Put IV%",data:pi,backgroundColor:"rgba(239,68,68,0.7)",borderRadius:6}]},options:{responsive:true,maintainAspectRatio:true,aspectRatio:2.5,plugins:{legend:{labels:{color:"#94a3b8"}}},scales:{x:{ticks:{color:"#94a3b8",maxRotation:45,minRotation:0},grid:{color:"rgba(45,55,72,0.5)"}},y:{ticks:{color:"#94a3b8"},grid:{color:"rgba(45,55,72,0.5)"}}}}});
     const ctx2=document.getElementById("pcr-chart").getContext("2d");
     if(pcrChart)pcrChart.destroy();
-    pcrChart=new Chart(ctx2,{type:"bar",data:{labels:t,datasets:[{label:"P/C Ratio",data:pc,backgroundColor:pc.map(p=>p>1.2?"rgba(239,68,68,0.7)":p<0.8?"rgba(16,185,129,0.7)":"rgba(245,158,11,0.7)"),borderRadius:6}]},options:{responsive:true,plugins:{legend:{labels:{color:"#94a3b8"}}},scales:{x:{ticks:{color:"#94a3b8"},grid:{color:"rgba(45,55,72,0.5)"}},y:{ticks:{color:"#94a3b8"},grid:{color:"rgba(45,55,72,0.5)"}}}}});
-    const avg=pc.reduce((a,b)=>a+b,0)/pc.length;
+    pcrChart=new Chart(ctx2,{type:"bar",data:{labels:t,datasets:[{label:"P/C Ratio",data:pc,backgroundColor:pc.map(p=>p>1.2?"rgba(239,68,68,0.7)":p<0.8?"rgba(16,185,129,0.7)":"rgba(245,158,11,0.7)"),borderRadius:6}]},options:{responsive:true,maintainAspectRatio:true,aspectRatio:2.5,plugins:{legend:{labels:{color:"#94a3b8"}}},scales:{x:{ticks:{color:"#94a3b8",maxRotation:45,minRotation:0},grid:{color:"rgba(45,55,72,0.5)"}},y:{ticks:{color:"#94a3b8"},grid:{color:"rgba(45,55,72,0.5)"}}}}});
+    const validPc=pc.filter(p=>p>0);
+    const avg=validPc.length?validPc.reduce((a,b)=>a+b,0)/validPc.length:0;
     const se=document.getElementById("sentiment-value"),pe=document.getElementById("pcr-value");
     pe.textContent=avg.toFixed(3);
     if(avg>1.2){se.textContent="🐻 BEARISH";se.style.color="#ef4444"}else if(avg<0.8){se.textContent="🐂 BULLISH";se.style.color="#10b981"}else{se.textContent="😐 NEUTRAL";se.style.color="#f59e0b"}
@@ -64,17 +100,32 @@ function updateBacktest(sigs){
     h+="</tbody></table></div>";c.innerHTML=h
 }
 
-function updateSelect(data){const s=document.getElementById("ticker-select"),v=s.value;s.innerHTML='<option value="">Select...</option>';data.forEach(d=>{const o=document.createElement("option");o.value=d.ticker;o.textContent=d.ticker;if(d.ticker===v)o.selected=true;s.appendChild(o)})}
+function updateSelect(data,watchlist){
+    const s=document.getElementById("ticker-select"),v=s.value;
+    s.innerHTML='<option value="">Select...</option>';
+    const allTickers=(watchlist&&watchlist.length)?watchlist:(data?data.map(d=>d.ticker):[]);
+    allTickers.forEach(t=>{const o=document.createElement("option");o.value=t;o.textContent=t;if(t===v)o.selected=true;s.appendChild(o)})
+}
 
-function selectTicker(t){document.getElementById("ticker-select").value=t;loadTickerHistory()}
+function selectTicker(t){
+    document.getElementById("ticker-select").value=t;
+    loadTickerHistory();
+    // Scroll to the history chart so user sees it
+    const hc=document.getElementById("history-chart");
+    if(hc)hc.scrollIntoView({behavior:"smooth",block:"center"});
+    if(typeof showOptionsChain==="function")showOptionsChain(t);
+}
 
 async function loadTickerHistory(){
     const t=document.getElementById("ticker-select").value;if(!t)return;
     const r=await fetchJSON(`/api/history/${t}?days=30`);if(r.status!=="ok"||!r.data.length)return;
     const d=r.data,l=d.map(x=>new Date(x.timestamp).toLocaleString()),p=d.map(x=>x.price),ci=d.map(x=>x.call_iv),pi=d.map(x=>x.put_iv);
+    // Calculate y-axis ranges with padding for flat data
+    const pMin=Math.min(...p),pMax=Math.max(...p),pPad=pMax===pMin?Math.max(pMax*0.05,0.5):0;
+    const ivAll=ci.concat(pi).filter(v=>v>0),ivMin=ivAll.length?Math.min(...ivAll):0,ivMax=ivAll.length?Math.max(...ivAll):100,ivPad=ivMax===ivMin?Math.max(ivMax*0.1,1):0;
     const ctx=document.getElementById("history-chart").getContext("2d");
     if(historyChart)historyChart.destroy();
-    historyChart=new Chart(ctx,{type:"line",data:{labels:l,datasets:[{label:t+" Price",data:p,borderColor:"#06b6d4",yAxisID:"y1",tension:.3,fill:false},{label:"Call IV%",data:ci,borderColor:"#10b981",borderDash:[5,5],yAxisID:"y2",tension:.3},{label:"Put IV%",data:pi,borderColor:"#ef4444",borderDash:[5,5],yAxisID:"y2",tension:.3}]},options:{responsive:true,interaction:{intersect:false,mode:"index"},plugins:{legend:{labels:{color:"#94a3b8"}}},scales:{x:{ticks:{color:"#94a3b8",maxTicksLimit:12},grid:{color:"rgba(45,55,72,0.3)"}},y1:{position:"left",ticks:{color:"#06b6d4"},grid:{color:"rgba(45,55,72,0.3)"},title:{display:true,text:"Price ($)",color:"#06b6d4"}},y2:{position:"right",ticks:{color:"#10b981"},grid:{display:false},title:{display:true,text:"IV (%)",color:"#10b981"}}}}})
+    historyChart=new Chart(ctx,{type:"line",data:{labels:l,datasets:[{label:t+" Price",data:p,borderColor:"#06b6d4",yAxisID:"y1",tension:.3,fill:false,pointRadius:3,pointBackgroundColor:"#06b6d4"},{label:"Call IV%",data:ci,borderColor:"#10b981",borderDash:[5,5],yAxisID:"y2",tension:.3,pointRadius:3,pointBackgroundColor:"#10b981"},{label:"Put IV%",data:pi,borderColor:"#ef4444",borderDash:[5,5],yAxisID:"y2",tension:.3,pointRadius:3,pointBackgroundColor:"#ef4444"}]},options:{responsive:true,interaction:{intersect:false,mode:"index"},plugins:{legend:{labels:{color:"#94a3b8"}},tooltip:{enabled:true}},scales:{x:{ticks:{color:"#94a3b8",maxTicksLimit:12},grid:{color:"rgba(45,55,72,0.3)"}},y1:{position:"left",min:pMin-pPad,max:pMax+pPad,ticks:{color:"#06b6d4"},grid:{color:"rgba(45,55,72,0.3)"},title:{display:true,text:"Price ($)",color:"#06b6d4"}},y2:{position:"right",min:Math.max(0,ivMin-ivPad),max:ivMax+ivPad,ticks:{color:"#10b981"},grid:{display:false},title:{display:true,text:"IV (%)",color:"#10b981"}}}}})
 }
 async function runCycle(){
     const b=document.getElementById("btn-run-cycle");
@@ -115,4 +166,77 @@ function showNotif(msg,type="info"){
     n.style.cssText=`position:fixed;top:20px;right:20px;padding:14px 24px;background:${c};color:white;border-radius:10px;font-weight:600;z-index:10000;box-shadow:0 4px 12px rgba(0,0,0,0.3)`;
     n.textContent=msg;document.body.appendChild(n);
     setTimeout(()=>{n.style.opacity="0";n.style.transition="opacity 0.3s";setTimeout(()=>n.remove(),300)},3000)
+}
+
+// ── Ticker autocomplete search ─────────────────────────────────────────────
+let _searchTimeout=null;
+function onTickerInput(e){
+    const q=e.target.value.trim();
+    const dd=document.getElementById("ticker-ac-dropdown");
+    if(q.length<1){dd.style.display="none";return}
+    clearTimeout(_searchTimeout);
+    _searchTimeout=setTimeout(async()=>{
+        try{
+            const r=await fetchJSON(`/api/search-ticker?q=${encodeURIComponent(q)}`);
+            if(r.status==="ok"&&r.results&&r.results.length){
+                dd.innerHTML=r.results.map(s=>
+                    `<div class="ac-item" onmousedown="pickTicker('${s.symbol}')">`+
+                    `<span class="ac-symbol">${s.symbol}</span>`+
+                    `<span class="ac-name">${(s.name||"").substring(0,40)}</span>`+
+                    `<span class="ac-price">$${s.price}</span></div>`
+                ).join("");
+                dd.style.display="block";
+            }else{
+                dd.innerHTML='<div class="ac-item ac-empty">No results for "'+q.replace(/</g,"&lt;")+'"</div>';
+                dd.style.display="block";
+            }
+        }catch(ex){dd.style.display="none"}
+    },400);
+}
+function pickTicker(symbol){
+    document.getElementById("add-ticker-input").value=symbol;
+    document.getElementById("ticker-ac-dropdown").style.display="none";
+    addTicker();
+}
+function hideAcDropdown(){setTimeout(()=>{document.getElementById("ticker-ac-dropdown").style.display="none"},200)}
+
+async function addTicker(){
+    const inp=document.getElementById("add-ticker-input");
+    const ticker=inp.value.trim().toUpperCase();
+    if(!ticker){showNotif("Enter a ticker symbol","error");return}
+    inp.disabled=true;
+    try{
+        const r=await fetch("/api/watchlist",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ticker})});
+        const d=await r.json();
+        if(d.status==="ok"){
+            inp.value="";
+            const info=d.ticker_info||{};
+            if(info.valid){
+                showNotif(`${ticker} added ($${info.price})`,"success");
+            }else if(d.message==="Already in watchlist"){
+                showNotif(`${ticker} already in watchlist`,"info");
+            }else{
+                showNotif(`${ticker} added — run a cycle for full data`,"success");
+            }
+            refreshData();
+        }else{
+            showNotif(d.message||"Error adding ticker","error");
+        }
+    }catch(e){showNotif("Connection error","error")}
+    inp.disabled=false;
+    inp.focus();
+}
+
+async function removeTicker(ticker){
+    if(!confirm(`Remove ${ticker} from watchlist?`))return;
+    try{
+        const r=await fetch(`/api/watchlist/${encodeURIComponent(ticker)}`,{method:"DELETE"});
+        const d=await r.json();
+        if(d.status==="ok"){
+            showNotif(`${ticker} removed`,"success");
+            refreshData();
+        }else{
+            showNotif(d.message||"Error removing ticker","error");
+        }
+    }catch(e){showNotif("Connection error","error")}
 }

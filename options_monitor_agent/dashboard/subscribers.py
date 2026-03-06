@@ -6,6 +6,13 @@ DB_PATH = os.path.join(os.path.dirname(__file__), 'subscribers.db')
 
 SUPERUSERS = {'braisnatural@gmail.com', 'braisontour@gmail.com'}
 
+# ── Usage limits for normal (paid) users ─────────────────────────────────────
+LIMITS = {
+    'watchlist_max':  25,   # max tickers in watchlist
+    'alerts_max':     20,   # max spike alert configs
+    'ask_agent_max':   5,   # max agent queries per day
+}
+
 def _conn():
     c = sqlite3.connect(DB_PATH)
     c.row_factory = sqlite3.Row
@@ -112,5 +119,70 @@ def list_subscribers():
 def list_payments():
     with _conn() as c:
         return c.execute("SELECT * FROM payments ORDER BY paid_at DESC").fetchall()
+
+
+# ── Superuser check ──────────────────────────────────────────────────────────
+def is_superuser(email: str) -> bool:
+    if not email:
+        return False
+    return email.strip().lower() in {e.lower() for e in SUPERUSERS}
+
+
+# ── Daily usage tracking ─────────────────────────────────────────────────────
+def _init_usage_table():
+    with _conn() as c:
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS daily_usage (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT NOT NULL COLLATE NOCASE,
+                usage_type TEXT NOT NULL,
+                usage_date TEXT NOT NULL,
+                count INTEGER NOT NULL DEFAULT 0,
+                UNIQUE(email, usage_type, usage_date)
+            )
+        ''')
+        c.commit()
+
+_init_usage_table()
+
+
+def get_daily_usage(email: str, usage_type: str) -> int:
+    """Get usage count for today."""
+    today = datetime.utcnow().strftime('%Y-%m-%d')
+    with _conn() as c:
+        row = c.execute(
+            "SELECT count FROM daily_usage WHERE email = ? AND usage_type = ? AND usage_date = ?",
+            (email.lower(), usage_type, today)
+        ).fetchone()
+    return row['count'] if row else 0
+
+
+def increment_usage(email: str, usage_type: str) -> int:
+    """Increment usage count for today. Returns new count."""
+    today = datetime.utcnow().strftime('%Y-%m-%d')
+    email = email.strip().lower()
+    with _conn() as c:
+        c.execute('''
+            INSERT INTO daily_usage (email, usage_type, usage_date, count)
+            VALUES (?, ?, ?, 1)
+            ON CONFLICT(email, usage_type, usage_date)
+            DO UPDATE SET count = count + 1
+        ''', (email, usage_type, today))
+        c.commit()
+        row = c.execute(
+            "SELECT count FROM daily_usage WHERE email = ? AND usage_type = ? AND usage_date = ?",
+            (email, usage_type, today)
+        ).fetchone()
+    return row['count'] if row else 1
+
+
+def check_limit(email: str, usage_type: str) -> tuple:
+    """Check if user is within limits. Returns (allowed: bool, remaining: int, limit: int)."""
+    if is_superuser(email):
+        return True, 999, 999
+    limit = LIMITS.get(usage_type, 999)
+    used = get_daily_usage(email, usage_type)
+    return used < limit, limit - used, limit
+
 
 init_db()

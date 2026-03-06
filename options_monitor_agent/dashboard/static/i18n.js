@@ -158,6 +158,12 @@ const TRANSLATIONS = {
 
 // Get current language from localStorage or browser default
 function getCurrentLang() {
+  // Migrate old 'language' key to 'lang' for backward compat
+  const oldKey = localStorage.getItem('language');
+  if (oldKey) {
+    localStorage.setItem('lang', oldKey);
+    localStorage.removeItem('language');
+  }
   const saved = localStorage.getItem('lang');
   if (saved && (saved === 'en' || saved === 'es')) return saved;
   
@@ -199,15 +205,10 @@ function applyTranslations() {
   });
 }
 
-// Initialize i18n on page load
-document.addEventListener('DOMContentLoaded', () => {
-  window.currentLang = getCurrentLang();
-  setLanguage(window.currentLang);
-  
-  // Add click listeners to flag buttons
-  document.querySelectorAll('.lang-flag').forEach(flag => {
-    flag.addEventListener('click', () => {
-      setLanguage(flag.dataset.lang);
-    });
-  });
-});
+// Initialize language on page load
+window.currentLang = getCurrentLang();
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => setLanguage(getCurrentLang()));
+} else {
+  setLanguage(getCurrentLang());
+}

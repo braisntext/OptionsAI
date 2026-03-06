@@ -63,6 +63,14 @@ def analyze_options_data(options_data):
         call_oi = sum(_n(c.get("openInterest", 0)) for c in calls)
         put_oi = sum(_n(p.get("openInterest", 0)) for p in puts)
 
+        # For synthetic options (volume=0), use the data's own put_call_ratio
+        is_synthetic = data.get("source") == "synthetic_black_scholes" or (call_volume == 0 and put_volume == 0)
+        if is_synthetic:
+            # Use count-based ratio from the original data
+            data_pcr = _n(data.get("put_call_ratio", 1.0))
+            call_volume = max(len(calls), 1)
+            put_volume = round(call_volume * data_pcr)
+
         total_put_volume += put_volume
         total_call_volume += call_volume
 
@@ -74,8 +82,10 @@ def analyze_options_data(options_data):
         iv_skew = avg_put_iv - avg_call_iv
 
         greeks_agg = _aggregate_greeks(calls, puts)
-        unusual = _detect_unusual_activity(calls + puts, ticker)
-        analysis["unusual_activity"].extend(unusual)
+        # Only detect unusual activity from real market data, not synthetic
+        if not is_synthetic:
+            unusual = _detect_unusual_activity(calls + puts, ticker)
+            analysis["unusual_activity"].extend(unusual)
 
         ticker_summary = {
             "current_price": data.get("current_price", 0),

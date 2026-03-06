@@ -49,6 +49,17 @@ tr:hover { background: var(--bg-card-hover); }
 .badge-put { background: rgba(239,68,68,0.2); color: var(--accent-red); }
 .badge-bullish { background: rgba(16,185,129,0.2); color: var(--accent-green); }
 .badge-bearish { background: rgba(239,68,68,0.2); color: var(--accent-red); }
+.btn-delete-ticker { background:none;border:none;cursor:pointer;color:var(--accent-red);font-size:1.1rem;padding:4px 8px;opacity:0.6;transition:opacity 0.2s,transform 0.2s;line-height:1; }
+.btn-delete-ticker:hover { opacity:1;transform:scale(1.2); }
+.ac-dropdown { position:absolute;top:100%;left:0;right:0;background:var(--bg-card);border:1px solid var(--border);border-radius:0 0 8px 8px;max-height:220px;overflow-y:auto;z-index:1000;box-shadow:0 8px 24px rgba(0,0,0,0.4); }
+.ac-item { padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);transition:background 0.15s; }
+.ac-item:hover { background:var(--bg-card-hover); }
+.ac-item:last-child { border-bottom:none; }
+.ac-symbol { font-weight:700;color:var(--accent-cyan);min-width:70px; }
+.ac-name { flex:1;color:var(--text-secondary);font-size:0.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.ac-price { color:var(--accent-green);font-weight:600;font-size:0.85rem; }
+.ac-empty { color:var(--text-secondary);font-style:italic;cursor:default; }
+.ac-empty:hover { background:transparent; }
 .footer { text-align: center; color: var(--text-secondary); font-size: 0.8rem; padding: 20px 0; }
 .chat-container { display: flex; flex-direction: column; gap: 12px; }
 .chat-input-row { display: flex; gap: 8px; }
