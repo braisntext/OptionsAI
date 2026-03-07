@@ -1,10 +1,9 @@
-Scraping 5 tickers: ['ACX.MC', 'ENG.MC', 'NTGY.MC', 'VIS.MC', 'SAN.MC']
-  ACX.MC: MEFF cache
-  ENG.MC: MEFF cache
-  NTGY.MC: MEFF cache
-  VIS.MC: MEFF cache
-  SAN.MC: success
+Scraping 4 tickers: ['KVUE', 'O', 'AAPL', 'NVDA']
+  KVUE: success
+  O: success
+  AAPL: success
+  NVDA: success
 Computing Greeks...
 Analyzing...
 Saving to DB...
-Done in 31.2s
+Done in 3.4s

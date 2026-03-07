@@ -75,8 +75,8 @@ DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{BASE_DIR}/memory/options_m
 # DASHBOARD CONFIG
 # ============================================================
 DASHBOARD_CONFIG = {
-    "host": "127.0.0.1",
-    "port": 5001,
+    "host": "0.0.0.0",
+    "port": int(os.getenv("PORT", 5001)),
     "debug": False,
 }
 
