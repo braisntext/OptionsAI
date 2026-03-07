@@ -7,7 +7,68 @@ async function _loadCsrf(){try{const r=await fetch("/api/csrf-token");const d=aw
 
 function _postHeaders(){return{"Content-Type":"application/json","X-CSRF-Token":_csrfToken}}
 
-document.addEventListener("DOMContentLoaded",()=>{_loadCsrf().then(()=>{refreshData();setInterval(refreshData,60000)})});
+document.addEventListener("DOMContentLoaded",()=>{_loadCsrf().then(()=>{checkMarketAndRefresh();setInterval(refreshData,60000)})});
+
+async function checkMarketAndRefresh(){
+    // Fetch market status and auto-refresh if needed
+    try{
+        const ms=await fetchJSON("/api/market-status");
+        if(ms.status==="ok"&&ms.market){
+            updateMarketBadge(ms.market);
+            // Auto-trigger cycle if market open and data stale
+            if(ms.market.should_refresh){
+                showNotif("Updating data...","info");
+                await fetch("/api/run-cycle",{method:"POST",headers:{"X-CSRF-Token":_csrfToken}});
+                // Poll for completion then refresh
+                let pollCount=0;
+                const pollId=setInterval(async()=>{
+                    pollCount++;
+                    try{
+                        const st=await fetchJSON("/api/cycle-status");
+                        if(st.status==="ok"&&st.cycle&&!st.cycle.running&&st.cycle.completed_at){
+                            clearInterval(pollId);
+                            refreshData();
+                        }
+                    }catch(e){clearInterval(pollId);}
+                    if(pollCount>100){clearInterval(pollId);refreshData();}
+                },3000);
+            }
+        }
+    }catch(e){}
+    refreshData();
+}
+
+function updateMarketBadge(market){
+    let badge=document.getElementById("market-status-badge");
+    if(!badge){
+        badge=document.createElement("span");
+        badge.id="market-status-badge";
+        badge.style.cssText="margin-left:12px;padding:4px 10px;border-radius:6px;font-size:0.8rem;font-weight:600;";
+        const header=document.getElementById("last-update");
+        if(header&&header.parentNode)header.parentNode.insertBefore(badge,header.nextSibling);
+    }
+    if(market.open){
+        let parts=[];
+        if(market.es_open)parts.push("ES");
+        if(market.us_open)parts.push("US");
+        badge.textContent="🟢 "+parts.join("+")+(" Open ("+market.now_cet+" CET)");
+        badge.style.background="rgba(16,185,129,0.15)";badge.style.color="#10b981";
+    }else{
+        badge.textContent="🔴 Markets Closed"+(market.now_cet?" ("+market.now_cet+" CET)":"");
+        badge.style.background="rgba(239,68,68,0.15)";badge.style.color="#ef4444";
+    }
+    // Show last update time
+    if(market.last_update){
+        let lu=document.getElementById("data-freshness");
+        if(!lu){
+            lu=document.createElement("span");
+            lu.id="data-freshness";
+            lu.style.cssText="margin-left:12px;font-size:0.75rem;color:#94a3b8;";
+            badge.parentNode.insertBefore(lu,badge.nextSibling);
+        }
+        lu.textContent="Data: "+new Date(market.last_update).toLocaleString();
+    }
+}
 
 async function fetchJSON(u){try{const r=await fetch(u);if(r.redirected||r.status===401||r.status===403){window.location.href='/login';return{status:'error'};}return await r.json()}catch(e){return{status:"error"}}}
 

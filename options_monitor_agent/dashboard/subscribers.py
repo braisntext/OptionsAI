@@ -158,6 +158,178 @@ def _init_tokens_table():
         ''')
         c.commit()
 
+
+def _init_user_watchlists_table():
+    with _conn() as c:
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS user_watchlists (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT NOT NULL COLLATE NOCASE,
+                ticker TEXT NOT NULL,
+                added_at TEXT NOT NULL,
+                UNIQUE(email, ticker)
+            )
+        ''')
+        c.commit()
+
+
+def _init_user_spike_configs_table():
+    with _conn() as c:
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS user_spike_configs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT NOT NULL COLLATE NOCASE,
+                ticker TEXT NOT NULL,
+                threshold REAL NOT NULL DEFAULT 25,
+                option_type TEXT NOT NULL DEFAULT 'ALL',
+                notify_push INTEGER NOT NULL DEFAULT 1,
+                notify_email INTEGER NOT NULL DEFAULT 0,
+                enabled INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL
+            )
+        ''')
+        c.commit()
+
+
+# ── Per-user watchlists ──────────────────────────────────────────────────────
+def get_user_watchlist(email: str) -> list:
+    """Return list of tickers for this user."""
+    email = email.strip().lower()
+    with _conn() as c:
+        rows = c.execute(
+            "SELECT ticker FROM user_watchlists WHERE email = ? COLLATE NOCASE ORDER BY added_at",
+            (email,)
+        ).fetchall()
+    return [r['ticker'] for r in rows]
+
+
+def add_user_ticker(email: str, ticker: str) -> bool:
+    """Add ticker to user's watchlist. Returns True if added, False if exists."""
+    email = email.strip().lower()
+    try:
+        with _conn() as c:
+            c.execute(
+                "INSERT OR IGNORE INTO user_watchlists (email, ticker, added_at) VALUES (?, ?, ?)",
+                (email, ticker.strip().upper(), datetime.utcnow().isoformat())
+            )
+            c.commit()
+            return c.total_changes > 0
+    except Exception:
+        return False
+
+
+def remove_user_ticker(email: str, ticker: str) -> bool:
+    """Remove ticker from user's watchlist."""
+    email = email.strip().lower()
+    with _conn() as c:
+        c.execute(
+            "DELETE FROM user_watchlists WHERE email = ? COLLATE NOCASE AND ticker = ?",
+            (email, ticker.strip().upper())
+        )
+        c.commit()
+        return c.total_changes > 0
+
+
+def get_all_watched_tickers() -> list:
+    """Return union of all tickers watched by any user."""
+    with _conn() as c:
+        rows = c.execute("SELECT DISTINCT ticker FROM user_watchlists").fetchall()
+    return [r['ticker'] for r in rows]
+
+
+def seed_user_watchlist(email: str, tickers: list):
+    """Seed a user's watchlist from a list (e.g. on first login)."""
+    email = email.strip().lower()
+    now = datetime.utcnow().isoformat()
+    with _conn() as c:
+        for ticker in tickers:
+            c.execute(
+                "INSERT OR IGNORE INTO user_watchlists (email, ticker, added_at) VALUES (?, ?, ?)",
+                (email, ticker.strip().upper(), now)
+            )
+        c.commit()
+
+
+def user_has_watchlist(email: str) -> bool:
+    """Check if user has any tickers in watchlist."""
+    email = email.strip().lower()
+    with _conn() as c:
+        row = c.execute(
+            "SELECT 1 FROM user_watchlists WHERE email = ? COLLATE NOCASE LIMIT 1",
+            (email,)
+        ).fetchone()
+    return row is not None
+
+
+# ── Per-user spike configs ───────────────────────────────────────────────────
+def get_user_spike_configs(email: str) -> list:
+    """Return spike configs for this user."""
+    email = email.strip().lower()
+    with _conn() as c:
+        rows = c.execute(
+            "SELECT * FROM user_spike_configs WHERE email = ? COLLATE NOCASE ORDER BY created_at",
+            (email,)
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def add_user_spike_config(email: str, ticker: str, threshold: float = 25,
+                          option_type: str = 'ALL', notify_push: bool = True,
+                          notify_email: bool = False) -> dict:
+    """Add a spike config for user. Returns the new config dict."""
+    email = email.strip().lower()
+    now = datetime.utcnow().isoformat()
+    with _conn() as c:
+        c.execute(
+            '''INSERT INTO user_spike_configs
+               (email, ticker, threshold, option_type, notify_push, notify_email, enabled, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, 1, ?)''',
+            (email, ticker.strip().upper(), threshold, option_type,
+             int(notify_push), int(notify_email), now)
+        )
+        c.commit()
+        cfg_id = c.execute("SELECT last_insert_rowid()").fetchone()[0]
+    return {
+        'id': cfg_id, 'email': email, 'ticker': ticker.strip().upper(),
+        'threshold': threshold, 'option_type': option_type,
+        'notify_push': bool(notify_push), 'notify_email': bool(notify_email),
+        'enabled': True, 'created_at': now,
+    }
+
+
+def delete_user_spike_config(email: str, cfg_id: int) -> bool:
+    """Delete a spike config (only if owned by user)."""
+    email = email.strip().lower()
+    with _conn() as c:
+        c.execute(
+            "DELETE FROM user_spike_configs WHERE id = ? AND email = ? COLLATE NOCASE",
+            (cfg_id, email)
+        )
+        c.commit()
+        return c.total_changes > 0
+
+
+def toggle_user_spike_config(email: str, cfg_id: int) -> bool:
+    """Toggle enabled status (only if owned by user)."""
+    email = email.strip().lower()
+    with _conn() as c:
+        c.execute(
+            '''UPDATE user_spike_configs SET enabled = CASE WHEN enabled=1 THEN 0 ELSE 1 END
+               WHERE id = ? AND email = ? COLLATE NOCASE''',
+            (cfg_id, email)
+        )
+        c.commit()
+        return c.total_changes > 0
+
+
+def get_all_spike_configs() -> list:
+    """Return all enabled spike configs across all users (for scheduler)."""
+    with _conn() as c:
+        rows = c.execute(
+            "SELECT * FROM user_spike_configs WHERE enabled = 1 ORDER BY created_at"
+        ).fetchall()
+    return [dict(r) for r in rows]
+
 def store_magic_token(token: str, email: str, expires_at):
     """Persist a magic-link token to the database."""
     with _conn() as c:
@@ -181,6 +353,8 @@ def consume_magic_token(token: str):
 
 _init_usage_table()
 _init_tokens_table()
+_init_user_watchlists_table()
+_init_user_spike_configs_table()
 
 
 def get_daily_usage(email: str, usage_type: str) -> int:

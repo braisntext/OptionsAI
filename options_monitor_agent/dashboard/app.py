@@ -21,37 +21,41 @@ if BASE_DIR not in sys.path:
 
 from auth import auth_bp, login_required
 from flask import Flask, render_template, jsonify, request, session, redirect, url_for
-from subscribers import is_superuser, check_limit, increment_usage, LIMITS
+from subscribers import (
+    is_superuser, check_limit, increment_usage, LIMITS,
+    get_user_watchlist, add_user_ticker, remove_user_ticker,
+    get_all_watched_tickers, seed_user_watchlist, user_has_watchlist,
+    get_user_spike_configs, add_user_spike_config,
+    delete_user_spike_config, toggle_user_spike_config,
+)
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 CYCLE_LOG = os.path.join(BASE_DIR, "cycle.log")
-WATCHLIST_FILE = os.path.join(BASE_DIR, "watchlist.json")
-SPIKE_CONFIGS_FILE = os.path.join(BASE_DIR, "spike_configs.json")
 
 
 def _load_watchlist():
-    """Load watchlist from JSON file, seeding from config.py if needed."""
-    if os.path.exists(WATCHLIST_FILE):
-        try:
-            with open(WATCHLIST_FILE) as f:
-                wl = json.load(f)
-            if isinstance(wl, list) and wl:
-                return wl
-        except Exception:
-            pass
-    # Seed from config.py defaults
+    """Load union of all users' watchlists for the scheduler.
+    Falls back to config defaults if no user has a watchlist yet."""
+    tickers = get_all_watched_tickers()
+    if tickers:
+        return tickers
+    # Fallback to config.py defaults (bootstrap)
     try:
         from config import WATCHLIST as _DEFAULT_WL
-        _save_watchlist(_DEFAULT_WL)
         return list(_DEFAULT_WL)
     except ImportError:
         return []
 
 
-def _save_watchlist(wl):
-    """Persist watchlist to JSON."""
-    with open(WATCHLIST_FILE, "w") as f:
-        json.dump(wl, f, indent=2)
+def _load_user_watchlist_or_seed(email: str) -> list:
+    """Return user's watchlist; seed from defaults on first login."""
+    if not user_has_watchlist(email):
+        try:
+            from config import WATCHLIST as _DEFAULT_WL
+            seed_user_watchlist(email, _DEFAULT_WL)
+        except ImportError:
+            pass
+    return get_user_watchlist(email)
 
 
 def _make_error(msg, **kwargs):
@@ -149,6 +153,72 @@ def create_app(database=None, agent=None):
     def api_csrf_token():
         return jsonify({"csrf_token": _generate_csrf_token()})
 
+    # ── Market status helpers ─────────────────────────────────────────────
+    def _is_market_open():
+        """Check if any tracked market (ES/US) is currently open.
+        Returns dict with per-market status and overall open flag."""
+        try:
+            from zoneinfo import ZoneInfo
+            madrid = ZoneInfo("Europe/Madrid")
+        except ImportError:
+            madrid = timezone(timedelta(hours=1))
+        now = datetime.now(madrid)
+        # Weekends
+        if now.weekday() >= 5:
+            return {"open": False, "es_open": False, "us_open": False,
+                    "now_cet": now.strftime("%H:%M"), "weekday": now.strftime("%A")}
+        hhmm = now.hour * 60 + now.minute
+        # Spain: 09:00 – 17:30 CET
+        es_open = 9 * 60 <= hhmm < 17 * 60 + 30
+        # US: 15:30 – 22:00 CET
+        us_open = 15 * 60 + 30 <= hhmm < 22 * 60
+        return {
+            "open": es_open or us_open,
+            "es_open": es_open,
+            "us_open": us_open,
+            "now_cet": now.strftime("%H:%M"),
+            "weekday": now.strftime("%A"),
+        }
+
+    @app.route("/api/market-status")
+    @login_required
+    def api_market_status():
+        """Return market open/closed status and data freshness info."""
+        status = _is_market_open()
+        # Check when data was last updated
+        last_update = None
+        try:
+            db = _require_db()
+            email = session.get('email', '')
+            user_tickers = set(_load_user_watchlist_or_seed(email))
+            if user_tickers:
+                latest = db.get_all_tickers_latest()
+                user_latest = [d for d in latest if d['ticker'] in user_tickers]
+                if user_latest:
+                    timestamps = [d.get('timestamp', '') for d in user_latest if d.get('timestamp')]
+                    if timestamps:
+                        last_update = max(timestamps)
+        except Exception:
+            pass
+        status["last_update"] = last_update
+        # Auto-refresh recommendation: market open and data > 15 min old
+        should_refresh = False
+        if status["open"] and last_update:
+            try:
+                from zoneinfo import ZoneInfo
+                madrid = ZoneInfo("Europe/Madrid")
+            except ImportError:
+                madrid = timezone(timedelta(hours=1))
+            last_dt = datetime.fromisoformat(last_update)
+            if last_dt.tzinfo is None:
+                last_dt = last_dt.replace(tzinfo=timezone.utc)
+            age_minutes = (datetime.now(timezone.utc) - last_dt).total_seconds() / 60
+            should_refresh = age_minutes > 15
+        elif status["open"] and not last_update:
+            should_refresh = True
+        status["should_refresh"] = should_refresh
+        return jsonify({"status": "ok", "market": status})
+
     @app.route("/")
     @login_required
     def index():
@@ -163,7 +233,11 @@ def create_app(database=None, agent=None):
     def api_latest():
         try:
             db = _require_db()
-            return jsonify({"status": "ok", "data": db.get_all_tickers_latest()})
+            email = session.get('email', '')
+            user_tickers = set(_load_user_watchlist_or_seed(email))
+            all_data = db.get_all_tickers_latest()
+            data = [d for d in all_data if d['ticker'] in user_tickers]
+            return jsonify({"status": "ok", "data": data})
         except RuntimeError as exc:
             return _make_error(str(exc)), 503
 
@@ -184,7 +258,11 @@ def create_app(database=None, agent=None):
         hours = request.args.get("hours", 24, type=int)
         try:
             db = _require_db()
-            return jsonify({"status": "ok", "data": db.get_recent_alerts(hours)})
+            email = session.get('email', '')
+            user_tickers = set(_load_user_watchlist_or_seed(email))
+            all_alerts = db.get_recent_alerts(hours)
+            data = [a for a in all_alerts if a.get('ticker') in user_tickers]
+            return jsonify({"status": "ok", "data": data})
         except RuntimeError as exc:
             return _make_error(str(exc)), 503
 
@@ -195,7 +273,11 @@ def create_app(database=None, agent=None):
         days   = request.args.get("days", 7, type=int)
         try:
             db = _require_db()
+            email = session.get('email', '')
+            user_tickers = set(_load_user_watchlist_or_seed(email))
             raw = db.get_unusual_history(ticker, days)
+            # Filter by user's watchlist
+            raw = [r for r in raw if r.get('ticker') in user_tickers]
             # Deduplicate by (ticker, type, strike, expiration) keeping newest
             seen = set()
             deduped = []
@@ -231,8 +313,8 @@ def create_app(database=None, agent=None):
     def api_usage():
         email = session.get('email', '')
         su = is_superuser(email)
-        wl_count = len(_load_watchlist())
-        alert_count = len(_load_spike_configs()) if os.path.exists(SPIKE_CONFIGS_FILE) else 0
+        wl_count = len(get_user_watchlist(email))
+        alert_count = len(get_user_spike_configs(email))
         _, ask_remaining, ask_limit = check_limit(email, 'ask_agent_max')
         return jsonify({
             "status": "ok",
@@ -254,32 +336,21 @@ def create_app(database=None, agent=None):
         except Exception as exc:
             return _make_error(str(exc), data=[]), 500
 
-    # ── Spike alert config persistence ────────────────────────────────────────
-    def _load_spike_configs():
-        if os.path.exists(SPIKE_CONFIGS_FILE):
-            try:
-                with open(SPIKE_CONFIGS_FILE) as f:
-                    return json.load(f)
-            except Exception:
-                pass
-        return []
-
-    def _save_spike_configs(configs):
-        with open(SPIKE_CONFIGS_FILE, "w") as f:
-            json.dump(configs, f, indent=2)
+    # ── Spike alert config persistence (per-user) ──────────────────────────────
 
     @app.route("/api/spike-configs")
     @login_required
     def api_spike_configs_get():
-        return jsonify({"status": "ok", "configs": _load_spike_configs()})
+        email = session.get('email', '')
+        configs = get_user_spike_configs(email)
+        return jsonify({"status": "ok", "configs": configs})
 
     @app.route("/api/spike-configs", methods=["POST"])
     @login_required
     def api_spike_configs_post():
-        # ── Usage limit: alert configs ────────────────────────────────────
         email = session.get('email', '')
         if not is_superuser(email):
-            configs_count = len(_load_spike_configs())
+            configs_count = len(get_user_spike_configs(email))
             if configs_count >= LIMITS['alerts_max']:
                 return jsonify({"status": "error", "message": f"Alert limit reached ({LIMITS['alerts_max']}). Upgrade to superuser for unlimited."}), 403
         data = request.get_json(silent=True) or {}
@@ -292,38 +363,22 @@ def create_app(database=None, agent=None):
             option_type = "ALL"
         notify_push = bool(data.get("notify_push", True))
         notify_email = bool(data.get("notify_email", False))
-        configs = _load_spike_configs()
-        cfg = {
-            "id": int(time.time() * 1000),
-            "ticker": ticker,
-            "threshold": threshold,
-            "option_type": option_type,
-            "notify_push": notify_push,
-            "notify_email": notify_email,
-            "enabled": True,
-            "created": datetime.now().isoformat(),
-        }
-        configs.append(cfg)
-        _save_spike_configs(configs)
+        cfg = add_user_spike_config(email, ticker, threshold, option_type,
+                                    notify_push, notify_email)
         return jsonify({"status": "ok", "config": cfg})
 
     @app.route("/api/spike-configs/<int:cfg_id>", methods=["DELETE"])
     @login_required
     def api_spike_configs_delete(cfg_id):
-        configs = _load_spike_configs()
-        configs = [c for c in configs if c.get("id") != cfg_id]
-        _save_spike_configs(configs)
+        email = session.get('email', '')
+        delete_user_spike_config(email, cfg_id)
         return jsonify({"status": "ok"})
 
     @app.route("/api/spike-configs/<int:cfg_id>/toggle", methods=["POST"])
     @login_required
     def api_spike_configs_toggle(cfg_id):
-        configs = _load_spike_configs()
-        for c in configs:
-            if c.get("id") == cfg_id:
-                c["enabled"] = not c.get("enabled", True)
-                break
-        _save_spike_configs(configs)
+        email = session.get('email', '')
+        toggle_user_spike_config(email, cfg_id)
         return jsonify({"status": "ok"})
 
     @app.route("/api/options-chain")
@@ -453,7 +508,10 @@ def create_app(database=None, agent=None):
     def _local_answer(db, question):
         """Generate a data-driven answer without Claude."""
         q = question.lower()
-        latest = db.get_all_tickers_latest()
+        email = session.get('email', '')
+        user_tickers = set(_load_user_watchlist_or_seed(email))
+        all_latest = db.get_all_tickers_latest()
+        latest = [d for d in all_latest if d['ticker'] in user_tickers]
         if not latest:
             return "No data available yet. Run a cycle first to collect options data."
         # Build summary
@@ -653,7 +711,8 @@ def create_app(database=None, agent=None):
     @login_required
     def api_watchlist_quotes():
         """Return live price for every watchlist ticker via yfinance fast_info."""
-        wl = _load_watchlist()
+        email = session.get('email', '')
+        wl = _load_user_watchlist_or_seed(email)
         quotes = {}
         try:
             for ticker in wl:
@@ -702,7 +761,9 @@ def create_app(database=None, agent=None):
     @app.route("/api/watchlist")
     @login_required
     def api_watchlist_get():
-        return jsonify({"status": "ok", "watchlist": _load_watchlist()})
+        email = session.get('email', '')
+        wl = _load_user_watchlist_or_seed(email)
+        return jsonify({"status": "ok", "watchlist": wl})
 
     @app.route("/api/watchlist", methods=["POST"])
     @login_required
@@ -710,15 +771,15 @@ def create_app(database=None, agent=None):
         ticker = (request.json or {}).get("ticker", "").strip().upper()
         if not ticker or not _validate_ticker(ticker):
             return _make_error("Invalid ticker format"), 400
-        wl = _load_watchlist()
+        email = session.get('email', '')
+        wl = get_user_watchlist(email)
         if ticker in wl:
             return jsonify({"status": "ok", "message": "Already in watchlist", "watchlist": wl})
         # ── Usage limit: watchlist size ───────────────────────────────────
-        email = session.get('email', '')
         if not is_superuser(email) and len(wl) >= LIMITS['watchlist_max']:
             return jsonify({"status": "error", "message": f"Watchlist limit reached ({LIMITS['watchlist_max']} tickers). Upgrade to superuser for unlimited."}), 403
-        wl.append(ticker)
-        _save_watchlist(wl)
+        add_user_ticker(email, ticker)
+        wl = get_user_watchlist(email)
         # Invalidate scheduler ticker classification
         _TICKER_MARKET.clear()
         _classify_tickers()
@@ -738,11 +799,10 @@ def create_app(database=None, agent=None):
     @login_required
     def api_watchlist_remove(ticker):
         ticker = ticker.strip().upper()
-        wl = _load_watchlist()
-        if ticker not in wl:
+        email = session.get('email', '')
+        if not remove_user_ticker(email, ticker):
             return _make_error("Ticker not in watchlist"), 404
-        wl.remove(ticker)
-        _save_watchlist(wl)
+        wl = get_user_watchlist(email)
         _TICKER_MARKET.clear()
         _classify_tickers()
         return jsonify({"status": "ok", "watchlist": wl})
