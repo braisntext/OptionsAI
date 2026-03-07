@@ -1,8 +1,10 @@
 import os
 import secrets
 import sys
+from collections import defaultdict
 from datetime import datetime, timedelta
 from functools import wraps
+from urllib.parse import urlparse
 from flask import (
     Blueprint, redirect, render_template, request,
     session, url_for, flash, jsonify
@@ -22,6 +24,11 @@ auth_bp = Blueprint('auth', __name__)
 
 # ── In-memory token store ────────────────────────────────────────────────────
 _tokens: dict = {}
+
+# ── Rate limiting for login requests (IP -> list of timestamps) ──────────────
+_login_attempts: dict = defaultdict(list)
+LOGIN_RATE_LIMIT = 5          # max requests
+LOGIN_RATE_WINDOW = 300       # per 5 minutes
 
 # ── Allowed emails whitelist (empty = anyone subscribed can log in) ──────────
 ALLOWED_EMAILS_ENV = os.getenv('ALLOWED_EMAILS', '')
@@ -80,6 +87,23 @@ def _send_magic_email(to_email: str, link: str) -> bool:
         print(f'[auth] Failed to send email via Brevo: {e}')
         return False
 
+def _is_safe_redirect(target: str) -> bool:
+    """Only allow relative redirects (no scheme/netloc)."""
+    if not target:
+        return False
+    parsed = urlparse(target)
+    return parsed.scheme == '' and parsed.netloc == '' and target.startswith('/')
+
+def _check_rate_limit(ip: str) -> bool:
+    """Return True if IP is within rate limit."""
+    now = datetime.utcnow()
+    cutoff = now - timedelta(seconds=LOGIN_RATE_WINDOW)
+    _login_attempts[ip] = [t for t in _login_attempts[ip] if t > cutoff]
+    if len(_login_attempts[ip]) >= LOGIN_RATE_LIMIT:
+        return False
+    _login_attempts[ip].append(now)
+    return True
+
 def login_required(f):
     """Decorator: redirect to /login if not authenticated."""
     @wraps(f)
@@ -98,6 +122,9 @@ def login():
 
 @auth_bp.route('/auth/request', methods=['POST'])
 def auth_request():
+    # ── Rate limiting ─────────────────────────────────────────────────────
+    if not _check_rate_limit(request.remote_addr):
+        return jsonify({'ok': False, 'error': 'Too many requests. Please wait a few minutes.'}), 429
     data  = request.get_json(silent=True) or {}
     email = (data.get('email') or '').strip().lower()
     if not email or '@' not in email:
@@ -130,10 +157,15 @@ def auth_verify(token):
         _tokens.pop(token, None)
         return render_template('login.html', error='This link has expired. Please request a new one.')
     _tokens.pop(token, None)
+    # Regenerate session to prevent session fixation
+    session.clear()
     session.permanent = True
     session['authenticated'] = True
     session['email'] = entry['email']
-    next_url = request.args.get('next') or url_for('index')
+    # Validate redirect URL to prevent open redirect
+    next_url = request.args.get('next', '')
+    if not _is_safe_redirect(next_url):
+        next_url = url_for('index')
     return redirect(next_url)
 
 @auth_bp.route('/logout')

@@ -3,6 +3,7 @@ import sys
 import re
 import time
 import json
+import secrets
 import threading
 from datetime import timedelta, datetime, timezone
 
@@ -58,8 +59,8 @@ def _make_error(msg, **kwargs):
 
 
 def _validate_ticker(ticker: str) -> bool:
-    """Validate ticker format: alphanumeric + dots, max 12 chars."""
-    return bool(re.match(r'^[A-Z0-9.]{1,12}$', ticker))
+    """Validate ticker: 1-12 chars, alphanumeric, may contain one dot for exchange suffix."""
+    return bool(re.match(r'^[A-Z0-9]+(?:\.[A-Z]{1,4})?$', ticker)) and len(ticker) <= 12
 
 
 def create_app(database=None, agent=None):
@@ -91,14 +92,24 @@ def create_app(database=None, agent=None):
 
     # ── Flask app ─────────────────────────────────────────────────────────────
     app = Flask(__name__, template_folder="templates", static_folder="static")
-    app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "options-monitor-secret")
-    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
+    app.config["SECRET_KEY"] = os.getenv("SECRET_KEY") or secrets.token_hex(32)
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=12)
     app.config['SESSION_COOKIE_SECURE'] = os.getenv('RENDER', '') != ''  # True on Render (HTTPS)
     app.config['SESSION_COOKIE_HTTPONLY'] = True
-    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Strict'
     app.register_blueprint(auth_bp)
     from billing import billing_bp
     app.register_blueprint(billing_bp)
+
+    # ── Security headers ─────────────────────────────────────────────────────
+    @app.after_request
+    def _set_security_headers(response):
+        response.headers['X-Frame-Options'] = 'DENY'
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+        if os.getenv('RENDER', ''):
+            response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+        return response
 
     # ── Helper: DB guard ──────────────────────────────────────────────────────
     def _require_db():

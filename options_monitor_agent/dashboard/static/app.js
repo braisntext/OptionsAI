@@ -1,5 +1,6 @@
 let ivChart=null,pcrChart=null,historyChart=null;
 const API="";
+function _esc(s){const d=document.createElement('div');d.appendChild(document.createTextNode(s));return d.innerHTML;}
 
 document.addEventListener("DOMContentLoaded",()=>{refreshData();setInterval(refreshData,60000)});
 
@@ -154,7 +155,7 @@ async function runCycle(){
 async function sendChat(){
     const inp=document.getElementById("chat-input"),q=inp.value.trim();if(!q)return;
     const msgs=document.getElementById("chat-messages");
-    msgs.innerHTML+=`<div class="chat-msg user">${q.replace(/</g,"&lt;")}</div>`;inp.value="";
+    msgs.innerHTML+=`<div class="chat-msg user">${_esc(q)}</div>`;inp.value="";
     const lid="l"+Date.now();msgs.innerHTML+=`<div class="chat-msg bot" id="${lid}">🤔 Thinking...</div>`;msgs.scrollTop=msgs.scrollHeight;
     try{const r=await fetch("/api/ask",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({question:q})});const d=await r.json();document.getElementById(lid).textContent=d.status==="ok"?d.response:"❌ Error"}catch(e){document.getElementById(lid).textContent="❌ Connection error"}
     msgs.scrollTop=msgs.scrollHeight
@@ -180,14 +181,14 @@ function onTickerInput(e){
             const r=await fetchJSON(`/api/search-ticker?q=${encodeURIComponent(q)}`);
             if(r.status==="ok"&&r.results&&r.results.length){
                 dd.innerHTML=r.results.map(s=>
-                    `<div class="ac-item" onmousedown="pickTicker('${s.symbol}')">`+
-                    `<span class="ac-symbol">${s.symbol}</span>`+
-                    `<span class="ac-name">${(s.name||"").substring(0,40)}</span>`+
-                    `<span class="ac-price">$${s.price}</span></div>`
+                    `<div class="ac-item" onmousedown="pickTicker('${_esc(s.symbol)}')">`+
+                    `<span class="ac-symbol">${_esc(s.symbol)}</span>`+
+                    `<span class="ac-name">${_esc((s.name||"").substring(0,40))}</span>`+
+                    `<span class="ac-price">$${_esc(String(s.price))}</span></div>`
                 ).join("");
                 dd.style.display="block";
             }else{
-                dd.innerHTML='<div class="ac-item ac-empty">No results for "'+q.replace(/</g,"&lt;")+'"</div>';
+                dd.innerHTML='<div class="ac-item ac-empty">No results for "'+_esc(q)+'"</div>';
                 dd.style.display="block";
             }
         }catch(ex){dd.style.display="none"}

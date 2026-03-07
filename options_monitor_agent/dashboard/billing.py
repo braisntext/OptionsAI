@@ -50,6 +50,8 @@ def stripe_webhook():
         return jsonify({'ok': False}), 503
     # Verify Stripe signature
     sig_header = request.headers.get('Stripe-Signature', '')
+    if not sig_header:
+        return jsonify({'ok': False, 'error': 'Missing signature'}), 401
     try:
         import stripe
         event = stripe.Webhook.construct_event(
@@ -57,7 +59,11 @@ def stripe_webhook():
         )
     except ValueError:
         return jsonify({'ok': False}), 400
-    except Exception:
+    except stripe.error.SignatureVerificationError:
+        print('[stripe] WARNING: Webhook signature verification FAILED')
+        return jsonify({'ok': False}), 401
+    except Exception as exc:
+        print(f'[stripe] Unexpected webhook error: {exc}')
         return jsonify({'ok': False}), 403
     if event['type'] == 'checkout.session.completed':
         obj   = event['data']['object']
@@ -105,6 +111,8 @@ def admin_add():
     notes  = request.form.get('notes', 'manual')
     if email:
         add_subscriber(email, months=months, method='manual', amount=0.0)
+        admin = session.get('email', '')
+        print(f'[audit] ADMIN_ADD: admin={admin} added user={email} months={months} ip={request.remote_addr}')
     return redirect(url_for('billing.admin_subscribers'))
 
 @billing_bp.route('/admin/subscribers/cancel', methods=['POST'])
@@ -113,4 +121,6 @@ def admin_cancel():
     email = request.form.get('email', '').strip().lower()
     if email:
         cancel_subscriber(email)
+        admin = session.get('email', '')
+        print(f'[audit] ADMIN_CANCEL: admin={admin} cancelled user={email} ip={request.remote_addr}')
     return redirect(url_for('billing.admin_subscribers'))

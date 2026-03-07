@@ -138,7 +138,7 @@ SPIKE_MAX_EXPIRY_DAYS = 60
 # 1. Install 'ntfy' app on your iPhone (free on App Store)
 # 2. Choose a unique topic name below (keep it secret!)
 # 3. In the ntfy app: tap '+' and subscribe to this topic
-NTFY_TOPIC = "braisn-options-alerts-7k2m"  # Subscribe to this in ntfy app
+NTFY_TOPIC = os.getenv("NTFY_TOPIC", "braisn-options-alerts-7k2m")
 
 # --- Legacy email notification vars (used by ntfy_notifier) ---
 NOTIFY_EMAIL_TO = os.getenv("NOTIFY_EMAIL_TO", "")
