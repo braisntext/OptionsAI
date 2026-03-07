@@ -84,7 +84,7 @@ def create_app(database=None, agent=None):
     app = Flask(__name__, template_folder="templates", static_folder="static")
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "options-monitor-secret")
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
-    app.config['SESSION_COOKIE_SECURE'] = False  # set True if using HTTPS
+    app.config['SESSION_COOKIE_SECURE'] = os.getenv('RENDER', '') != ''  # True on Render (HTTPS)
     app.config['SESSION_COOKIE_HTTPONLY'] = True
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
     app.register_blueprint(auth_bp)

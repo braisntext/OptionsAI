@@ -16,6 +16,8 @@ AGENT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 if AGENT_DIR not in sys.path:
     sys.path.insert(0, AGENT_DIR)
 
+from memory.database import OptionsDatabase
 from dashboard.app import create_app
 
-app = create_app()
+db = OptionsDatabase()
+app = create_app(database=db)
