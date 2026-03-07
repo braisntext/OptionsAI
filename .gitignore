@@ -4,3 +4,22 @@ __pycache__/
 env/
 *.sqlite3
 .DS_Store
+
+# Backup files
+*.bak
+*_backup*
+_archive/
+
+# Database files (local)
+*.db
+
+# Logs
+*.log
+cycle.log
+
+# Environment
+.env
+.local/
+
+# OS
+Thumbs.db

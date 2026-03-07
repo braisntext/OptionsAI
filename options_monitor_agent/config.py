@@ -101,6 +101,18 @@ BREVO_SENDER_EMAIL = os.getenv("BREVO_SENDER_EMAIL", "")
 BREVO_SENDER_NAME = os.getenv("BREVO_SENDER_NAME", "Options Monitor")
 
 # ============================================================
+# SUPERADMIN EMAILS
+# ============================================================
+SUPERADMIN_EMAILS = [
+    e.strip().lower()
+    for e in os.getenv(
+        "SUPERADMIN_EMAILS",
+        "braisnatural@gmail.com,braisontour@gmail.com"
+    ).split(",")
+    if e.strip()
+]
+
+# ============================================================
 # PATHS
 # ============================================================
 REPORTS_DIR = "reports"

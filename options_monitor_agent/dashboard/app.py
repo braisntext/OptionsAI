@@ -1,10 +1,13 @@
 import os
 import sys
+import re
 import time
 import json
 import threading
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import timedelta, datetime, timezone
+
+import yfinance as yf
+import numpy as np
 
 # ── Path setup (run from any working directory) ───────────────────────────────
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -54,6 +57,11 @@ def _make_error(msg, **kwargs):
     return jsonify({"status": "error", "message": msg, **kwargs})
 
 
+def _validate_ticker(ticker: str) -> bool:
+    """Validate ticker format: alphanumeric + dots, max 12 chars."""
+    return bool(re.match(r'^[A-Z0-9.]{1,12}$', ticker))
+
+
 def create_app(database=None, agent=None):
     """
     Application factory.  Called by the WSGI entry-point with live
@@ -63,6 +71,7 @@ def create_app(database=None, agent=None):
     agent_ref   = [agent]          # mutable cell so closures can update it
 
     # ── Cycle state ───────────────────────────────────────────────────────────
+    cycle_lock = threading.Lock()
     cycle_status = {
         "running":      False,
         "result":       None,
@@ -282,24 +291,22 @@ def create_app(database=None, agent=None):
     @app.route("/api/options-chain")
     @login_required
     def api_options_chain():
-        ticker = request.args.get("ticker")
-        if not ticker:
-            return _make_error("ticker parameter required"), 400
+        ticker = request.args.get("ticker", "").strip().upper()
+        if not ticker or not _validate_ticker(ticker):
+            return _make_error("Invalid ticker format"), 400
         try:
-            import yfinance as yf
             stock       = yf.Ticker(ticker)
             expirations = stock.options
 
             # ---- MEFF cache fallback for Spanish tickers ----
             if not expirations and ticker.endswith(".MC"):
-                import json as _json
                 _cache_file = os.path.join(
                     BASE_DIR, "data", "meff_cache",
                     f"{ticker.replace('.', '_')}.json"
                 )
                 if os.path.exists(_cache_file):
                     with open(_cache_file) as _f:
-                        _cached = _json.load(_f)
+                        _cached = json.load(_f)
                     def _meff_row(opt, opt_type):
                         return {
                             "type":             opt_type,
@@ -436,8 +443,9 @@ def create_app(database=None, agent=None):
     @login_required
     def api_run_cycle():
         """Run a fast in-process refresh cycle in a background thread."""
-        if cycle_status["running"]:
-            return jsonify({"status": "ok", "message": "Cycle already running"})
+        with cycle_lock:
+            if cycle_status["running"]:
+                return jsonify({"status": "ok", "message": "Cycle already running"})
 
         def _fast_cycle():
             """Ultra-fast cycle: batch prices + cached/synthetic options → analyze → save."""
@@ -453,8 +461,6 @@ def create_app(database=None, agent=None):
                 from tools.analysis_tool import analyze_options_data
                 from tools.greeks_calculator import GreeksCalculator
                 from tools.synthetic_options import generate_synthetic_options
-                import yfinance as yf
-                import numpy as np
 
                 greeks = GreeksCalculator()
 
@@ -560,12 +566,13 @@ def create_app(database=None, agent=None):
             except Exception:
                 pass
 
-        cycle_status.update({
-            "running":      True,
-            "result":       None,
-            "error":        None,
-            "completed_at": None,
-        })
+        with cycle_lock:
+            cycle_status.update({
+                "running":      True,
+                "result":       None,
+                "error":        None,
+                "completed_at": None,
+            })
         t = threading.Thread(target=_fast_cycle, daemon=True, name="fast-cycle")
         t.start()
         return jsonify({"status": "ok", "message": "Cycle started"})
@@ -594,7 +601,6 @@ def create_app(database=None, agent=None):
         wl = _load_watchlist()
         quotes = {}
         try:
-            import yfinance as yf
             for ticker in wl:
                 try:
                     fi = yf.Ticker(ticker).fast_info
@@ -614,7 +620,6 @@ def create_app(database=None, agent=None):
         if len(q) < 1:
             return jsonify({"status": "ok", "results": []})
         try:
-            import yfinance as yf
             results = []
             # yfinance doesn't have a search API, so we validate the ticker directly
             # and also try common suffixes
@@ -648,11 +653,7 @@ def create_app(database=None, agent=None):
     @login_required
     def api_watchlist_add():
         ticker = (request.json or {}).get("ticker", "").strip().upper()
-        if not ticker:
-            return _make_error("ticker required"), 400
-        # Basic validation: alphanumeric, dots, max 12 chars
-        import re as _re
-        if not _re.match(r'^[A-Z0-9.]{1,12}$', ticker):
+        if not ticker or not _validate_ticker(ticker):
             return _make_error("Invalid ticker format"), 400
         wl = _load_watchlist()
         if ticker in wl:
@@ -669,7 +670,6 @@ def create_app(database=None, agent=None):
         # Try to get a quick price snapshot for the new ticker
         price_info = {}
         try:
-            import yfinance as yf
             t = yf.Ticker(ticker)
             fi = t.fast_info
             p = getattr(fi, 'last_price', None) or getattr(fi, 'previous_close', None)

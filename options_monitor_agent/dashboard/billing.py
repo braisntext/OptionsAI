@@ -11,7 +11,11 @@ from subscribers import (
 
 billing_bp = Blueprint('billing', __name__)
 
-SUPERADMIN = {'braisnatural@gmail.com', 'braisontour@gmail.com'}
+try:
+    from config import SUPERADMIN_EMAILS
+    SUPERADMIN = set(SUPERADMIN_EMAILS)
+except ImportError:
+    SUPERADMIN = {'braisnatural@gmail.com', 'braisontour@gmail.com'}
 
 def _superadmin_required(f):
     @wraps(f)
@@ -41,17 +45,22 @@ def payment():
 # ──────────────────────────────────────────────────────────
 @billing_bp.route('/webhook/stripe', methods=['POST'])
 def stripe_webhook():
-    # SECURITY: Stripe webhook signature verification required before production.
-    # Without it, anyone can send fake payment events.
     stripe_secret = os.getenv('STRIPE_WEBHOOK_SECRET', '')
     if not stripe_secret:
-        # Webhook not configured — reject all requests
-        return jsonify({'ok': False, 'error': 'Webhook not configured'}), 503
-    # TODO: Implement stripe.Webhook.construct_event(payload, sig_header, stripe_secret)
-    data = request.get_json(silent=True) or {}
-    event_type = data.get('type', '')
-    if event_type == 'checkout.session.completed':
-        obj   = data.get('data', {}).get('object', {})
+        return jsonify({'ok': False}), 503
+    # Verify Stripe signature
+    sig_header = request.headers.get('Stripe-Signature', '')
+    try:
+        import stripe
+        event = stripe.Webhook.construct_event(
+            request.data, sig_header, stripe_secret
+        )
+    except ValueError:
+        return jsonify({'ok': False}), 400
+    except Exception:
+        return jsonify({'ok': False}), 403
+    if event['type'] == 'checkout.session.completed':
+        obj   = event['data']['object']
         email = obj.get('customer_email', '')
         if email:
             add_subscriber(email, months=1, method='stripe',

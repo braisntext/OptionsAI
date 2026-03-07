@@ -4,7 +4,11 @@ from datetime import datetime, timedelta
 
 DB_PATH = os.path.join(os.path.dirname(__file__), 'subscribers.db')
 
-SUPERUSERS = {'braisnatural@gmail.com', 'braisontour@gmail.com'}
+try:
+    from config import SUPERADMIN_EMAILS
+    SUPERUSERS = set(SUPERADMIN_EMAILS)
+except ImportError:
+    SUPERUSERS = {'braisnatural@gmail.com', 'braisontour@gmail.com'}
 
 # ── Usage limits for normal (paid) users ─────────────────────────────────────
 LIMITS = {

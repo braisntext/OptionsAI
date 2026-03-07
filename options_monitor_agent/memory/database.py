@@ -1,8 +1,9 @@
 """
-Base de datos SQLite con SQLAlchemy
+Base de datos con SQLAlchemy (SQLite local / PostgreSQL en Render)
 """
 
-from sqlalchemy import create_engine, Column, Integer, Float, String, DateTime, Text, Boolean, func
+from contextlib import contextmanager
+from sqlalchemy import create_engine, Column, Integer, Float, String, DateTime, Text, Boolean, Index, func
 from sqlalchemy.orm import sessionmaker, scoped_session, declarative_base
 from datetime import datetime, timedelta
 import json
@@ -29,6 +30,10 @@ class OptionsSnapshot(Base):
     iv_skew = Column(Float)
     market_sentiment = Column(String(20))
 
+    __table_args__ = (
+        Index('idx_snapshot_ticker_ts', 'ticker', 'timestamp'),
+    )
+
 
 class AlertRecord(Base):
     __tablename__ = "alerts"
@@ -39,6 +44,10 @@ class AlertRecord(Base):
     message = Column(Text)
     severity = Column(String(10))
     acknowledged = Column(Boolean, default=False)
+
+    __table_args__ = (
+        Index('idx_alert_ts_ticker', 'timestamp', 'ticker'),
+    )
 
 
 class UnusualActivity(Base):
@@ -99,6 +108,19 @@ class OptionsDatabase:
     def session(self):
         """Return a thread-local session."""
         return self._Session()
+
+    @contextmanager
+    def session_scope(self):
+        """Provide a transactional scope for database operations."""
+        session = self._Session()
+        try:
+            yield session
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            self._Session.remove()
 
     def _refresh(self):
         """Remove thread-local session so the next access gets a fresh one."""
