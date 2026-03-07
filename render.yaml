@@ -1,3 +1,9 @@
+databases:
+  - name: optionsai-db
+    plan: free
+    databaseName: optionsai
+    user: optionsai_user
+
 services:
   - type: web
     name: optionsai
@@ -9,3 +15,7 @@ services:
         value: "3.11.11"
       - key: MPLBACKEND
         value: Agg
+      - key: DATABASE_URL
+        fromDatabase:
+          name: optionsai-db
+          property: connectionString

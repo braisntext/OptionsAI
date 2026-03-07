@@ -69,7 +69,11 @@ NOTIFICATION_CONFIG = {
 # DATABASE CONFIG
 # ============================================================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{BASE_DIR}/memory/options_monitor.db")
+_raw_db_url = os.getenv("DATABASE_URL", f"sqlite:///{BASE_DIR}/memory/options_monitor.db")
+# Render provides postgres:// but SQLAlchemy 2.x requires postgresql://
+if _raw_db_url.startswith("postgres://"):
+    _raw_db_url = _raw_db_url.replace("postgres://", "postgresql://", 1)
+DATABASE_URL = _raw_db_url
 
 # ============================================================
 # DASHBOARD CONFIG

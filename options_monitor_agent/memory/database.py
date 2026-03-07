@@ -86,7 +86,11 @@ class BacktestSignal(Base):
 
 class OptionsDatabase:
     def __init__(self):
-        self.engine = create_engine(DATABASE_URL, echo=False)
+        engine_kwargs = {"echo": False}
+        # PostgreSQL: enable pool_pre_ping to recover from dropped connections
+        if DATABASE_URL.startswith("postgresql"):
+            engine_kwargs.update(pool_pre_ping=True, pool_size=5, max_overflow=10)
+        self.engine = create_engine(DATABASE_URL, **engine_kwargs)
         Base.metadata.create_all(self.engine)
         self._Session = scoped_session(sessionmaker(bind=self.engine))
         self.cycle_count = self._get_cycle_count()
