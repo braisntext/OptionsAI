@@ -38,6 +38,7 @@
   </div>
   <h2>Add / Extend Subscriber</h2>
   <form class="add-form" method="POST" action="/admin/subscribers/add">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
     <div><label>Email</label><input type="email" name="email" required placeholder="user@example.com"></div>
     <div><label>Months</label><select name="months"><option value="1">1</option><option value="3">3</option><option value="6">6</option><option value="12">12</option></select></div>
     <div><label>&nbsp;</label><button type="submit" class="btn">&#43; Add</button></div>
@@ -54,6 +55,7 @@
       <td>{{ '⭐' if s['superuser'] else '' }}</td>
       <td>{% if not s['superuser'] %}
         <form method="POST" action="/admin/subscribers/cancel" style="display:inline">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
           <input type="hidden" name="email" value="{{ s['email'] }}">
           <button class="btn-sm-cancel">Cancel</button>
         </form>{% endif %}

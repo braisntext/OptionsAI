@@ -171,38 +171,30 @@
             
 
             if (calls.length === 0) {
-                callsBody.innerHTML = '<tr><td colspan="8">No call options available</td></tr>';
+                callsBody.innerHTML = '<tr><td colspan=\"8\">No call options available</td></tr>';
             } else {
                 calls.forEach(opt => {
-                    const row = `<tr>
-                        <td>${opt.expiration}</td>
-                        <td>$${opt.strike.toFixed(2)}</td>
-                        <td>$${opt.lastPrice.toFixed(2)}</td>
-                        <td>$${opt.bid.toFixed(2)}</td>
-                        <td>$${opt.ask.toFixed(2)}</td>
-                        <td>${opt.volume}</td>
-                        <td>${opt.openInterest}</td>
-                        <td>${opt.impliedVolatility.toFixed(2)}%</td>
-                    </tr>`;
-                    callsBody.innerHTML += row;
+                    const tr = document.createElement('tr');
+                    [opt.expiration, '$'+opt.strike.toFixed(2), '$'+opt.lastPrice.toFixed(2),
+                     '$'+opt.bid.toFixed(2), '$'+opt.ask.toFixed(2), String(opt.volume),
+                     String(opt.openInterest), opt.impliedVolatility.toFixed(2)+'%'].forEach(v => {
+                        const td = document.createElement('td'); td.textContent = v; tr.appendChild(td);
+                    });
+                    callsBody.appendChild(tr);
                 });
             }
 
             if (puts.length === 0) {
-                putsBody.innerHTML = '<tr><td colspan="8">No put options available</td></tr>';
+                putsBody.innerHTML = '<tr><td colspan=\"8\">No put options available</td></tr>';
             } else {
                 puts.forEach(opt => {
-                    const row = `<tr>
-                        <td>${opt.expiration}</td>
-                        <td>$${opt.strike.toFixed(2)}</td>
-                        <td>$${opt.lastPrice.toFixed(2)}</td>
-                        <td>$${opt.bid.toFixed(2)}</td>
-                        <td>$${opt.ask.toFixed(2)}</td>
-                        <td>${opt.volume}</td>
-                        <td>${opt.openInterest}</td>
-                        <td>${opt.impliedVolatility.toFixed(2)}%</td>
-                    </tr>`;
-                    putsBody.innerHTML += row;
+                    const tr = document.createElement('tr');
+                    [opt.expiration, '$'+opt.strike.toFixed(2), '$'+opt.lastPrice.toFixed(2),
+                     '$'+opt.bid.toFixed(2), '$'+opt.ask.toFixed(2), String(opt.volume),
+                     String(opt.openInterest), opt.impliedVolatility.toFixed(2)+'%'].forEach(v => {
+                        const td = document.createElement('td'); td.textContent = v; tr.appendChild(td);
+                    });
+                    putsBody.appendChild(tr);
                 });
             }
         }
@@ -340,7 +332,7 @@ async function addSpikeConfig() {
   try {
     const r = await fetch(API + "/api/spike-configs", {
       method: "POST",
-      headers: {"Content-Type": "application/json"},
+      headers:{"Content-Type":"application/json","X-CSRF-Token":_csrfToken},
       body: JSON.stringify({ticker, threshold, option_type, notify_push, notify_email})
     });
     const d = await r.json();
@@ -356,7 +348,7 @@ async function addSpikeConfig() {
 async function deleteSpikeConfig(id, ticker) {
   if (!confirm(`Delete alert rule for ${ticker}?`)) return;
   try {
-    await fetch(API + `/api/spike-configs/${id}`, {method: "DELETE"});
+    await fetch(API + `/api/spike-configs/${id}`, {method: "DELETE", headers:{"X-CSRF-Token":_csrfToken}});
     loadSpikeConfigs();
     if (typeof showNotif === 'function') showNotif(`Alert for ${ticker} deleted`, "success");
   } catch(e) {}
@@ -364,7 +356,7 @@ async function deleteSpikeConfig(id, ticker) {
 
 async function toggleSpikeConfig(id) {
   try {
-    await fetch(API + `/api/spike-configs/${id}/toggle`, {method: "POST"});
+    await fetch(API + `/api/spike-configs/${id}/toggle`, {method: "POST", headers:{"X-CSRF-Token":_csrfToken}});
     loadSpikeConfigs();
   } catch(e) {}
 }

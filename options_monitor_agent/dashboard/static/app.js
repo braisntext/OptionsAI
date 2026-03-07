@@ -1,8 +1,13 @@
 let ivChart=null,pcrChart=null,historyChart=null;
 const API="";
+let _csrfToken="";
 function _esc(s){const d=document.createElement('div');d.appendChild(document.createTextNode(s));return d.innerHTML;}
 
-document.addEventListener("DOMContentLoaded",()=>{refreshData();setInterval(refreshData,60000)});
+async function _loadCsrf(){try{const r=await fetch("/api/csrf-token");const d=await r.json();_csrfToken=d.csrf_token||""}catch(e){}}
+
+function _postHeaders(){return{"Content-Type":"application/json","X-CSRF-Token":_csrfToken}}
+
+document.addEventListener("DOMContentLoaded",()=>{_loadCsrf().then(()=>{refreshData();setInterval(refreshData,60000)})});
 
 async function fetchJSON(u){try{const r=await fetch(u);if(r.redirected||r.status===401||r.status===403){window.location.href='/login';return{status:'error'};}return await r.json()}catch(e){return{status:"error"}}}
 
@@ -81,14 +86,14 @@ function updateCharts(data,watchlist){
 function updateAlerts(alerts){
     const c=document.getElementById("alerts-container");document.getElementById("alerts-count").textContent=alerts.length;
     if(!alerts.length){c.innerHTML='<p class="loading">No alerts ✅</p>';return}
-    c.innerHTML=alerts.slice(0,20).map(a=>{const i=a.severity==="high"?"🔴":"🟡";return`<div class="alert-item alert-${a.severity||"medium"}">${i} <span class="alert-ticker">[${a.ticker}]</span> ${a.message}<div class="alert-time">${a.type} · ${new Date(a.timestamp).toLocaleString()}</div></div>`}).join("")
+    c.innerHTML=alerts.slice(0,20).map(a=>{const i=a.severity==="high"?"\ud83d\udd34":"\ud83d\udfe1";const sev=_esc(a.severity||"medium");return`<div class="alert-item alert-${sev}">${i} <span class="alert-ticker">[${_esc(a.ticker)}]</span> ${_esc(a.message)}<div class="alert-time">${_esc(a.type)} \u00b7 ${new Date(a.timestamp).toLocaleString()}</div></div>`}).join("")
 }
 
 function updateUnusual(acts){
     const c=document.getElementById("unusual-container");
     if(!acts.length){c.innerHTML='<p class="loading">No unusual activity</p>';return}
-    c.innerHTML=acts.slice(0,15).map(u=>`<div class="alert-item alert-medium">${u.type==="CALL"?"📗":"📕"} <span class="alert-ticker">${u.ticker}</span> ${u.type}
-$${u.strike?.toFixed(2)} | Vol:${(u.volume||0).toLocaleString()} OI:${(u.oi||0).toLocaleString()} <b>Vol/OI:${u.vol_oi_ratio}x</b> IV:${u.iv}%<div class="alert-time">Exp:${u.expiration} · ${new Date(u.timestamp).toLocaleString()}</div></div>`).join("")
+    c.innerHTML=acts.slice(0,15).map(u=>`<div class="alert-item alert-medium">${u.type==="CALL"?"\ud83d\udcd7":"\ud83d\udcd5"} <span class="alert-ticker">${_esc(u.ticker)}</span> ${_esc(u.type)}
+$${u.strike?.toFixed(2)} | Vol:${(u.volume||0).toLocaleString()} OI:${(u.oi||0).toLocaleString()} <b>Vol/OI:${_esc(String(u.vol_oi_ratio))}x</b> IV:${_esc(String(u.iv))}%<div class="alert-time">Exp:${_esc(u.expiration)} \u00b7 ${new Date(u.timestamp).toLocaleString()}</div></div>`).join("")
 }
 
 function updateBacktest(sigs){
@@ -132,7 +137,7 @@ async function runCycle(){
     const b=document.getElementById("btn-run-cycle");
     b.disabled=true;b.textContent="Running...";
     try{
-        await fetch("/api/run-cycle",{method:"POST"});
+        await fetch("/api/run-cycle",{method:"POST",headers:{"X-CSRF-Token":_csrfToken}});
         showNotif("Cycle started!","info");
         let pollInterval=setInterval(async()=>{
             try{
@@ -155,9 +160,9 @@ async function runCycle(){
 async function sendChat(){
     const inp=document.getElementById("chat-input"),q=inp.value.trim();if(!q)return;
     const msgs=document.getElementById("chat-messages");
-    msgs.innerHTML+=`<div class="chat-msg user">${_esc(q)}</div>`;inp.value="";
-    const lid="l"+Date.now();msgs.innerHTML+=`<div class="chat-msg bot" id="${lid}">🤔 Thinking...</div>`;msgs.scrollTop=msgs.scrollHeight;
-    try{const r=await fetch("/api/ask",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({question:q})});const d=await r.json();document.getElementById(lid).textContent=d.status==="ok"?d.response:"❌ Error"}catch(e){document.getElementById(lid).textContent="❌ Connection error"}
+    const userDiv=document.createElement('div');userDiv.className='chat-msg user';userDiv.textContent=q;msgs.appendChild(userDiv);inp.value="";
+    const lid="l"+Date.now();const botDiv=document.createElement('div');botDiv.className='chat-msg bot';botDiv.id=lid;botDiv.textContent='\ud83e\udd14 Thinking...';msgs.appendChild(botDiv);msgs.scrollTop=msgs.scrollHeight;
+    try{const r=await fetch("/api/ask",{method:"POST",headers:_postHeaders(),body:JSON.stringify({question:q})});const d=await r.json();document.getElementById(lid).textContent=d.status==="ok"?d.response:"❌ Error"}catch(e){document.getElementById(lid).textContent="❌ Connection error"}
     msgs.scrollTop=msgs.scrollHeight
 }
 
@@ -207,7 +212,7 @@ async function addTicker(){
     if(!ticker){showNotif("Enter a ticker symbol","error");return}
     inp.disabled=true;
     try{
-        const r=await fetch("/api/watchlist",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ticker})});
+        const r=await fetch("/api/watchlist",{method:"POST",headers:_postHeaders(),body:JSON.stringify({ticker})});
         const d=await r.json();
         if(d.status==="ok"){
             inp.value="";
@@ -231,7 +236,7 @@ async function addTicker(){
 async function removeTicker(ticker){
     if(!confirm(`Remove ${ticker} from watchlist?`))return;
     try{
-        const r=await fetch(`/api/watchlist/${encodeURIComponent(ticker)}`,{method:"DELETE"});
+        const r=await fetch(`/api/watchlist/${encodeURIComponent(ticker)}`,{method:"DELETE",headers:{"X-CSRF-Token":_csrfToken}});
         const d=await r.json();
         if(d.status==="ok"){
             showNotif(`${ticker} removed`,"success");

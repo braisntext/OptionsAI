@@ -5,6 +5,7 @@ import time
 import json
 import secrets
 import threading
+from collections import defaultdict
 from datetime import timedelta, datetime, timezone
 
 import yfinance as yf
@@ -101,6 +102,28 @@ def create_app(database=None, agent=None):
     from billing import billing_bp
     app.register_blueprint(billing_bp)
 
+    # ── CSRF protection ──────────────────────────────────────────────────────
+    def _generate_csrf_token():
+        if '_csrf_token' not in session:
+            session['_csrf_token'] = secrets.token_hex(32)
+        return session['_csrf_token']
+
+    @app.context_processor
+    def _inject_csrf():
+        return dict(csrf_token=_generate_csrf_token)
+
+    CSRF_EXEMPT_ENDPOINTS = {'billing.stripe_webhook'}
+
+    @app.before_request
+    def _check_csrf():
+        if request.method not in ('POST', 'PUT', 'PATCH', 'DELETE'):
+            return
+        if request.endpoint in CSRF_EXEMPT_ENDPOINTS:
+            return
+        token = request.headers.get('X-CSRF-Token') or (request.form.get('_csrf_token') if request.form else None)
+        if not token or token != session.get('_csrf_token'):
+            return jsonify({'status': 'error', 'message': 'CSRF token missing or invalid'}), 403
+
     # ── Security headers ─────────────────────────────────────────────────────
     @app.after_request
     def _set_security_headers(response):
@@ -121,6 +144,10 @@ def create_app(database=None, agent=None):
     # =========================================================================
     # ROUTES – UI
     # =========================================================================
+
+    @app.route("/api/csrf-token")
+    def api_csrf_token():
+        return jsonify({"csrf_token": _generate_csrf_token()})
 
     @app.route("/")
     @login_required
@@ -376,14 +403,31 @@ def create_app(database=None, agent=None):
     # ROUTES – AI CHAT
     # =========================================================================
 
+    # Per-user rate limiting for /api/ask (max 3 requests per 60 seconds)
+    _ask_rate: dict = defaultdict(list)
+    ASK_RATE_LIMIT = 3
+    ASK_RATE_WINDOW = 60  # seconds
+
+    def _check_ask_rate(email: str) -> bool:
+        now = time.time()
+        cutoff = now - ASK_RATE_WINDOW
+        _ask_rate[email] = [t for t in _ask_rate[email] if t > cutoff]
+        if len(_ask_rate[email]) >= ASK_RATE_LIMIT:
+            return False
+        _ask_rate[email].append(now)
+        return True
+
     @app.route("/api/ask", methods=["POST"])
     @login_required
     def api_ask():
         question = (request.json or {}).get("question", "").strip()
         if not question:
             return _make_error("question field required"), 400
-        # ── Usage limit: agent queries per day ────────────────────────────
+        # ── Per-minute rate limit ─────────────────────────────────────────
         email = session.get('email', '')
+        if not is_superuser(email) and not _check_ask_rate(email):
+            return jsonify({"status": "error", "message": f"Too many requests. Please wait {ASK_RATE_WINDOW}s between bursts (max {ASK_RATE_LIMIT}/min)."}), 429
+        # ── Usage limit: agent queries per day ────────────────────────────
         allowed, remaining, limit = check_limit(email, 'ask_agent_max')
         if not allowed:
             return jsonify({"status": "error", "message": f"Daily query limit reached ({limit}). Resets tomorrow. Superusers have unlimited queries."}), 403

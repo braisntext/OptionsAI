@@ -147,7 +147,40 @@ def _init_usage_table():
         ''')
         c.commit()
 
+def _init_tokens_table():
+    with _conn() as c:
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS magic_tokens (
+                token TEXT PRIMARY KEY,
+                email TEXT NOT NULL COLLATE NOCASE,
+                expires_at TEXT NOT NULL
+            )
+        ''')
+        c.commit()
+
+def store_magic_token(token: str, email: str, expires_at):
+    """Persist a magic-link token to the database."""
+    with _conn() as c:
+        c.execute(
+            "INSERT OR REPLACE INTO magic_tokens (token, email, expires_at) VALUES (?, ?, ?)",
+            (token, email.strip().lower(), expires_at.isoformat())
+        )
+        c.commit()
+
+def consume_magic_token(token: str):
+    """Fetch and delete a magic-link token. Returns {'email', 'expires_at'} or None."""
+    with _conn() as c:
+        row = c.execute("SELECT email, expires_at FROM magic_tokens WHERE token = ?", (token,)).fetchone()
+        if not row:
+            return None
+        c.execute("DELETE FROM magic_tokens WHERE token = ?", (token,))
+        # Purge expired tokens while we're here
+        c.execute("DELETE FROM magic_tokens WHERE expires_at < ?", (datetime.utcnow().isoformat(),))
+        c.commit()
+    return {'email': row['email'], 'expires_at': datetime.fromisoformat(row['expires_at'])}
+
 _init_usage_table()
+_init_tokens_table()
 
 
 def get_daily_usage(email: str, usage_type: str) -> int:

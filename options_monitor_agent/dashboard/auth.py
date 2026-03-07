@@ -18,12 +18,9 @@ except ImportError:
     BREVO_SENDER_EMAIL = os.getenv('BREVO_SENDER_EMAIL', '')
     BREVO_SENDER_NAME = os.getenv('BREVO_SENDER_NAME', 'Options Monitor')
 
-from subscribers import is_subscribed
+from subscribers import is_subscribed, store_magic_token, consume_magic_token
 
 auth_bp = Blueprint('auth', __name__)
-
-# ── In-memory token store ────────────────────────────────────────────────────
-_tokens: dict = {}
 
 # ── Rate limiting for login requests (IP -> list of timestamps) ──────────────
 _login_attempts: dict = defaultdict(list)
@@ -141,7 +138,7 @@ def auth_request():
         }), 403
     token      = secrets.token_urlsafe(32)
     expires_at = datetime.utcnow() + timedelta(minutes=TOKEN_TTL_MINUTES)
-    _tokens[token] = {'email': email, 'expires_at': expires_at}
+    store_magic_token(token, email, expires_at)
     link = url_for('auth.auth_verify', token=token, _external=True)
     sent = _send_magic_email(email, link)
     if not sent:
@@ -150,13 +147,11 @@ def auth_request():
 
 @auth_bp.route('/auth/verify/<token>')
 def auth_verify(token):
-    entry = _tokens.get(token)
+    entry = consume_magic_token(token)
     if not entry:
         return render_template('login.html', error='Invalid or already used link.')
     if datetime.utcnow() > entry['expires_at']:
-        _tokens.pop(token, None)
         return render_template('login.html', error='This link has expired. Please request a new one.')
-    _tokens.pop(token, None)
     # Regenerate session to prevent session fixation
     session.clear()
     session.permanent = True

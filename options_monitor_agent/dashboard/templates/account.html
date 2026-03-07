@@ -61,6 +61,7 @@
       <a href="/logout" class="btn-secondary">&#128275; Sign Out</a>
       {% if sub and sub['status'] == 'active' and not sub['superuser'] %}
       <form method="POST" action="/account/cancel" onsubmit="return confirm('Cancel subscription? You will lose access at the end of your current period.')">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn-danger">&#10006; Cancel Subscription</button>
       </form>
       {% endif %}
