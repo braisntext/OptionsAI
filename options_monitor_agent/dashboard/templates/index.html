@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>🤖 Options Monitor Agent</title>
     <link rel="stylesheet" href="/static/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -221,7 +222,7 @@
 
         // Initialize click handlers when page loads
         // (ticker click is handled by selectTicker in app.js)
-    </script><script src="/static/app.js?v=13"></script>
+    </script><script src="/static/app.js?v=14"></script>
 
 <!-- PREMIUM SPIKE ALERTS SECTION -->
 <div class="card" id="spike-alerts-section" style="margin-top:20px">

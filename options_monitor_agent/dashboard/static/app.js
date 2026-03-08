@@ -3,11 +3,15 @@ const API="";
 let _csrfToken="";
 function _esc(s){const d=document.createElement('div');d.appendChild(document.createTextNode(s));return d.innerHTML;}
 
-async function _loadCsrf(){try{const r=await fetch("/api/csrf-token");const d=await r.json();_csrfToken=d.csrf_token||""}catch(e){}}
+function _loadCsrf(){
+    const meta=document.querySelector('meta[name="csrf-token"]');
+    if(meta&&meta.content){_csrfToken=meta.content;return Promise.resolve()}
+    return fetch("/api/csrf-token").then(r=>r.json()).then(d=>{_csrfToken=d.csrf_token||""}).catch(()=>{})
+}
 
 function _postHeaders(){return{"Content-Type":"application/json","X-CSRF-Token":_csrfToken}}
 
-document.addEventListener("DOMContentLoaded",()=>{_loadCsrf().then(()=>{checkMarketAndRefresh();setInterval(refreshData,60000)})});
+document.addEventListener("DOMContentLoaded",()=>{_loadCsrf().then?_loadCsrf().then(()=>{checkMarketAndRefresh();setInterval(refreshData,60000)}):(_loadCsrf(),checkMarketAndRefresh(),setInterval(refreshData,60000))});
 
 async function checkMarketAndRefresh(){
     // Fetch market status and auto-refresh if needed
