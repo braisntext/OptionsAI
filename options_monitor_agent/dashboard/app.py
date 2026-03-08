@@ -472,6 +472,34 @@ def create_app(database=None, agent=None):
         _ask_rate[email].append(now)
         return True
 
+    def _build_user_context(email):
+        """Build a data context string with the user's watchlist and latest data."""
+        parts = []
+        try:
+            user_tickers = _load_user_watchlist_or_seed(email)
+            parts.append(f"User watchlist: {', '.join(user_tickers)}")
+            db = _require_db()
+            all_latest = db.get_all_tickers_latest()
+            user_data = [d for d in all_latest if d['ticker'] in set(user_tickers)]
+            if user_data:
+                parts.append("\nLatest data for user's tickers:")
+                for d in user_data:
+                    parts.append(
+                        f"  {d['ticker']}: price=${d.get('price',0):.2f}, "
+                        f"Call IV={d.get('call_iv',0):.1f}%, Put IV={d.get('put_iv',0):.1f}%, "
+                        f"P/C ratio={d.get('pcr_volume',0):.2f}, IV skew={d.get('iv_skew',0):.1f}%, "
+                        f"sentiment={d.get('sentiment','N/A')}, updated={d.get('timestamp','N/A')}"
+                    )
+            alerts = db.get_recent_alerts(hours=48)
+            user_alerts = [a for a in alerts if a.get('ticker') in set(user_tickers)]
+            if user_alerts:
+                parts.append(f"\nRecent alerts ({len(user_alerts)}):")
+                for a in user_alerts[:10]:
+                    parts.append(f"  [{a.get('ticker')}] {a.get('severity','')}: {a.get('message','')}")
+        except Exception:
+            pass
+        return "\n".join(parts)
+
     @app.route("/api/ask", methods=["POST"])
     @login_required
     def api_ask():
@@ -487,11 +515,14 @@ def create_app(database=None, agent=None):
         if not allowed:
             return jsonify({"status": "error", "message": f"Daily query limit reached ({limit}). Resets tomorrow. Superusers have unlimited queries."}), 403
         increment_usage(email, 'ask_agent_max')
+        # Build context from user's data
+        context = _build_user_context(email)
+        enriched_question = f"[User data context]\n{context}\n\n[User question]\n{question}" if context else question
         # Try Claude agent first
         agent = _get_agent()
         if agent is not None:
             try:
-                result = agent._call_claude(question)
+                result = agent._call_claude(enriched_question)
                 if not result.startswith("Error with Claude"):
                     return jsonify({"status": "ok", "response": result})
                 print(f"[ask] Claude failed: {result}")
