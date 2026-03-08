@@ -101,7 +101,7 @@ def create_app(database=None, agent=None):
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=12)
     app.config['SESSION_COOKIE_SECURE'] = os.getenv('RENDER', '') != ''  # True on Render (HTTPS)
     app.config['SESSION_COOKIE_HTTPONLY'] = True
-    app.config['SESSION_COOKIE_SAMESITE'] = 'Strict'
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
     app.register_blueprint(auth_bp)
     from billing import billing_bp
     app.register_blueprint(billing_bp)
