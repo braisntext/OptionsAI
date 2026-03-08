@@ -26,7 +26,11 @@ from memory.database import OptionsDatabase
 
 class OptionsMonitorAgent:
     def __init__(self):
-        self.client = Anthropic(api_key=ANTHROPIC_API_KEY)
+        if not ANTHROPIC_API_KEY:
+            print("[agent] WARNING: ANTHROPIC_API_KEY not set – Claude will be unavailable")
+            self.client = None
+        else:
+            self.client = Anthropic(api_key=ANTHROPIC_API_KEY)
         self.conversation_history = []
         self.memory = AgentMemory()
         self.db = OptionsDatabase()
@@ -78,6 +82,8 @@ Para analisis generales usa:
 7. 📋 PROXIMOS PASOS"""
 
     def _call_claude(self, user_message):
+        if self.client is None:
+            return "Error with Claude: ANTHROPIC_API_KEY not configured. Set it in Render dashboard → Environment."
         self.conversation_history.append({"role": "user", "content": user_message})
         try:
             response = self.client.messages.create(

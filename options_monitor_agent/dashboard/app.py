@@ -520,18 +520,25 @@ def create_app(database=None, agent=None):
         enriched_question = f"[User data context]\n{context}\n\n[User question]\n{question}" if context else question
         # Try Claude agent first
         agent = _get_agent()
+        claude_error = None
         if agent is not None:
             try:
                 result = agent._call_claude(enriched_question)
                 if not result.startswith("Error with Claude"):
                     return jsonify({"status": "ok", "response": result})
+                claude_error = result
                 print(f"[ask] Claude failed: {result}")
             except Exception as exc:
+                claude_error = str(exc)
                 print(f"[ask] Claude error: {exc}")
-        # Fallback: answer from local data
+        else:
+            claude_error = "Agent could not be initialized (check ANTHROPIC_API_KEY)"
+        # Fallback: answer from local data + explain why AI is unavailable
         try:
             db = _require_db()
             answer = _local_answer(db, question)
+            if claude_error:
+                answer += f"\n\n⚠️ *AI agent unavailable: {claude_error}*"
             return jsonify({"status": "ok", "response": answer})
         except Exception as exc:
             return _make_error(str(exc)), 500
