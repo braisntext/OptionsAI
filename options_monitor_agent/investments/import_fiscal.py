@@ -11,6 +11,16 @@ from .fifo_engine import rebuild_positions
 IMPORTABLE_CATEGORIES = {'Stocks', 'Equity and Index Options'}
 
 
+def delete_fiscal_from_investments(email, stmt_id):
+    """Delete all investment data that was imported from a fiscal statement,
+    then rebuild FIFO for the affected symbols."""
+    source_ref = str(stmt_id)
+    affected = db.delete_by_source(email, 'fiscal_import', source_ref)
+    for acct_id, symbol in affected:
+        rebuild_positions(email, account_id=acct_id, symbol=symbol)
+    return len(affected)
+
+
 def get_available_fiscal_statements(email):
     """Get fiscal statements available for import, with import status."""
     statements = fiscal_db.get_user_statements(email)

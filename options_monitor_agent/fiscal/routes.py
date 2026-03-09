@@ -124,6 +124,14 @@ def upload_statement():
         return jsonify({'status': 'error',
                        'message': f'Error procesando datos: {str(e)[:200]}'}), 500
 
+    # Auto-import into Investments app
+    inv_imported = None
+    try:
+        from options_monitor_agent.investments.import_fiscal import import_fiscal_statements
+        inv_imported = import_fiscal_statements(email, [stmt_id])
+    except Exception:
+        pass  # Non-critical — user can import manually later
+
     return jsonify({
         'status': 'ok',
         'statement_id': stmt_id,
@@ -139,6 +147,7 @@ def upload_statement():
             'positions': len(parsed.positions),
         },
         'tax_results': len(tax_results),
+        'investments_imported': inv_imported,
     })
 
 
@@ -343,6 +352,13 @@ def delete_statement(stmt_id):
     stmt = db.get_statement(stmt_id, email)
     if not stmt:
         return jsonify({'status': 'error', 'message': 'Extracto no encontrado'}), 404
+
+    # Delete related data from Investments app first
+    try:
+        from options_monitor_agent.investments.import_fiscal import delete_fiscal_from_investments
+        delete_fiscal_from_investments(email, stmt_id)
+    except Exception:
+        pass  # Investments module may not have data for this statement
 
     with db._conn() as c:
         c.execute('DELETE FROM fiscal_statements WHERE id = ?', (stmt_id,))

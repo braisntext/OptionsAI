@@ -8,7 +8,10 @@ import os
 import json
 from datetime import datetime
 
-DB_PATH = os.path.join(os.path.dirname(__file__), '..', 'dashboard', 'fiscal.db')
+_PERSISTENT_DIR = '/var/data'
+_LOCAL_FALLBACK = os.path.join(os.path.dirname(__file__), '..', 'dashboard')
+_DB_DIR = _PERSISTENT_DIR if os.path.isdir(_PERSISTENT_DIR) else _LOCAL_FALLBACK
+DB_PATH = os.path.join(_DB_DIR, 'fiscal.db')
 
 
 def _conn():

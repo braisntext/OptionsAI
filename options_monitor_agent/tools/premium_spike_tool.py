@@ -10,7 +10,10 @@ import time
 from datetime import datetime
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SNAPSHOT_DB = os.path.join(BASE_DIR, "memory", "premium_snapshots.db")
+_PERSISTENT_DIR = '/var/data'
+_LOCAL_FALLBACK = os.path.join(BASE_DIR, "memory")
+_DB_DIR = _PERSISTENT_DIR if os.path.isdir(_PERSISTENT_DIR) else _LOCAL_FALLBACK
+SNAPSHOT_DB = os.path.join(_DB_DIR, "premium_snapshots.db")
 
 
 def _get_conn():

@@ -2,7 +2,10 @@ import sqlite3
 import os
 from datetime import datetime, timedelta
 
-DB_PATH = os.path.join(os.path.dirname(__file__), 'subscribers.db')
+_PERSISTENT_DIR = '/var/data'
+_LOCAL_FALLBACK = os.path.dirname(__file__)
+_DB_DIR = _PERSISTENT_DIR if os.path.isdir(_PERSISTENT_DIR) else _LOCAL_FALLBACK
+DB_PATH = os.path.join(_DB_DIR, 'subscribers.db')
 
 try:
     from config import SUPERADMIN_EMAILS

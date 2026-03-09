@@ -7,7 +7,10 @@ import sqlite3
 import os
 from datetime import datetime
 
-DB_PATH = os.path.join(os.path.dirname(__file__), '..', 'dashboard', 'investments.db')
+_PERSISTENT_DIR = '/var/data'
+_LOCAL_FALLBACK = os.path.join(os.path.dirname(__file__), '..', 'dashboard')
+_DB_DIR = _PERSISTENT_DIR if os.path.isdir(_PERSISTENT_DIR) else _LOCAL_FALLBACK
+DB_PATH = os.path.join(_DB_DIR, 'investments.db')
 
 
 def _conn():
@@ -380,6 +383,37 @@ def check_duplicate_by_source(email, source, source_ref):
             (email.lower(), source, source_ref)
         ).fetchone()
     return row[0] > 0
+
+
+def delete_by_source(email, source, source_ref):
+    """Delete all transactions and dividends imported from a specific source.
+    Returns list of (account_id, symbol) pairs affected for FIFO rebuild."""
+    e = email.lower()
+    with _conn() as c:
+        # Get affected (account_id, symbol) pairs before deleting
+        affected = c.execute(
+            '''SELECT DISTINCT account_id, symbol FROM investment_transactions
+               WHERE email = ? COLLATE NOCASE AND source = ? AND source_ref = ?''',
+            (e, source, source_ref)
+        ).fetchall()
+        affected = [(r['account_id'], r['symbol']) for r in affected]
+
+        # Delete transactions
+        c.execute(
+            '''DELETE FROM investment_transactions
+               WHERE email = ? COLLATE NOCASE AND source = ? AND source_ref = ?''',
+            (e, source, source_ref)
+        )
+
+        # Delete dividends
+        c.execute(
+            '''DELETE FROM investment_dividends
+               WHERE email = ? COLLATE NOCASE AND source = ? AND source_ref = ?''',
+            (e, source, source_ref)
+        )
+
+        c.commit()
+    return affected
 
 
 # ── FIFO-related writes ──────────────────────────────────────────────────────
