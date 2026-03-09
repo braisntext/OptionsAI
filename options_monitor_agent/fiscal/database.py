@@ -488,5 +488,114 @@ def get_cached_rates_bulk(currency, start_date=None, end_date=None):
     return {r['rate_date']: r['rate'] for r in rows}
 
 
+# ── Cross-statement query helpers ────────────────────────────────────────────
+
+def get_user_statement_ids(email, tax_year):
+    """Get all completed statement IDs for a user+year."""
+    with _conn() as c:
+        rows = c.execute(
+            '''SELECT id FROM fiscal_statements
+               WHERE email = ? COLLATE NOCASE AND tax_year = ? AND status = 'completed'
+               ORDER BY broker, account_id''',
+            (email.lower(), tax_year)
+        ).fetchall()
+    return [r['id'] for r in rows]
+
+
+def get_user_years(email):
+    """Get all tax years with statements, grouped with metadata."""
+    with _conn() as c:
+        rows = c.execute(
+            '''SELECT id, broker, tax_year, account_id, filename, uploaded_at, status
+               FROM fiscal_statements
+               WHERE email = ? COLLATE NOCASE
+               ORDER BY tax_year DESC, broker, account_id''',
+            (email.lower(),)
+        ).fetchall()
+    years = {}
+    for r in rows:
+        yr = r['tax_year']
+        if yr not in years:
+            years[yr] = []
+        years[yr].append(dict(r))
+    return [{'tax_year': yr, 'statements': stmts} for yr, stmts in sorted(years.items(), reverse=True)]
+
+
+def get_tax_results_multi(stmt_ids):
+    """Get tax results across multiple statements."""
+    if not stmt_ids:
+        return []
+    placeholders = ','.join('?' * len(stmt_ids))
+    with _conn() as c:
+        rows = c.execute(
+            f'SELECT * FROM fiscal_tax_results WHERE statement_id IN ({placeholders}) ORDER BY casilla',
+            stmt_ids
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_trades_multi(stmt_ids, asset_category=None):
+    """Get trades across multiple statements."""
+    if not stmt_ids:
+        return []
+    placeholders = ','.join('?' * len(stmt_ids))
+    params = list(stmt_ids)
+    sql = f'''SELECT t.*, s.broker FROM fiscal_trades t
+              JOIN fiscal_statements s ON t.statement_id = s.id
+              WHERE t.statement_id IN ({placeholders})'''
+    if asset_category:
+        sql += ' AND t.asset_category = ?'
+        params.append(asset_category)
+    sql += ' ORDER BY t.trade_date'
+    with _conn() as c:
+        rows = c.execute(sql, params).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_dividends_multi(stmt_ids):
+    """Get dividends across multiple statements."""
+    if not stmt_ids:
+        return []
+    placeholders = ','.join('?' * len(stmt_ids))
+    with _conn() as c:
+        rows = c.execute(
+            f'''SELECT d.*, s.broker FROM fiscal_dividends d
+                JOIN fiscal_statements s ON d.statement_id = s.id
+                WHERE d.statement_id IN ({placeholders}) ORDER BY d.pay_date''',
+            stmt_ids
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_interest_multi(stmt_ids):
+    """Get interest across multiple statements."""
+    if not stmt_ids:
+        return []
+    placeholders = ','.join('?' * len(stmt_ids))
+    with _conn() as c:
+        rows = c.execute(
+            f'''SELECT i.*, s.broker FROM fiscal_interest i
+                JOIN fiscal_statements s ON i.statement_id = s.id
+                WHERE i.statement_id IN ({placeholders}) ORDER BY i.pay_date''',
+            stmt_ids
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_withholdings_multi(stmt_ids):
+    """Get withholdings across multiple statements."""
+    if not stmt_ids:
+        return []
+    placeholders = ','.join('?' * len(stmt_ids))
+    with _conn() as c:
+        rows = c.execute(
+            f'''SELECT w.*, s.broker FROM fiscal_withholdings w
+                JOIN fiscal_statements s ON w.statement_id = s.id
+                WHERE w.statement_id IN ({placeholders}) ORDER BY w.pay_date''',
+            stmt_ids
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
 # Initialize on import
 init_fiscal_db()

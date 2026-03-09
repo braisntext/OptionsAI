@@ -139,11 +139,98 @@
     .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin .6s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    /* Summary panels */
+    .summary-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem; margin-bottom: 2rem;
+    }
+    .summary-panel {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 1.25rem;
+    }
+    .summary-panel h3 { font-size: .9rem; font-weight: 700; margin: 0 0 .75rem; }
+    .summary-row { display: flex; justify-content: space-between; padding: .25rem 0; font-size: .85rem; }
+    .summary-row .label { color: var(--text-muted); }
+    .summary-row .value { font-weight: 600; font-variant-numeric: tabular-nums; }
+    .summary-row .value.positive { color: var(--success); }
+    .summary-row .value.negative { color: var(--danger); }
+    .summary-total { border-top: 1px solid var(--border); margin-top: .5rem; padding-top: .5rem; font-weight: 700; }
+
+    /* Broker cards */
+    .broker-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1rem; margin-bottom: 2rem;
+    }
+    .broker-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 1.25rem; position: relative;
+    }
+    .broker-card .broker-icon { font-size: 1.5rem; margin-bottom: .5rem; }
+    .broker-card h4 { font-size: .95rem; font-weight: 700; margin: 0 0 .25rem; }
+    .broker-card .broker-meta { font-size: .8rem; color: var(--text-muted); line-height: 1.5; }
+    .broker-card .broker-status {
+      display: inline-block; padding: 2px 8px; border-radius: 10px;
+      font-size: .7rem; font-weight: 600; margin-top: .5rem;
+    }
+    .broker-status.completed { background: var(--success-bg); color: var(--success); }
+    .broker-status.processing { background: var(--info-bg); color: var(--info-text); }
+    .broker-status.error { background: var(--danger-bg); color: var(--danger); }
+    .broker-card .broker-actions { margin-top: .75rem; display: flex; gap: .5rem; }
+    .broker-card .broker-actions button {
+      padding: .3rem .6rem; border-radius: 6px; border: 1px solid var(--border);
+      background: transparent; color: var(--text-muted); cursor: pointer;
+      font-size: .75rem; transition: all .2s;
+    }
+    .broker-card .broker-actions button:hover { background: var(--danger-bg); color: var(--danger); }
+    .broker-add {
+      border: 2px dashed var(--border) !important; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; cursor: pointer;
+      color: var(--text-muted); transition: border-color .2s; min-height: 120px;
+    }
+    .broker-add:hover { border-color: var(--primary-text); color: var(--primary-text); }
+    .broker-add .add-icon { font-size: 1.5rem; margin-bottom: .25rem; }
+
+    /* Export box */
+    .export-box {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 1.25rem; margin-bottom: 2rem;
+      display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+    }
+    .export-box .export-info { flex: 1; min-width: 200px; }
+    .export-box .export-info h3 { font-size: .95rem; font-weight: 700; margin: 0 0 .25rem; }
+    .export-box .export-info p { font-size: .82rem; color: var(--text-muted); margin: 0; }
+    .export-box .export-buttons { display: flex; gap: .5rem; flex-wrap: wrap; }
+    .export-box .export-buttons a {
+      padding: .5rem 1rem; border-radius: 8px; font-size: .82rem; font-weight: 600;
+      text-decoration: none; transition: all .2s; display: inline-flex; align-items: center; gap: .4rem;
+    }
+    .btn-export-csv {
+      background: var(--success-bg); color: var(--success); border: 1px solid var(--success);
+    }
+    .btn-export-csv:hover { background: var(--success); color: #fff; }
+    .btn-export-html {
+      background: var(--info-bg); color: var(--info-text); border: 1px solid var(--info-border);
+    }
+    .btn-export-html:hover { background: var(--primary-text); color: #fff; }
+
+    /* Year selector */
+    .year-selector {
+      display: flex; align-items: center; gap: .75rem; margin-bottom: 1.5rem; flex-wrap: wrap;
+    }
+    .year-selector select {
+      padding: .5rem .75rem; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--card); color: var(--text); font-size: .9rem; font-weight: 600;
+    }
+    .year-selector label { font-weight: 600; font-size: .9rem; }
+
     /* Responsive */
     @media (max-width: 768px) {
       .fiscal-container { padding: 1rem; }
       .casilla-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
       .casilla-card .casilla-amount { font-size: 1.3rem; }
+      .summary-grid { grid-template-columns: 1fr; }
+      .broker-grid { grid-template-columns: 1fr; }
+      .export-box { flex-direction: column; align-items: stretch; }
     }
   </style>
 </head>
@@ -186,6 +273,33 @@
       <label for="stmtSelect" style="font-weight:600;font-size:.9rem;">Extracto:</label>
       <select id="stmtSelect" onchange="loadStatement()"></select>
       <button class="btn-delete" onclick="deleteStatement()" title="Eliminar extracto">🗑️ Eliminar</button>
+    </div>
+
+    <!-- Year Selector -->
+    <div class="year-selector" id="yearSelector" style="display:none;">
+      <label for="yearSelect">📅 Ejercicio fiscal:</label>
+      <select id="yearSelect" onchange="onYearChange()"></select>
+    </div>
+
+    <!-- Broker Manager -->
+    <div id="brokerManager" style="display:none;">
+      <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:1rem;">🏦 Extractos importados</h2>
+      <div class="broker-grid" id="brokerGrid"></div>
+    </div>
+
+    <!-- Summary Panels -->
+    <div id="summarySection" style="display:none;">
+      <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:1rem;">📊 Resumen del ejercicio</h2>
+      <div class="summary-grid" id="summaryGrid"></div>
+    </div>
+
+    <!-- Export Box -->
+    <div class="export-box" id="exportBox" style="display:none;">
+      <div class="export-info">
+        <h3>📤 Exportar para gestoría</h3>
+        <p>Descarga un resumen con todas las operaciones, dividendos, intereses y retenciones del ejercicio para tu asesor fiscal.</p>
+      </div>
+      <div class="export-buttons" id="exportButtons"></div>
     </div>
 
     <!-- Results container (hidden until data loaded) -->
@@ -295,6 +409,7 @@
   /* ── Globals ────────────────────────────────────────────────── */
   const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
   let currentStmtId = null;
+  let currentYear = null;
 
   /* ── Upload ─────────────────────────────────────────────────── */
   const zone = document.getElementById('uploadZone');
@@ -336,6 +451,7 @@
         if (data.status === 'ok') {
           msg.textContent = `✅ ${data.broker} ${data.tax_year} — ${data.summary.trades} operaciones, ${data.summary.dividends} dividendos`;
           msg.className = 'upload-msg success';
+          loadYears(data.tax_year);
           loadStatements(data.statement_id);
         } else {
           msg.textContent = '❌ ' + (data.message || 'Error desconocido');
@@ -347,6 +463,211 @@
         msg.textContent = '❌ Error de conexión';
         msg.className = 'upload-msg error';
       });
+  }
+
+  /* ── Year Selector ──────────────────────────────────────────── */
+  function loadYears(selectYear) {
+    fetch('/api/fiscal/years')
+      .then(r => r.json())
+      .then(data => {
+        if (data.status !== 'ok' || !data.years.length) {
+          document.getElementById('yearSelector').style.display = 'none';
+          return;
+        }
+        const sel = document.getElementById('yearSelect');
+        sel.innerHTML = data.years.map(y =>
+          `<option value="${y.tax_year}" ${y.tax_year === selectYear ? 'selected' : ''}>${y.tax_year} (${y.statements.length} extracto${y.statements.length !== 1 ? 's' : ''})</option>`
+        ).join('');
+        document.getElementById('yearSelector').style.display = 'flex';
+        onYearChange();
+      });
+  }
+
+  function onYearChange() {
+    const sel = document.getElementById('yearSelect');
+    currentYear = parseInt(sel.value);
+    if (!currentYear) return;
+    loadSummary(currentYear);
+    loadBrokers(currentYear);
+    updateExportLinks(currentYear);
+  }
+
+  /* ── Summary Panels ─────────────────────────────────────────── */
+  function loadSummary(year) {
+    fetch(`/api/fiscal/summary?year=${year}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.status !== 'ok') {
+          document.getElementById('summarySection').style.display = 'none';
+          return;
+        }
+        renderSummary(data);
+        document.getElementById('summarySection').style.display = 'block';
+      });
+  }
+
+  function renderSummary(data) {
+    const grid = document.getElementById('summaryGrid');
+    const pnl = data.pnl;
+    const inc = data.income;
+    const cas = data.casillas;
+
+    // Panel 1: P&L por tipo
+    const totalNet = (pnl.stocks?.net || 0) + (pnl.options?.net || 0) + (pnl.forex?.net || 0);
+    let pnlHtml = `<div class="summary-panel">
+      <h3>📈 Pérdidas y Ganancias</h3>`;
+    for (const [key, label] of [['stocks', 'Acciones'], ['options', 'Opciones'], ['forex', 'Forex']]) {
+      const p = pnl[key] || {gains:0, losses:0, net:0, count:0};
+      if (p.count === 0 && p.net === 0) continue;
+      pnlHtml += `
+        <div class="summary-row">
+          <span class="label">${label} (${p.count})</span>
+          <span class="value ${p.net >= 0 ? 'positive' : 'negative'}">${fmtEur(p.net)}</span>
+        </div>
+        <div class="summary-row" style="font-size:.78rem;padding-left:.5rem;">
+          <span class="label" style="font-size:.75rem">↗ Ganancias</span>
+          <span class="value positive" style="font-size:.78rem">${fmtEur(p.gains)}</span>
+        </div>
+        <div class="summary-row" style="font-size:.78rem;padding-left:.5rem;">
+          <span class="label" style="font-size:.75rem">↘ Pérdidas</span>
+          <span class="value negative" style="font-size:.78rem">${fmtEur(p.losses)}</span>
+        </div>`;
+    }
+    pnlHtml += `<div class="summary-row summary-total">
+        <span class="label">Total neto</span>
+        <span class="value ${totalNet >= 0 ? 'positive' : 'negative'}">${fmtEur(totalNet)}</span>
+      </div>
+    </div>`;
+
+    // Panel 2: Income
+    let incHtml = `<div class="summary-panel">
+      <h3>💰 Rendimientos del Capital</h3>
+      <div class="summary-row">
+        <span class="label">Dividendos brutos (${inc.dividends.count})</span>
+        <span class="value positive">${fmtEur(inc.dividends.gross)}</span>
+      </div>
+      <div class="summary-row">
+        <span class="label">Intereses (${inc.interest.count})</span>
+        <span class="value positive">${fmtEur(inc.interest.total)}</span>
+      </div>
+      <div class="summary-row">
+        <span class="label">Retención extranjera</span>
+        <span class="value negative">-${fmtEur(inc.withholdings.foreign)}</span>
+      </div>
+      <div class="summary-row">
+        <span class="label">Retención española</span>
+        <span class="value negative">-${fmtEur(inc.withholdings.domestic)}</span>
+      </div>
+      <div class="summary-row summary-total">
+        <span class="label">Dividendos netos</span>
+        <span class="value ${inc.net_dividends >= 0 ? 'positive' : 'negative'}">${fmtEur(inc.net_dividends)}</span>
+      </div>
+    </div>`;
+
+    // Panel 3: Casillas
+    const casillaOrder = ['0027', '0029', '0328', '0588', 'retenciones'];
+    const casillaIcons = { '0027': '🏦', '0029': '💰', '0328': '📈', '0588': '🌍', 'retenciones': '🏛️' };
+    let casHtml = `<div class="summary-panel">
+      <h3>📋 Casillas IRPF</h3>`;
+    for (const k of casillaOrder) {
+      const c = cas[k];
+      if (!c) continue;
+      const label = k === 'retenciones' ? 'Retenciones' : `Cas. ${k}`;
+      casHtml += `<div class="summary-row">
+        <span class="label">${casillaIcons[k] || '📋'} ${label}</span>
+        <span class="value ${c.total >= 0 ? 'positive' : 'negative'}">${fmtEur(c.total)}</span>
+      </div>`;
+    }
+    casHtml += '</div>';
+
+    grid.innerHTML = pnlHtml + incHtml + casHtml;
+  }
+
+  /* ── Broker Manager ─────────────────────────────────────────── */
+  function loadBrokers(year) {
+    fetch('/api/fiscal/years')
+      .then(r => r.json())
+      .then(data => {
+        if (data.status !== 'ok') return;
+        const yearData = data.years.find(y => y.tax_year === year);
+        if (!yearData) {
+          document.getElementById('brokerManager').style.display = 'none';
+          return;
+        }
+        renderBrokers(yearData.statements);
+        document.getElementById('brokerManager').style.display = 'block';
+      });
+  }
+
+  function renderBrokers(statements) {
+    const grid = document.getElementById('brokerGrid');
+    const brokerIcons = { 'IBKR': '🟢', 'DEGIRO': '🔵', 'TRADE_REPUBLIC': '🟣' };
+
+    let html = statements.map(s => {
+      const icon = brokerIcons[s.broker] || '📊';
+      const statusClass = s.status || 'completed';
+      const statusLabel = { completed: 'Procesado', processing: 'Procesando...', error: 'Error' }[statusClass] || statusClass;
+      return `<div class="broker-card">
+        <div class="broker-icon">${icon}</div>
+        <h4>${esc(s.broker)}</h4>
+        <div class="broker-meta">
+          ${esc(s.filename)}<br>
+          ${s.account_id ? 'Cuenta: ' + esc(s.account_id) + '<br>' : ''}
+          Subido: ${esc((s.uploaded_at || '').slice(0, 10))}
+        </div>
+        <span class="broker-status ${statusClass}">${statusLabel}</span>
+        <div class="broker-actions">
+          <button onclick="viewBrokerStatement(${s.id})" title="Ver detalle">📋 Ver</button>
+          <button onclick="deleteBrokerStatement(${s.id})" title="Eliminar">🗑️</button>
+        </div>
+      </div>`;
+    }).join('');
+
+    // Add broker card
+    html += `<div class="broker-card broker-add" onclick="document.getElementById('fileInput').click()" title="Importar nuevo extracto">
+      <div class="add-icon">➕</div>
+      <span style="font-size:.85rem;font-weight:600">Añadir broker</span>
+      <span style="font-size:.75rem;margin-top:.25rem">IBKR · DEGIRO · Trade Republic</span>
+    </div>`;
+
+    grid.innerHTML = html;
+  }
+
+  function viewBrokerStatement(stmtId) {
+    const sel = document.getElementById('stmtSelect');
+    if (sel) {
+      sel.value = stmtId;
+      loadStatement();
+      document.getElementById('resultsContainer')?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+
+  function deleteBrokerStatement(stmtId) {
+    if (!confirm('¿Eliminar este extracto y todos sus datos?')) return;
+    fetch(`/api/fiscal/statement/${stmtId}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF },
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.status === 'ok') {
+        loadYears(currentYear);
+        loadStatements();
+      }
+    });
+  }
+
+  /* ── Export Links ───────────────────────────────────────────── */
+  function updateExportLinks(year) {
+    const box = document.getElementById('exportBox');
+    const btns = document.getElementById('exportButtons');
+    if (!year) { box.style.display = 'none'; return; }
+
+    btns.innerHTML = `
+      <a href="/api/fiscal/export?year=${year}&format=csv" class="btn-export-csv" download>📥 Descargar CSV</a>
+      <a href="/api/fiscal/export?year=${year}&format=html" class="btn-export-html" target="_blank">🖨️ Ver informe HTML</a>
+    `;
+    box.style.display = 'flex';
   }
 
   /* ── Statement List ─────────────────────────────────────────── */
@@ -593,6 +914,7 @@
 
   /* ── Init ───────────────────────────────────────────────────── */
   loadStatements();
+  loadYears();
   </script>
 </body>
 </html>

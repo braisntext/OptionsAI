@@ -432,3 +432,83 @@ CASILLA_DESCRIPTIONS = {
     '0588': 'Deducción por doble imposición internacional — rentas obtenidas en el extranjero',
     'retenciones': 'Retenciones e ingresos a cuenta ya practicados (reducen cuota)',
 }
+
+
+def get_aggregated_summary(email, tax_year):
+    """
+    Aggregate P&L and income data across all statements for a user+year.
+    Returns a dict with: statements, pnl (by asset type), income, casillas.
+    """
+    stmt_ids = db.get_user_statement_ids(email, tax_year)
+    if not stmt_ids:
+        return None
+
+    # Statements metadata
+    stmts = []
+    for sid in stmt_ids:
+        s = db.get_statement(sid, email)
+        if s:
+            stmts.append({
+                'id': s['id'], 'broker': s['broker'],
+                'account_id': s['account_id'], 'status': s['status'],
+            })
+
+    # Tax results across all statements
+    tax_results = db.get_tax_results_multi(stmt_ids)
+
+    # P&L by asset type
+    pnl = {}
+    for cat in ('stocks', 'options', 'forex'):
+        gains = sum(r['amount_eur'] for r in tax_results
+                    if r['category'] == cat and r['amount_eur'] > 0)
+        losses = sum(r['amount_eur'] for r in tax_results
+                     if r['category'] == cat and r['amount_eur'] < 0)
+        count = sum(1 for r in tax_results if r['category'] == cat)
+        pnl[cat] = {
+            'gains': round(gains, 2),
+            'losses': round(losses, 2),
+            'net': round(gains + losses, 2),
+            'count': count,
+        }
+
+    # Income
+    div_total = sum(r['amount_eur'] for r in tax_results if r['category'] == 'dividends')
+    div_count = sum(1 for r in tax_results if r['category'] == 'dividends')
+    int_total = sum(r['amount_eur'] for r in tax_results if r['category'] == 'interest')
+    int_count = sum(1 for r in tax_results if r['category'] == 'interest')
+
+    wh_foreign = sum(r['amount_eur'] for r in tax_results
+                     if r['category'] == 'withholdings' and r['casilla'] == '0588')
+    wh_domestic = sum(r['amount_eur'] for r in tax_results
+                      if r['category'] == 'withholdings' and r['casilla'] == 'retenciones')
+    wh_count = sum(1 for r in tax_results if r['category'] == 'withholdings')
+
+    income = {
+        'dividends': {'gross': round(div_total, 2), 'count': div_count},
+        'interest': {'total': round(int_total, 2), 'count': int_count},
+        'withholdings': {
+            'total': round(wh_foreign + wh_domestic, 2),
+            'foreign': round(wh_foreign, 2),
+            'domestic': round(wh_domestic, 2),
+            'count': wh_count,
+        },
+        'net_dividends': round(div_total - wh_foreign, 2),
+    }
+
+    # Casillas aggregation
+    casillas = {}
+    for r in tax_results:
+        cas = r['casilla']
+        if cas not in casillas:
+            casillas[cas] = {'total': 0, 'description': CASILLA_DESCRIPTIONS.get(cas, cas)}
+        casillas[cas]['total'] += r['amount_eur']
+    for k in casillas:
+        casillas[k]['total'] = round(casillas[k]['total'], 2)
+
+    return {
+        'tax_year': tax_year,
+        'statements': stmts,
+        'pnl': pnl,
+        'income': income,
+        'casillas': casillas,
+    }

@@ -4,7 +4,7 @@ Fiscal Import — Flask blueprint with all API routes.
 
 import os
 import re
-from flask import Blueprint, request, jsonify, session, render_template
+from flask import Blueprint, request, jsonify, session, render_template, Response
 
 # Path setup
 import sys
@@ -17,7 +17,8 @@ from . import database as db
 from .exchange_rates import to_eur, ensure_rates_cached
 from .parsers import detect_broker, get_parser, available_brokers
 from .parsers import ibkr_parser  # register IBKR parser
-from .tax_engine import calculate_taxes, get_tax_summary, CASILLA_DESCRIPTIONS
+from .tax_engine import calculate_taxes, get_tax_summary, get_aggregated_summary, CASILLA_DESCRIPTIONS
+from .export import generate_csv, generate_html
 
 fiscal_bp = Blueprint('fiscal', __name__)
 
@@ -348,3 +349,61 @@ def delete_statement(stmt_id):
         c.commit()
 
     return jsonify({'status': 'ok', 'message': 'Extracto eliminado'})
+
+
+# ── Cross-statement aggregation routes ────────────────────────────────────────
+
+@fiscal_bp.route('/api/fiscal/years')
+def list_years():
+    """List tax years with statement metadata."""
+    email = _get_email()
+    if not email:
+        return jsonify({'status': 'error', 'message': 'No autenticado'}), 401
+    years = db.get_user_years(email)
+    return jsonify({'status': 'ok', 'years': years})
+
+
+@fiscal_bp.route('/api/fiscal/summary')
+def fiscal_summary():
+    """Aggregated P&L and income across all statements for a year."""
+    email = _get_email()
+    if not email:
+        return jsonify({'status': 'error', 'message': 'No autenticado'}), 401
+
+    year = request.args.get('year', type=int)
+    if not year:
+        return jsonify({'status': 'error', 'message': 'Parámetro year requerido'}), 400
+
+    data = get_aggregated_summary(email, year)
+    if not data:
+        return jsonify({'status': 'error', 'message': 'No hay datos para el año indicado'}), 404
+
+    return jsonify({'status': 'ok', **data})
+
+
+@fiscal_bp.route('/api/fiscal/export')
+def export_data():
+    """Export fiscal data for a year in CSV or HTML format."""
+    email = _get_email()
+    if not email:
+        return jsonify({'status': 'error', 'message': 'No autenticado'}), 401
+
+    year = request.args.get('year', type=int)
+    fmt = request.args.get('format', 'csv')
+
+    if not year:
+        return jsonify({'status': 'error', 'message': 'Parámetro year requerido'}), 400
+
+    if fmt == 'csv':
+        content = generate_csv(email, year)
+        if not content:
+            return jsonify({'status': 'error', 'message': 'No hay datos'}), 404
+        return Response(content, mimetype='text/csv; charset=utf-8',
+                        headers={'Content-Disposition': f'attachment; filename=fiscal_{year}_resumen.csv'})
+    elif fmt == 'html':
+        content = generate_html(email, year)
+        if not content:
+            return jsonify({'status': 'error', 'message': 'No hay datos'}), 404
+        return Response(content, mimetype='text/html; charset=utf-8')
+    else:
+        return jsonify({'status': 'error', 'message': 'Formato no soportado (csv o html)'}), 400
