@@ -92,6 +92,7 @@
                     <p style="flex:1">Importa extractos de tu broker (IBKR), calcula automáticamente ganancias, dividendos, intereses y retenciones, y obtén las casillas exactas para tu Declaración de la Renta (IRPF).</p>
                     <div style="margin-top:1.5rem;display:flex;gap:10px;flex-wrap:wrap;">
                         <a href="/fiscal" class="btn btn-sm">Ir a Fiscal</a>
+                        <a href="#fiscal-features" class="btn btn-outline btn-sm">Más info ↓</a>
                     </div>
                 </article>
             </div>
@@ -131,6 +132,43 @@
                 <span class="feature-icon" aria-hidden="true">🔐</span>
                 <h3>Acceso Seguro</h3>
                 <p>Magic link — sin contraseñas. Sesiones seguras con CSRF y cookies HttpOnly.</p>
+            </article>
+        </section>
+
+        <!-- ═══ IMPORTADOR FISCAL FEATURES ═══ -->
+        <section class="features" id="fiscal-features" aria-label="Funciones del Importador Fiscal">
+            <div style="grid-column:1/-1;text-align:center;margin-bottom:1rem;">
+                <h2 style="font-size:1.8rem;">🧾 Importador Fiscal — Funciones</h2>
+            </div>
+            <article class="feature-card">
+                <span class="feature-icon" aria-hidden="true">📂</span>
+                <h3>Importación CSV de Broker</h3>
+                <p>Sube el extracto anual de Interactive Brokers (Activity Statement) y el sistema lo parsea automáticamente.</p>
+            </article>
+            <article class="feature-card">
+                <span class="feature-icon" aria-hidden="true">🔢</span>
+                <h3>Cálculo Automático IRPF</h3>
+                <p>Motor fiscal que calcula ganancias, dividendos, intereses, retenciones y operaciones forex según la normativa española.</p>
+            </article>
+            <article class="feature-card">
+                <span class="feature-icon" aria-hidden="true">📋</span>
+                <h3>Casillas de la Renta</h3>
+                <p>Mapeo directo a casillas IRPF: 0027 (intereses), 0029 (dividendos), 0328 (ganancias), 0588 (doble imposición).</p>
+            </article>
+            <article class="feature-card">
+                <span class="feature-icon" aria-hidden="true">💱</span>
+                <h3>Conversión EUR Automática</h3>
+                <p>Tipos de cambio del BCE al día de cada operación. Convierte USD, GBP y todas las divisas a euros automáticamente.</p>
+            </article>
+            <article class="feature-card">
+                <span class="feature-icon" aria-hidden="true">📊</span>
+                <h3>Panel de Resultados</h3>
+                <p>Dashboard interactivo con resumen por casilla, tablas de operaciones, dividendos, intereses, retenciones y posiciones.</p>
+            </article>
+            <article class="feature-card">
+                <span class="feature-icon" aria-hidden="true">🔄</span>
+                <h3>Multi-Broker (próximamente)</h3>
+                <p>Arquitectura extensible preparada para DEGIRO, Trade Republic y otros brokers europeos.</p>
             </article>
         </section>
 

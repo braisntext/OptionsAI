@@ -1,14 +1,71 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Account — Options Monitor</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+  <title>Mi Cuenta — Small Smart Tools</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧰</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/landing.css">
+  <style>
+    .account-container { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+    .account-header { text-align: center; margin-bottom: 2.5rem; }
+    .account-header h1 { font-size: 2rem; font-weight: 800; margin-bottom: .25rem; }
+    .account-header .email-badge { color: var(--text-muted); font-size: .9rem; }
+
+    /* Subscription card */
+    .sub-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+      padding: 1.5rem; margin-bottom: 2rem; display: flex; justify-content: space-between;
+      align-items: center; flex-wrap: wrap; gap: 1rem;
+    }
+    .sub-info { display: flex; flex-direction: column; gap: .25rem; }
+    .sub-plan { font-size: 1.1rem; font-weight: 700; }
+    .sub-status { font-size: .85rem; }
+    .sub-expiry { font-size: .8rem; color: var(--text-muted); }
+    .sub-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+    .badge-active { background: var(--success-bg); color: var(--success); padding: 3px 10px; border-radius: 12px; font-size: .78rem; font-weight: 600; }
+    .badge-inactive { background: var(--danger-bg); color: var(--danger); padding: 3px 10px; border-radius: 12px; font-size: .78rem; font-weight: 600; }
+    .badge-super { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #fff; padding: 3px 10px; border-radius: 12px; font-size: .78rem; font-weight: 600; }
+
+    /* App grid */
+    .apps-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.25rem; margin-bottom: 2rem;
+    }
+    .app-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+      padding: 1.5rem; display: flex; flex-direction: column; transition: transform .15s;
+      position: relative;
+    }
+    .app-card:hover { transform: translateY(-2px); }
+    .app-card.locked { opacity: .7; }
+    .app-card .app-icon { font-size: 2rem; margin-bottom: .75rem; }
+    .app-card h3 { font-size: 1.1rem; font-weight: 700; margin: 0 0 .5rem; }
+    .app-card p { font-size: .85rem; color: var(--text-muted); flex: 1; margin: 0 0 1rem; line-height: 1.5; }
+    .app-card .app-action { margin-top: auto; }
+    .app-card .lock-overlay {
+      position: absolute; top: 12px; right: 12px;
+      font-size: .7rem; font-weight: 600; background: var(--border);
+      padding: 2px 8px; border-radius: 8px; color: var(--text-muted);
+    }
+
+    /* Section title */
+    .section-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 1rem; }
+
+    /* Bottom actions */
+    .bottom-actions {
+      border-top: 1px solid var(--border); padding-top: 1.5rem;
+      display: flex; gap: .75rem; flex-wrap: wrap; align-items: center;
+    }
+
+    @media (max-width: 600px) {
+      .sub-card { flex-direction: column; align-items: flex-start; }
+      .account-container { padding: 1rem; }
+    }
+  </style>
 </head>
 <body>
 
@@ -16,7 +73,8 @@
     <a href="/" class="logo">Small Smart Tools</a>
     <ul class="nav-links" id="navMenu">
       <li><a href="/">Inicio</a></li>
-      <li><a href="/dashboard">Dashboard</a></li>
+      <li><a href="/dashboard">Options Monitor</a></li>
+      <li><a href="/fiscal">Importador Fiscal</a></li>
       <li><a href="/account" style="color:var(--primary-text)">Mi Cuenta</a></li>
     </ul>
     <button class="menu-toggle" aria-label="Abrir menú" aria-expanded="false" aria-controls="navMenu" id="menuToggle">
@@ -24,52 +82,110 @@
     </button>
   </nav>
 
-  <div class="page-center">
-    <div class="page-card" style="max-width:480px;">
-      <h1 style="font-size:1.8rem;font-weight:800;margin-bottom:4px">👤 My Account</h1>
-      <div style="color:var(--text-muted);font-size:.9rem;margin-bottom:2rem">{{ email }}</div>
-      {% if sub %}
-      <div class="data-row">
-        <span class="data-label">Status</span>
-        {% if sub['superuser'] %}<span class="badge badge-lifetime">Superuser ⭐</span>
-        {% elif sub['status'] == 'active' %}<span class="badge badge-active">Active</span>
-        {% else %}<span class="badge badge-inactive">{{ sub['status']|capitalize }}</span>{% endif %}
-      </div>
-      <div class="data-row">
-        <span class="data-label">Plan</span>
-        <span class="data-value">{{ sub['plan']|capitalize }}</span>
-      </div>
-      {% if sub['expires_at'] %}
-      <div class="data-row">
-        <span class="data-label">Renews / Expires</span>
-        <span class="data-value">{{ sub['expires_at'][:10] }}</span>
-      </div>
-      {% elif sub['plan'] == 'lifetime' %}
-      <div class="data-row">
-        <span class="data-label">Access</span>
-        <span class="data-value" style="color:var(--primary-text)">Lifetime ∞</span>
-      </div>
-      {% endif %}
-      {% else %}
-      <p style="color:var(--text-muted);margin-bottom:1.5rem">No active subscription found.</p>
-      {% endif %}
-      <div style="margin-top:2rem;display:flex;flex-direction:column;gap:12px">
-        <a href="/dashboard" class="btn btn-block">⚡ Open Dashboard</a>
-        <a href="/payment" class="btn btn-outline btn-block">💳 Extend / Renew</a>
-        <hr style="border:none;border-top:1px solid var(--border);margin:12px 0">
-        <a href="/logout" class="btn btn-outline btn-block" style="border-color:var(--text-muted);color:var(--text-muted)">🔓 Sign Out</a>
-        {% if sub and sub['status'] == 'active' and not sub['superuser'] %}
-        <form method="POST" action="/account/cancel" onsubmit="return confirm('Cancel subscription? You will lose access at the end of your current period.')">
-          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-          <button type="submit" class="btn btn-danger-outline btn-block">✖ Cancel Subscription</button>
-        </form>
+  <div class="account-container">
+
+    <!-- Header -->
+    <div class="account-header">
+      <h1>👤 Mi Cuenta</h1>
+      <div class="email-badge">{{ email }}</div>
+    </div>
+
+    <!-- Subscription info card -->
+    <div class="sub-card">
+      <div class="sub-info">
+        {% if sub %}
+          <div class="sub-plan">
+            Plan: {{ plan_label }}
+            {% if sub['superuser'] %}<span class="badge-super">Superuser ⭐</span>
+            {% elif sub['status'] == 'active' %}<span class="badge-active">Activo</span>
+            {% else %}<span class="badge-inactive">{{ sub['status']|capitalize }}</span>{% endif %}
+          </div>
+          {% if sub['expires_at'] %}
+          <div class="sub-expiry">Renovación: {{ sub['expires_at'][:10] }}</div>
+          {% elif sub['superuser'] or sub['plan'] == 'lifetime' %}
+          <div class="sub-expiry" style="color:var(--primary-text)">Acceso vitalicio ∞</div>
+          {% endif %}
+        {% else %}
+          <div class="sub-plan">Sin suscripción activa</div>
+          <div class="sub-status" style="color:var(--text-muted)">Crea una cuenta gratuita o elige un plan</div>
         {% endif %}
       </div>
+      <div class="sub-actions">
+        {% if not has_all_apps %}
+        <a href="/subscribe" class="btn btn-sm">⬆️ Mejorar plan</a>
+        {% endif %}
+        <a href="/payment" class="btn btn-outline btn-sm">💳 Renovar</a>
+      </div>
+    </div>
+
+    <!-- Apps Hub -->
+    <h2 class="section-title">🧰 Tus Aplicaciones</h2>
+    <div class="apps-grid">
+
+      <!-- Options Monitor -->
+      <div class="app-card {{ '' if can_options else 'locked' }}">
+        <div class="app-icon">📊</div>
+        {% if not can_options %}<div class="lock-overlay">🔒 No incluida</div>{% endif %}
+        <h3>Options Monitor</h3>
+        <p>Monitoriza opciones en tiempo real con IA, alertas de spikes, cadena completa y backtesting.</p>
+        <div class="app-action">
+          {% if can_options %}
+          <a href="/dashboard" class="btn btn-sm btn-block">Abrir Dashboard</a>
+          {% else %}
+          <a href="/subscribe" class="btn btn-outline btn-sm btn-block">Desbloquear →</a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Importador Fiscal -->
+      <div class="app-card {{ '' if can_fiscal else 'locked' }}">
+        <div class="app-icon">🧾</div>
+        {% if not can_fiscal %}<div class="lock-overlay">🔒 No incluida</div>{% endif %}
+        <h3>Importador Fiscal</h3>
+        <p>Importa extractos del broker, calcula impuestos y obtén las casillas para tu Declaración de la Renta.</p>
+        <div class="app-action">
+          {% if can_fiscal %}
+          <a href="/fiscal" class="btn btn-sm btn-block">Abrir Fiscal</a>
+          {% else %}
+          <a href="/subscribe" class="btn btn-outline btn-sm btn-block">Desbloquear →</a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Alt Investments (Coming Soon) -->
+      <div class="app-card locked">
+        <div class="app-icon">🏦</div>
+        <div class="lock-overlay">Próximamente</div>
+        <h3>Alt Investments Tracker</h3>
+        <p>Seguimiento de inversiones alternativas: private equity, venture capital, real estate y más.</p>
+        <div class="app-action">
+          <a href="/alt-investments" class="btn btn-outline btn-sm btn-block" style="opacity:.6">Saber más →</a>
+        </div>
+      </div>
+
+    </div>
+
+    {% if not has_all_apps %}
+    <div style="background:var(--info-bg);border:1px solid var(--info-border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:2rem;font-size:.88rem;color:var(--info-text);">
+      💡 <strong>¿Quieres acceso a todas las apps?</strong> Con el plan <strong>Unlimited</strong> por €9,95/mes accedes a todas las aplicaciones actuales y futuras, sin límites.
+      <a href="/subscribe" style="color:var(--primary-text);font-weight:600;margin-left:.5rem;">Ver planes →</a>
+    </div>
+    {% endif %}
+
+    <!-- Bottom actions -->
+    <div class="bottom-actions">
+      <a href="/logout" class="btn btn-outline btn-sm" style="border-color:var(--text-muted);color:var(--text-muted)">🔓 Cerrar sesión</a>
+      {% if sub and sub['status'] == 'active' and not sub['superuser'] %}
+      <form method="POST" action="/account/cancel" style="margin:0;" onsubmit="return confirm('¿Cancelar suscripción? Perderás acceso al final del período actual.')">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-sm" style="background:transparent;color:var(--danger);border:1px solid var(--danger);">✖ Cancelar suscripción</button>
+      </form>
+      {% endif %}
     </div>
   </div>
 
   <footer class="site-footer">
-    <p>&copy; <span id="year">2025</span> Small Smart Tools. All rights reserved.</p>
+    <p>&copy; <span id="year">2025</span> Small Smart Tools. Todos los derechos reservados.</p>
   </footer>
 
   <script>

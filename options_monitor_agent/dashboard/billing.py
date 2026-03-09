@@ -82,7 +82,46 @@ def account():
         return redirect(url_for('auth.login', next='/account'))
     email = session.get('email', '')
     sub   = get_subscriber(email)
-    return render_template('account.html', email=email, sub=sub)
+
+    # Determine plan label and app access
+    plan_label = 'Sin plan'
+    has_all_apps = False
+    can_options = False
+    can_fiscal = False
+
+    if sub:
+        plan = (sub['plan'] or '').lower()
+        is_super = bool(sub['superuser'])
+
+        if is_super:
+            plan_label = 'Lifetime (Superuser)'
+            has_all_apps = True
+        elif plan == 'unlimited':
+            plan_label = 'Unlimited'
+            has_all_apps = True
+        elif plan == 'basic':
+            plan_label = 'Basic'
+        elif plan == 'monthly':
+            plan_label = 'Basic'
+        elif plan == 'lifetime':
+            plan_label = 'Lifetime'
+            has_all_apps = True
+        elif plan == 'free':
+            plan_label = 'Free'
+        else:
+            plan_label = plan.capitalize() if plan else 'Free'
+
+        if has_all_apps:
+            can_options = True
+            can_fiscal = True
+        else:
+            # Free and Basic plans: both apps available (1-app limit managed elsewhere)
+            can_options = sub['status'] == 'active'
+            can_fiscal = sub['status'] == 'active'
+
+    return render_template('account.html', email=email, sub=sub,
+                           plan_label=plan_label, has_all_apps=has_all_apps,
+                           can_options=can_options, can_fiscal=can_fiscal)
 
 @billing_bp.route('/account/cancel', methods=['POST'])
 def cancel():
