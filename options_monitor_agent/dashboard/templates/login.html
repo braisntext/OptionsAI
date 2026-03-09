@@ -3,46 +3,53 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign In — Options Monitor Agent</title>
-  <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{background:#0f1117;color:#e2e8f0;font-family:Inter,Arial,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-    .card{background:#1e293b;border-radius:16px;padding:48px 40px;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.4)}
-    .brand{display:flex;align-items:center;gap:12px;margin-bottom:8px}
-    .brand-icon{font-size:1.8rem}
-    .brand-name{font-size:1.3rem;font-weight:800;color:#3b82f6}
-    .tagline{color:#64748b;font-size:.875rem;margin-bottom:32px}
-    label{display:block;font-size:.8rem;color:#94a3b8;margin-bottom:6px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
-    input[type=email]{width:100%;padding:14px 16px;background:#0f172a;border:2px solid #1e293b;border-radius:10px;color:#e2e8f0;font-size:1rem;outline:none;transition:border-color .2s}
-    input[type=email]:focus{border-color:#3b82f6}
-    .btn{width:100%;padding:14px;background:linear-gradient(135deg,#3b82f6,#6366f1);color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;margin-top:16px;transition:opacity .2s}
-    .btn:hover{opacity:.9}
-    .btn:disabled{opacity:.5;cursor:not-allowed}
-    .msg{margin-top:14px;padding:12px 16px;border-radius:8px;font-size:.875rem;display:none}
-    .msg.error{background:#450a0a;border:1px solid #ef4444;color:#fca5a5}
-    .msg.success{background:#052e16;border:1px solid #22c55e;color:#86efac}
-    .msg.warn{background:#1e3a5f;border:1px solid #3b82f6;color:#93c5fd}
-    .footer{margin-top:24px;text-align:center;color:#475569;font-size:.8rem}
-    .footer a{color:#3b82f6;text-decoration:none}
-    {% if error %}.server-error{background:#450a0a;border:1px solid #ef4444;color:#fca5a5;padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:.875rem}{% endif %}
-  </style>
+  <title>Sign In — Options Monitor</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/landing.css">
 </head>
 <body>
-  <div class="card">
-    <div class="brand"><span class="brand-icon">&#127942;</span><span class="brand-name">Options Monitor</span></div>
-    <p class="tagline">Secure access via magic link</p>
-    {% if error %}<div class="server-error">&#9888; {{ error }}</div>{% endif %}
-    <label for="email">Your email address</label>
-    <input type="email" id="email" placeholder="you@example.com" autocomplete="email">
-    <div id="msg" class="msg"></div>
-    <button class="btn" id="btn" onclick="sendLink()">&#9889; Send Magic Link</button>
-    <div class="footer">
-      <span>&#128274; No password needed &mdash; one-time secure link, expires in 15 min.</span>
-      <br><br>
-      <a href="/subscribe">Subscribe for €0.95/mo</a> &nbsp;·&nbsp; <a href="/account">My Account</a>
+
+  <nav class="site-nav" aria-label="Navegación principal">
+    <a href="/" class="logo">Small Smart Tools</a>
+    <ul class="nav-links" id="navMenu">
+      <li><a href="/">Inicio</a></li>
+      <li><a href="/subscribe">Suscribirse</a></li>
+      <li><a href="/login" style="color:var(--primary-text)">Acceder</a></li>
+    </ul>
+    <button class="menu-toggle" aria-label="Abrir menú" aria-expanded="false" aria-controls="navMenu" id="menuToggle">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <div class="page-center">
+    <div class="page-card" style="max-width:420px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+        <span style="font-size:1.8rem">🏆</span>
+        <span style="font-size:1.3rem;font-weight:800;color:var(--primary-text)">Options Monitor</span>
+      </div>
+      <p style="color:var(--text-muted);font-size:.875rem;margin-bottom:2rem">Secure access via magic link</p>
+      {% if error %}<div class="alert-info" style="border-color:var(--danger);background:var(--danger-bg);color:var(--danger)">⚠ {{ error }}</div>{% endif %}
+      <label class="form-label" for="email">Your email address</label>
+      <input type="email" id="email" class="form-input" placeholder="you@example.com" autocomplete="email">
+      <div id="msg" class="msg"></div>
+      <button class="btn btn-block" id="btn" onclick="sendLink()" style="margin-top:16px">⚡ Send Magic Link</button>
+      <div style="margin-top:24px;text-align:center;color:var(--text-muted);font-size:.8rem">
+        <span>🔒 No password needed — one-time secure link, expires in 15 min.</span>
+        <br><br>
+        <a href="/subscribe" style="color:var(--primary-text);text-decoration:none">Subscribe for €0.95/mo</a> · <a href="/account" style="color:var(--primary-text);text-decoration:none">My Account</a>
+      </div>
     </div>
   </div>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year">2025</span> Small Smart Tools. All rights reserved.</p>
+  </footer>
+
   <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
     async function sendLink() {
       const email = document.getElementById('email').value.trim();
       const btn   = document.getElementById('btn');
@@ -88,6 +95,16 @@
     document.getElementById('email').addEventListener('keydown', e => {
       if (e.key === 'Enter') sendLink();
     });
+
+    // Hamburger menu
+    const toggle = document.getElementById('menuToggle');
+    const menu   = document.getElementById('navMenu');
+    toggle.addEventListener('click', () => {
+      const open = menu.classList.toggle('active');
+      toggle.classList.toggle('active');
+      toggle.setAttribute('aria-expanded', open);
+    });
+    menu.querySelectorAll('a').forEach(l => l.addEventListener('click', () => { menu.classList.remove('active'); toggle.classList.remove('active'); }));
   </script>
 </body>
 </html>

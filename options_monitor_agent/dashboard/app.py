@@ -220,8 +220,15 @@ def create_app(database=None, agent=None):
         return jsonify({"status": "ok", "market": status})
 
     @app.route("/")
+    def landing():
+        """Public landing page — entry point for all visitors."""
+        if session.get('authenticated'):
+            return redirect(url_for('dashboard'))
+        return render_template("landing.html")
+
+    @app.route("/dashboard")
     @login_required
-    def index():
+    def dashboard():
         return render_template("index.html")
 
     # =========================================================================

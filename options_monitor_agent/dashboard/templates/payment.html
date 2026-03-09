@@ -4,75 +4,74 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Payment — Options Monitor</title>
-  <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{background:#0f1117;color:#e2e8f0;font-family:Inter,Arial,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-    .card{background:#1e293b;border-radius:16px;padding:48px 40px;max-width:520px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.4)}
-    h1{font-size:1.8rem;font-weight:800;margin-bottom:8px;text-align:center}
-    .subtitle{color:#94a3b8;text-align:center;margin-bottom:32px}
-    .method{background:#0f172a;border:2px solid #1e293b;border-radius:12px;padding:20px 24px;margin-bottom:16px;cursor:pointer;transition:border-color .2s;text-decoration:none;display:block;color:inherit}
-    .method:hover{border-color:#3b82f6}
-    .method-header{display:flex;align-items:center;gap:16px;margin-bottom:6px}
-    .method-icon{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0}
-    .stripe-icon{background:#635bff}
-    .paypal-icon{background:#003087}
-    .kofi-icon{background:#ff5e5b}
-    .method-name{font-weight:700;font-size:1.05rem}
-    .method-desc{color:#64748b;font-size:.875rem;margin-left:56px}
-    .recommended{background:#1e3a5f;color:#60a5fa;font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:8px}
-    .email-form{margin-bottom:24px}
-    .email-form label{display:block;font-size:.85rem;color:#94a3b8;margin-bottom:6px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
-    .email-form input{width:100%;padding:12px 16px;background:#0f172a;border:2px solid #1e293b;border-radius:8px;color:#e2e8f0;font-size:1rem;outline:none}
-    .email-form input:focus{border-color:#3b82f6}
-    .divider{border:none;border-top:1px solid #1e293b;margin:24px 0}
-    .note{text-align:center;color:#475569;font-size:.8rem;margin-top:20px}
-    .back{display:inline-flex;align-items:center;gap:6px;color:#64748b;font-size:.875rem;text-decoration:none;margin-bottom:24px}
-    .back:hover{color:#94a3b8}
-    .info-box{background:#0f172a;border-radius:8px;padding:12px 16px;margin-bottom:24px;color:#94a3b8;font-size:.875rem;line-height:1.5}
-    .info-box strong{color:#e2e8f0}
-  </style>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/landing.css">
 </head>
 <body>
-  <div class="card">
-    <a href="/subscribe" class="back">← Back to plans</a>
-    <h1>&#9889; Complete Payment</h1>
-    <p class="subtitle">One month access — <strong style="color:#3b82f6">€0.95</strong></p>
-    <div class="email-form">
-      <label>Your email address</label>
-      <input type="email" id="emailInput" value="{{ email }}" placeholder="you@example.com">
-    </div>
-    <div class="info-box">
-      After payment, <strong>send your payment confirmation + email</strong> to
-      <strong>braisnatural@gmail.com</strong> and access will be activated within a few hours.
-      Or use Stripe below for instant automated activation.
-    </div>
-    <a href="#" onclick="goStripe()" class="method">
-      <div class="method-header">
-        <div class="method-icon stripe-icon">&#128179;</div>
-        <div>
-          <span class="method-name">Stripe</span>
-          <span class="recommended">INSTANT</span>
+
+  <nav class="site-nav" aria-label="Navegación principal">
+    <a href="/" class="logo">Small Smart Tools</a>
+    <ul class="nav-links" id="navMenu">
+      <li><a href="/">Inicio</a></li>
+      <li><a href="/subscribe">Suscribirse</a></li>
+      <li><a href="/login">Acceder</a></li>
+    </ul>
+    <button class="menu-toggle" aria-label="Abrir menú" aria-expanded="false" aria-controls="navMenu" id="menuToggle">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <div class="page-center">
+    <div class="page-card" style="max-width:520px;">
+      <a href="/subscribe" style="display:inline-flex;align-items:center;gap:6px;color:var(--text-muted);font-size:.875rem;text-decoration:none;margin-bottom:24px">← Back to plans</a>
+      <h1 style="font-size:1.8rem;font-weight:800;margin-bottom:8px;text-align:center">⚡ Complete Payment</h1>
+      <p style="color:var(--text-muted);text-align:center;margin-bottom:2rem">One month access — <strong style="color:var(--primary-text)">€0.95</strong></p>
+      <div style="margin-bottom:1.5rem">
+        <label class="form-label">Your email address</label>
+        <input type="email" id="emailInput" class="form-input" value="{{ email }}" placeholder="you@example.com">
+      </div>
+      <div class="alert-info" style="margin-bottom:1.5rem">
+        After payment, <strong>send your payment confirmation + email</strong> to
+        <strong>braisnatural@gmail.com</strong> and access will be activated within a few hours.
+        Or use Stripe below for instant automated activation.
+      </div>
+      <a href="#" onclick="goStripe()" class="method">
+        <div class="method-header">
+          <div class="method-icon stripe-icon">💳</div>
+          <div>
+            <span class="method-name">Stripe</span>
+            <span class="recommended">INSTANT</span>
+          </div>
         </div>
-      </div>
-      <div class="method-desc">Credit/debit card · Apple Pay · Google Pay · instant activation</div>
-    </a>
-    <a href="#" onclick="goPayPal()" class="method">
-      <div class="method-header">
-        <div class="method-icon paypal-icon">&#x1F4B3;</div>
-        <span class="method-name">PayPal</span>
-      </div>
-      <div class="method-desc">Pay via PayPal.me · manual activation (same day)</div>
-    </a>
-    <a href="#" onclick="goKofi()" class="method">
-      <div class="method-header">
-        <div class="method-icon kofi-icon">&#9749;</div>
-        <span class="method-name">Ko-fi</span>
-      </div>
-      <div class="method-desc">Support page · pay €0.95 · manual activation (same day)</div>
-    </a>
-    <div class="note">All payments are secure. Cancel anytime by contacting support.</div>
+        <div class="method-desc">Credit/debit card · Apple Pay · Google Pay · instant activation</div>
+      </a>
+      <a href="#" onclick="goPayPal()" class="method">
+        <div class="method-header">
+          <div class="method-icon paypal-icon">💳</div>
+          <span class="method-name">PayPal</span>
+        </div>
+        <div class="method-desc">Pay via PayPal.me · manual activation (same day)</div>
+      </a>
+      <a href="#" onclick="goKofi()" class="method">
+        <div class="method-header">
+          <div class="method-icon kofi-icon">☕</div>
+          <span class="method-name">Ko-fi</span>
+        </div>
+        <div class="method-desc">Support page · pay €0.95 · manual activation (same day)</div>
+      </a>
+      <div style="text-align:center;color:var(--text-muted);font-size:.8rem;margin-top:20px">All payments are secure. Cancel anytime by contacting support.</div>
+    </div>
   </div>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year">2025</span> Small Smart Tools. All rights reserved.</p>
+  </footer>
+
   <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
     // TODO: replace with your real Stripe Payment Link URL
     const STRIPE_URL  = 'https://buy.stripe.com/REPLACE_WITH_YOUR_LINK';
     // TODO: replace with your PayPal.me link
@@ -93,6 +92,16 @@
       window.open(KOFI_URL, '_blank');
       alert('After paying on Ko-fi, email braisnatural@gmail.com with your receipt and email address for manual activation.');
     }
+
+    // Hamburger menu
+    const toggle = document.getElementById('menuToggle');
+    const menu   = document.getElementById('navMenu');
+    toggle.addEventListener('click', () => {
+      const open = menu.classList.toggle('active');
+      toggle.classList.toggle('active');
+      toggle.setAttribute('aria-expanded', open);
+    });
+    menu.querySelectorAll('a').forEach(l => l.addEventListener('click', () => { menu.classList.remove('active'); toggle.classList.remove('active'); }));
   </script>
 </body>
 </html>

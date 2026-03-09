@@ -4,48 +4,66 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Subscribe — Options Monitor</title>
-  <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{background:#0f1117;color:#e2e8f0;font-family:Inter,Arial,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-    .card{background:#1e293b;border-radius:16px;padding:48px 40px;max-width:480px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4)}
-    .badge{background:#3b82f6;color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;letter-spacing:1px;text-transform:uppercase;display:inline-block;margin-bottom:16px}
-    h1{font-size:2rem;font-weight:800;margin-bottom:8px}    
-    .price{font-size:3.5rem;font-weight:900;color:#3b82f6;line-height:1;margin:24px 0 4px}
-    .price span{font-size:1.2rem;color:#94a3b8;font-weight:400}
-    .period{color:#64748b;margin-bottom:32px}
-    .features{text-align:left;list-style:none;margin:0 0 32px;padding:0}
-    .features li{padding:10px 0;border-bottom:1px solid #0f172a;color:#cbd5e1;display:flex;align-items:center;gap:12px}
-    .features li:last-child{border-bottom:none}
-    .features li::before{content:'✓';color:#22c55e;font-weight:700;font-size:1.1rem;flex-shrink:0}
-    .btn{display:block;width:100%;padding:16px;background:linear-gradient(135deg,#3b82f6,#6366f1);color:#fff;text-decoration:none;border-radius:10px;font-size:1.1rem;font-weight:700;transition:opacity .2s;cursor:pointer;border:none}
-    .btn:hover{opacity:.9}
-    .login-link{margin-top:20px;color:#64748b;font-size:.9rem}
-    .login-link a{color:#3b82f6;text-decoration:none}
-    .note{margin-top:16px;color:#475569;font-size:.8rem}
-    .alert{background:#1e3a5f;border:1px solid #3b82f6;border-radius:8px;padding:12px 16px;margin-bottom:24px;color:#93c5fd;font-size:.9rem}
-  </style>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/landing.css">
 </head>
 <body>
-  <div class="card">
-    <div class="badge">Options Monitor</div>
-    {% if request.args.get('cancelled') %}
-    <div class="alert">Your subscription has been cancelled. We hope to see you again!</div>
-    {% endif %}
-    <h1>&#9889; Get Access</h1>
-    <p style="color:#94a3b8;margin-top:8px">Real-time options flow, alerts & AI analysis</p>
-    <div class="price">0.95<span>€</span></div>
-    <div class="period">per month &nbsp;·&nbsp; cancel anytime</div>
-    <ul class="features">
-      <li>Live options flow &amp; unusual activity</li>
-      <li>AI-powered market analysis (Claude)</li>
-      <li>Premium spike alerts</li>
-      <li>Full options chain viewer</li>
-      <li>Backtesting signals</li>
-      <li>Magic-link login — no password needed</li>
+
+  <nav class="site-nav" aria-label="Navegación principal">
+    <a href="/" class="logo">Small Smart Tools</a>
+    <ul class="nav-links" id="navMenu">
+      <li><a href="/">Inicio</a></li>
+      <li><a href="/subscribe" style="color:var(--primary-text)">Suscribirse</a></li>
+      <li><a href="/login">Acceder</a></li>
     </ul>
-    <a href="/payment" class="btn">&#9889; Subscribe for €0.95/month</a>
-    <div class="login-link">Already subscribed? <a href="/login">Sign in</a></div>
-    <div class="note">Cancel anytime. No hidden fees. Experimental project.</div>
+    <button class="menu-toggle" aria-label="Abrir menú" aria-expanded="false" aria-controls="navMenu" id="menuToggle">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <div class="page-center">
+    <div class="page-card" style="max-width:480px;text-align:center;">
+      <span class="badge badge-gradient" style="margin-bottom:16px">Options Monitor</span>
+      {% if request.args.get('cancelled') %}
+      <div class="alert-info" style="text-align:left">Your subscription has been cancelled. We hope to see you again!</div>
+      {% endif %}
+      <h1 style="font-size:2rem;font-weight:800;margin-bottom:8px">⚡ Get Access</h1>
+      <p style="color:var(--text-muted);margin-top:8px">Real-time options flow, alerts &amp; AI analysis</p>
+      <div style="font-size:3.5rem;font-weight:900;color:var(--primary-text);line-height:1;margin:24px 0 4px">0.95<span style="font-size:1.2rem;color:var(--text-muted);font-weight:400">€</span></div>
+      <div style="color:var(--text-muted);margin-bottom:2rem">per month · cancel anytime</div>
+      <ul class="sub-features">
+        <li>Live options flow &amp; unusual activity</li>
+        <li>AI-powered market analysis (Claude)</li>
+        <li>Premium spike alerts</li>
+        <li>Full options chain viewer</li>
+        <li>Backtesting signals</li>
+        <li>Magic-link login — no password needed</li>
+      </ul>
+      <a href="/payment" class="btn btn-block">⚡ Subscribe for €0.95/month</a>
+      <div style="margin-top:20px;color:var(--text-muted);font-size:.9rem">
+        Already subscribed? <a href="/login" style="color:var(--primary-text);text-decoration:none">Sign in</a>
+      </div>
+      <div style="margin-top:16px;color:var(--text-muted);font-size:.8rem">Cancel anytime. No hidden fees. Experimental project.</div>
+    </div>
   </div>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year">2025</span> Small Smart Tools. All rights reserved.</p>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+    const toggle = document.getElementById('menuToggle');
+    const menu   = document.getElementById('navMenu');
+    toggle.addEventListener('click', () => {
+      const open = menu.classList.toggle('active');
+      toggle.classList.toggle('active');
+      toggle.setAttribute('aria-expanded', open);
+    });
+    menu.querySelectorAll('a').forEach(l => l.addEventListener('click', () => { menu.classList.remove('active'); toggle.classList.remove('active'); }));
+  </script>
 </body>
 </html>

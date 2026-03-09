@@ -114,7 +114,7 @@ def login_required(f):
 @auth_bp.route('/login', methods=['GET'])
 def login():
     if session.get('authenticated'):
-        return redirect(url_for('index'))
+        return redirect(url_for('dashboard'))
     return render_template('login.html')
 
 @auth_bp.route('/auth/request', methods=['POST'])
@@ -160,7 +160,7 @@ def auth_verify(token):
     # Validate redirect URL to prevent open redirect
     next_url = request.args.get('next', '')
     if not _is_safe_redirect(next_url):
-        next_url = url_for('index')
+        next_url = url_for('dashboard')
     return redirect(next_url)
 
 @auth_bp.route('/logout')
