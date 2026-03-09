@@ -62,108 +62,136 @@ def _get_account_symbols(email, account_id):
 
 def _rebuild_single(email, account_id, symbol):
     """Rebuild FIFO for a single (account, symbol) pair."""
-    # 1. Clear computed data
-    db.delete_lots(email, account_id, symbol)
-    db.delete_closed(email, account_id, symbol)
-    db.delete_position(email, account_id, symbol)
+    # Use a single shared connection for all DB operations in this rebuild
+    conn = db.get_shared_conn()
+    try:
+        # 1. Clear computed data (single transaction)
+        conn.execute(
+            '''DELETE FROM investment_lots
+               WHERE email = ? COLLATE NOCASE AND account_id = ? AND symbol = ?''',
+            (email.lower(), account_id, symbol))
+        conn.execute(
+            '''DELETE FROM investment_closed
+               WHERE email = ? COLLATE NOCASE AND account_id = ? AND symbol = ?''',
+            (email.lower(), account_id, symbol))
+        conn.execute(
+            '''DELETE FROM investment_positions
+               WHERE email = ? COLLATE NOCASE AND account_id = ? AND symbol = ?''',
+            (email.lower(), account_id, symbol))
 
-    # 2. Fetch transactions in chronological order
-    txs = db.get_transactions_for_fifo(email, account_id, symbol)
-    if not txs:
-        return
+        # 2. Fetch transactions in chronological order
+        txs = conn.execute(
+            '''SELECT * FROM investment_transactions
+               WHERE email = ? COLLATE NOCASE AND account_id = ?
+                 AND symbol = ? AND tx_type IN ('buy','sell','split')
+               ORDER BY tx_date ASC, id ASC''',
+            (email.lower(), account_id, symbol)
+        ).fetchall()
+        txs = [dict(r) for r in txs]
 
-    # 3. FIFO matching
-    open_lots = deque()
+        if not txs:
+            conn.commit()
+            return
 
-    for tx in txs:
-        if tx['tx_type'] == 'buy':
-            qty = tx['quantity']
-            cost_per_unit = (tx['price_eur'] or tx['price']) + \
-                            ((tx['commission_eur'] or tx['commission'] or 0) / qty if qty else 0)
-            open_lots.append({
-                'tx_id': tx['id'],
-                'date': tx['tx_date'],
-                'remaining_qty': qty,
-                'original_qty': qty,
-                'cost_per_unit_eur': cost_per_unit,
-            })
+        # 3. FIFO matching
+        open_lots = deque()
 
-        elif tx['tx_type'] == 'sell':
-            remaining = tx['quantity']
-            sell_qty = tx['quantity']
-            sell_price_per_unit = (tx['price_eur'] or tx['price']) - \
-                                 ((tx['commission_eur'] or tx['commission'] or 0) / sell_qty if sell_qty else 0)
+        for tx in txs:
+            if tx['tx_type'] == 'buy':
+                qty = tx['quantity']
+                cost_per_unit = (tx['price_eur'] or tx['price']) + \
+                                ((tx['commission_eur'] or tx['commission'] or 0) / qty if qty else 0)
+                open_lots.append({
+                    'tx_id': tx['id'],
+                    'date': tx['tx_date'],
+                    'remaining_qty': qty,
+                    'original_qty': qty,
+                    'cost_per_unit_eur': cost_per_unit,
+                })
 
-            while remaining > 0 and open_lots:
-                lot = open_lots[0]
-                matched = min(remaining, lot['remaining_qty'])
+            elif tx['tx_type'] == 'sell':
+                remaining = tx['quantity']
+                sell_qty = tx['quantity']
+                sell_price_per_unit = (tx['price_eur'] or tx['price']) - \
+                                     ((tx['commission_eur'] or tx['commission'] or 0) / sell_qty if sell_qty else 0)
 
-                buy_date = lot['date']
-                sell_date = tx['tx_date']
-                try:
-                    holding_days = (datetime.strptime(sell_date, '%Y-%m-%d') -
-                                   datetime.strptime(buy_date, '%Y-%m-%d')).days
-                except (ValueError, TypeError):
-                    holding_days = 0
+                while remaining > 0 and open_lots:
+                    lot = open_lots[0]
+                    matched = min(remaining, lot['remaining_qty'])
 
-                db.insert_closed(
-                    email=email,
-                    account_id=account_id,
-                    symbol=symbol,
-                    buy_date=buy_date,
-                    sell_date=sell_date,
-                    buy_tx_id=lot['tx_id'],
-                    sell_tx_id=tx['id'],
-                    quantity=matched,
-                    cost_eur=round(matched * lot['cost_per_unit_eur'], 6),
-                    proceeds_eur=round(matched * sell_price_per_unit, 6),
-                    realized_pl_eur=round(matched * (sell_price_per_unit - lot['cost_per_unit_eur']), 6),
-                    holding_days=holding_days,
+                    buy_date = lot['date']
+                    sell_date = tx['tx_date']
+                    try:
+                        holding_days = (datetime.strptime(sell_date, '%Y-%m-%d') -
+                                       datetime.strptime(buy_date, '%Y-%m-%d')).days
+                    except (ValueError, TypeError):
+                        holding_days = 0
+
+                    conn.execute(
+                        '''INSERT INTO investment_closed
+                           (email, account_id, symbol, buy_date, sell_date,
+                            buy_tx_id, sell_tx_id, quantity, cost_eur, proceeds_eur,
+                            realized_pl_eur, holding_days)
+                           VALUES (?,?,?,?,?,?,?,?,?,?,?,?)''',
+                        (email.lower(), account_id, symbol, buy_date, sell_date,
+                         lot['tx_id'], tx['id'], matched,
+                         round(matched * lot['cost_per_unit_eur'], 6),
+                         round(matched * sell_price_per_unit, 6),
+                         round(matched * (sell_price_per_unit - lot['cost_per_unit_eur']), 6),
+                         holding_days)
+                    )
+
+                    lot['remaining_qty'] -= matched
+                    remaining -= matched
+
+                    if lot['remaining_qty'] <= 1e-9:
+                        open_lots.popleft()
+
+            elif tx['tx_type'] == 'split':
+                ratio = tx['quantity']
+                if ratio > 0:
+                    for lot in open_lots:
+                        lot['remaining_qty'] *= ratio
+                        lot['original_qty'] *= ratio
+                        lot['cost_per_unit_eur'] /= ratio
+
+        # 4. Persist remaining open lots
+        now = datetime.utcnow().isoformat()
+        for lot in open_lots:
+            if lot['remaining_qty'] > 1e-9:
+                conn.execute(
+                    '''INSERT INTO investment_lots
+                       (email, account_id, symbol, buy_date, buy_tx_id,
+                        original_quantity, remaining_quantity, cost_per_unit_eur)
+                       VALUES (?,?,?,?,?,?,?,?)''',
+                    (email.lower(), account_id, symbol, lot['date'], lot['tx_id'],
+                     lot['original_qty'], lot['remaining_qty'], lot['cost_per_unit_eur'])
                 )
 
-                lot['remaining_qty'] -= matched
-                remaining -= matched
+        # 5. Compute aggregate position
+        active_lots = [l for l in open_lots if l['remaining_qty'] > 1e-9]
+        if active_lots:
+            total_qty = sum(l['remaining_qty'] for l in active_lots)
+            total_cost = sum(l['remaining_qty'] * l['cost_per_unit_eur'] for l in active_lots)
+            avg_cost = total_cost / total_qty if total_qty > 0 else 0
+            earliest_date = min(l['date'] for l in active_lots)
 
-                if lot['remaining_qty'] <= 1e-9:
-                    open_lots.popleft()
-
-        elif tx['tx_type'] == 'split':
-            # tx.quantity = split ratio (e.g., 4 for 4:1 split)
-            ratio = tx['quantity']
-            if ratio > 0:
-                for lot in open_lots:
-                    lot['remaining_qty'] *= ratio
-                    lot['original_qty'] *= ratio
-                    lot['cost_per_unit_eur'] /= ratio
-
-    # 4. Persist remaining open lots
-    for lot in open_lots:
-        if lot['remaining_qty'] > 1e-9:
-            db.insert_lot(
-                email=email,
-                account_id=account_id,
-                symbol=symbol,
-                buy_date=lot['date'],
-                buy_tx_id=lot['tx_id'],
-                original_quantity=lot['original_qty'],
-                remaining_quantity=lot['remaining_qty'],
-                cost_per_unit_eur=lot['cost_per_unit_eur'],
+            conn.execute(
+                '''INSERT INTO investment_positions
+                   (email, account_id, symbol, open_date, quantity,
+                    avg_cost_eur, total_cost_eur, last_updated)
+                   VALUES (?,?,?,?,?,?,?,?)
+                   ON CONFLICT(email, account_id, symbol) DO UPDATE SET
+                     open_date = excluded.open_date,
+                     quantity = excluded.quantity,
+                     avg_cost_eur = excluded.avg_cost_eur,
+                     total_cost_eur = excluded.total_cost_eur,
+                     last_updated = excluded.last_updated''',
+                (email.lower(), account_id, symbol, earliest_date,
+                 round(total_qty, 8), round(avg_cost, 6), round(total_cost, 6), now)
             )
 
-    # 5. Compute aggregate position
-    active_lots = [l for l in open_lots if l['remaining_qty'] > 1e-9]
-    if active_lots:
-        total_qty = sum(l['remaining_qty'] for l in active_lots)
-        total_cost = sum(l['remaining_qty'] * l['cost_per_unit_eur'] for l in active_lots)
-        avg_cost = total_cost / total_qty if total_qty > 0 else 0
-        earliest_date = min(l['date'] for l in active_lots)
-
-        db.upsert_position(
-            email=email,
-            account_id=account_id,
-            symbol=symbol,
-            open_date=earliest_date,
-            quantity=round(total_qty, 8),
-            avg_cost_eur=round(avg_cost, 6),
-            total_cost_eur=round(total_cost, 6),
-        )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise

@@ -18,6 +18,31 @@ def _conn():
     return c
 
 
+# Thread-local connection for batch operations
+import threading
+_local = threading.local()
+
+
+def get_shared_conn():
+    """Get a thread-local shared connection for batch use."""
+    c = getattr(_local, 'conn', None)
+    if c is None:
+        c = _conn()
+        _local.conn = c
+    return c
+
+
+def close_shared_conn():
+    """Close and discard the thread-local shared connection."""
+    c = getattr(_local, 'conn', None)
+    if c is not None:
+        try:
+            c.close()
+        except Exception:
+            pass
+        _local.conn = None
+
+
 def init_investments_db():
     """Create all investment tables if they don't exist."""
     with _conn() as c:

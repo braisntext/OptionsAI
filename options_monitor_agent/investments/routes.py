@@ -2,19 +2,13 @@
 Investments — Flask blueprint with all API routes for the investment management app.
 """
 
-import os
 import re
-import sys
 from flask import Blueprint, request, jsonify, session
-
-_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-if _THIS_DIR not in sys.path:
-    sys.path.insert(0, _THIS_DIR)
 
 from . import database as db
 from .fifo_engine import rebuild_positions
 from .import_fiscal import get_available_fiscal_statements, import_fiscal_statements
-from .price_service import search_symbols, get_live_price, refresh_prices, get_price_history
+from .price_service import search_symbols, refresh_prices, get_price_history
 
 investments_bp = Blueprint('investments', __name__)
 
@@ -254,27 +248,35 @@ def get_positions():
     account_id = request.args.get('account_id', type=int)
     positions = db.get_positions(email, account_id=account_id)
 
-    # Enrich with live market data
-    symbols = list({p['symbol'] for p in positions})
-    if symbols:
-        prices = refresh_prices(symbols)
-        for p in positions:
-            sym = p['symbol']
-            if sym in prices:
-                lp = prices[sym]['price_eur']
-                p['current_price_eur'] = lp
-                p['market_value_eur'] = round(p['quantity'] * lp, 2) if lp else None
-                if lp and p['total_cost_eur']:
-                    mv = p['quantity'] * lp
-                    p['unrealized_pl_eur'] = round(mv - p['total_cost_eur'], 2)
-                    p['unrealized_pl_pct'] = round(
-                        (mv - p['total_cost_eur']) / p['total_cost_eur'] * 100, 2
-                    ) if p['total_cost_eur'] else 0
-            else:
-                p['current_price_eur'] = None
-                p['market_value_eur'] = None
-                p['unrealized_pl_eur'] = None
-                p['unrealized_pl_pct'] = None
+    # Only refresh prices if ?refresh=1 is passed (manual refresh)
+    # Otherwise use cached prices from the DB join (last_price_eur)
+    do_refresh = request.args.get('refresh', '') == '1'
+    prices = {}
+    if do_refresh:
+        symbols = list({p['symbol'] for p in positions})
+        if symbols:
+            prices = refresh_prices(symbols)
+
+    for p in positions:
+        sym = p['symbol']
+        lp = None
+        if sym in prices and prices[sym].get('price_eur'):
+            lp = prices[sym]['price_eur']
+        elif p.get('last_price_eur'):
+            lp = p['last_price_eur']
+
+        p['current_price_eur'] = lp
+        if lp and p.get('quantity') and p.get('total_cost_eur'):
+            mv = p['quantity'] * lp
+            p['market_value_eur'] = round(mv, 2)
+            p['unrealized_pl_eur'] = round(mv - p['total_cost_eur'], 2)
+            p['unrealized_pl_pct'] = round(
+                (mv - p['total_cost_eur']) / p['total_cost_eur'] * 100, 2
+            ) if p['total_cost_eur'] else 0
+        else:
+            p['market_value_eur'] = None
+            p['unrealized_pl_eur'] = None
+            p['unrealized_pl_pct'] = None
 
     return jsonify({'status': 'ok', 'positions': positions})
 
@@ -287,9 +289,18 @@ def get_position_detail(symbol):
     symbol = symbol.upper()
     detail = db.get_position_detail(email, symbol)
 
-    # Add live price
-    price_data = get_live_price(symbol)
-    detail['live_price'] = price_data
+    # Use cached price — don't call yfinance here (chart endpoint handles live data)
+    cached = db.get_cached_symbol(symbol)
+    if cached:
+        detail['live_price'] = {
+            'symbol': cached['symbol'],
+            'price': cached.get('last_price'),
+            'price_eur': cached.get('last_price_eur'),
+            'currency': cached.get('currency', 'EUR'),
+            'name': cached.get('name', ''),
+        }
+    else:
+        detail['live_price'] = None
 
     return jsonify({'status': 'ok', **detail})
 
@@ -306,14 +317,15 @@ def portfolio_summary():
     positions = db.get_positions(email)
     symbols = list({p['symbol'] for p in positions})
     total_market_value = 0
+    prices = {}
     if symbols:
         prices = refresh_prices(symbols)
-        for p in positions:
-            sym = p['symbol']
-            if sym in prices and prices[sym].get('price_eur'):
-                total_market_value += p['quantity'] * prices[sym]['price_eur']
-            else:
-                total_market_value += p['total_cost_eur']  # fallback to cost
+    for p in positions:
+        sym = p['symbol']
+        if sym in prices and prices[sym].get('price_eur'):
+            total_market_value += p['quantity'] * prices[sym]['price_eur']
+        else:
+            total_market_value += p.get('total_cost_eur') or 0
 
     summary['total_market_value_eur'] = round(total_market_value, 2)
     if summary['total_invested_eur'] > 0:
@@ -326,20 +338,17 @@ def portfolio_summary():
         summary['total_unrealized_pl_eur'] = 0
         summary['total_unrealized_pl_pct'] = 0
 
-    # Allocation
+    # Allocation — reuse already-fetched prices (no extra API calls)
     allocation = []
     for p in positions:
         sym = p['symbol']
-        value = total_market_value
-        sym_value = p['total_cost_eur']
-        if symbols:
-            prices_data = refresh_prices([sym])
-            if sym in prices_data and prices_data[sym].get('price_eur'):
-                sym_value = p['quantity'] * prices_data[sym]['price_eur']
+        sym_value = p.get('total_cost_eur') or 0
+        if sym in prices and prices[sym].get('price_eur'):
+            sym_value = p['quantity'] * prices[sym]['price_eur']
         allocation.append({
             'symbol': sym,
             'value_eur': round(sym_value, 2),
-            'pct': round(sym_value / value * 100, 2) if value > 0 else 0,
+            'pct': round(sym_value / total_market_value * 100, 2) if total_market_value > 0 else 0,
         })
     allocation.sort(key=lambda x: x['value_eur'], reverse=True)
     summary['allocation'] = allocation[:20]

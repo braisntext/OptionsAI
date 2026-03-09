@@ -88,11 +88,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function refreshAll() {
   await loadAccounts();
-  loadSummary();
-  loadPositions();
-  loadTransactions();
-  loadDividends();
-  loadClosed();
+  // Load all tabs in parallel
+  await Promise.all([
+    loadSummary(),
+    loadPositions(),
+    loadTransactions(),
+    loadDividends(),
+    loadClosed(),
+  ]);
 }
 
 async function loadAccounts() {
@@ -199,17 +202,29 @@ async function openDetail(symbol) {
   panel.classList.add('active');
   document.getElementById('detailTitle').textContent = symbol + ' — Detalle';
 
-  // Load detail data
-  const res = await api('/api/investments/positions/' + encodeURIComponent(symbol));
-  if (res.status !== 'ok') return;
+  // Show loading state
+  document.getElementById('lotsTable').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  document.getElementById('detailTxTable').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  document.getElementById('detailDivTable').innerHTML = '';
+
+  // Load detail data and chart in parallel
+  const [res] = await Promise.all([
+    api('/api/investments/positions/' + encodeURIComponent(symbol)),
+    loadChart(symbol, '1y'),
+  ]);
+
+  if (res.status !== 'ok') {
+    document.getElementById('lotsTable').innerHTML = '<p style="color:var(--danger)">Error cargando datos</p>';
+    return;
+  }
 
   // Lots table
-  const lotsHtml = res.lots.length ? `
+  const lotsHtml = (res.lots && res.lots.length) ? `
     <table class="data-table">
       <thead><tr><th>Fecha compra</th><th>Broker</th><th>Cantidad</th><th>Coste/ud €</th></tr></thead>
       <tbody>${res.lots.map(l => `
         <tr>
-          <td>${l.buy_date}</td>
+          <td>${l.buy_date || '—'}</td>
           <td>${l.broker || ''}</td>
           <td>${fmt(l.remaining_quantity, 4)}</td>
           <td>${fmtEur(l.cost_per_unit_eur)}</td>
@@ -219,15 +234,16 @@ async function openDetail(symbol) {
   document.getElementById('lotsTable').innerHTML = lotsHtml;
 
   // Recent transactions
-  const txHtml = res.transactions.length ? `
+  const txList = res.transactions || [];
+  const txHtml = txList.length ? `
     <table class="data-table">
-      <thead><tr><th>Fecha</th><th>Tipo</th><th>Cant.</th><th>Precio</th><th>Broker</th></tr></thead>
-      <tbody>${res.transactions.slice(0, 10).map(t => `
+      <thead><tr><th>Fecha</th><th>Tipo</th><th>Cant.</th><th>Precio €</th><th>Broker</th></tr></thead>
+      <tbody>${txList.slice(0, 10).map(t => `
         <tr>
-          <td>${t.tx_date}</td>
-          <td>${t.tx_type}</td>
+          <td>${t.tx_date || '—'}</td>
+          <td style="text-transform:capitalize">${t.tx_type || ''}</td>
           <td>${fmt(t.quantity, 4)}</td>
-          <td>${fmtEur(t.price_eur || t.price)}</td>
+          <td>${fmtEur(t.price_eur != null ? t.price_eur : t.price)}</td>
           <td>${t.broker || ''}</td>
         </tr>`).join('')}
       </tbody>
@@ -235,21 +251,19 @@ async function openDetail(symbol) {
   document.getElementById('detailTxTable').innerHTML = txHtml;
 
   // Dividends
-  const divHtml = res.dividends.length ? `
+  const divList = res.dividends || [];
+  const divHtml = divList.length ? `
     <table class="data-table">
       <thead><tr><th>Fecha</th><th>Importe €</th><th>Retención €</th></tr></thead>
-      <tbody>${res.dividends.map(d => `
+      <tbody>${divList.map(d => `
         <tr>
-          <td>${d.pay_date}</td>
+          <td>${d.pay_date || '—'}</td>
           <td>${fmtEur(d.amount_eur)}</td>
           <td>${fmtEur(d.withholding_eur)}</td>
         </tr>`).join('')}
       </tbody>
     </table>` : '<p style="font-size:.85rem;color:var(--text-muted)">Sin dividendos</p>';
   document.getElementById('detailDivTable').innerHTML = divHtml;
-
-  // Load chart
-  loadChart(symbol, '1y');
 
   // Scroll to panel
   panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -262,63 +276,74 @@ function closeDetail() {
 
 // ── Charts ───────────────────────────────────────────────────────────────────
 
+const PERIOD_MAP = { '1m': '1M', '3m': '3M', '6m': '6M', '1y': '1A', '5y': '5A', 'max': 'Max' };
+
 async function loadChart(symbol, period) {
   // Update active button
+  const label = PERIOD_MAP[period] || period;
   document.querySelectorAll('#chartControls button').forEach(b => {
-    b.classList.toggle('active', b.textContent.toLowerCase().includes(
-      period === '1m' ? '1m' : period === '3m' ? '3m' : period === '6m' ? '6m' :
-      period === '1y' ? '1a' : period === '5y' ? '5a' : 'max'
-    ));
+    b.classList.toggle('active', b.textContent.trim() === label);
   });
 
-  const res = await api('/api/investments/chart/' + encodeURIComponent(symbol) + '?period=' + period);
-  if (res.status !== 'ok' || !res.data || !res.data.length) return;
+  const canvas = document.getElementById('priceChart');
+  if (!canvas) return;
 
-  const ctx = document.getElementById('priceChart').getContext('2d');
-  if (priceChart) priceChart.destroy();
-
-  const labels = res.data.map(d => d.date);
-  const prices = res.data.map(d => d.close_eur || d.close);
-
-  priceChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        label: symbol + ' (€)',
-        data: prices,
-        borderColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-text').trim() || '#6366f1',
-        backgroundColor: 'transparent',
-        borderWidth: 2,
-        pointRadius: 0,
-        tension: 0.3,
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: ctx => fmt(ctx.parsed.y) + ' €'
-          }
-        }
-      },
-      scales: {
-        x: {
-          display: true,
-          ticks: { maxTicksLimit: 8, font: { size: 10 } },
-          grid: { display: false },
-        },
-        y: {
-          ticks: { font: { size: 10 }, callback: v => fmt(v) + '€' },
-          grid: { color: 'rgba(0,0,0,.06)' },
-        }
-      },
-      interaction: { mode: 'index', intersect: false },
+  try {
+    const res = await api('/api/investments/chart/' + encodeURIComponent(symbol) + '?period=' + period);
+    if (res.status !== 'ok' || !res.data || !res.data.length) {
+      // Show empty state on canvas
+      if (priceChart) { priceChart.destroy(); priceChart = null; }
+      return;
     }
-  });
+
+    const ctx = canvas.getContext('2d');
+    if (priceChart) priceChart.destroy();
+
+    const labels = res.data.map(d => d.date);
+    const prices = res.data.map(d => d.close_eur != null ? d.close_eur : d.close);
+
+    priceChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: symbol + ' (€)',
+          data: prices,
+          borderColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-text').trim() || '#6366f1',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: 0,
+          tension: 0.3,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => fmt(ctx.parsed.y) + ' €'
+            }
+          }
+        },
+        scales: {
+          x: {
+            display: true,
+            ticks: { maxTicksLimit: 8, font: { size: 10 } },
+            grid: { display: false },
+          },
+          y: {
+            ticks: { font: { size: 10 }, callback: v => fmt(v) + '€' },
+            grid: { color: 'rgba(0,0,0,.06)' },
+          }
+        },
+        interaction: { mode: 'index', intersect: false },
+      }
+    });
+  } catch (e) {
+    // Chart load failed silently — already have data tables
+  }
 }
 
 // ── Transactions ─────────────────────────────────────────────────────────────
