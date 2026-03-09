@@ -226,6 +226,11 @@ def create_app(database=None, agent=None):
             return redirect(url_for('dashboard'))
         return render_template("landing.html")
 
+    @app.route("/alt-investments")
+    def alt_investments():
+        """Public informational page for Alt Investments Tracker."""
+        return render_template("alt_investments.html")
+
     @app.route("/dashboard")
     @login_required
     def dashboard():
@@ -299,6 +304,8 @@ def create_app(database=None, agent=None):
             api_instance = sib_api_v3_sdk.TransactionalEmailsApi(
                 sib_api_v3_sdk.ApiClient(configuration)
             )
+
+            # 1) Email to admin
             send_email = sib_api_v3_sdk.SendSmtpEmail(
                 to=[{"email": admin_email}],
                 sender={"name": BREVO_SENDER_NAME, "email": BREVO_SENDER_EMAIL},
@@ -308,6 +315,30 @@ def create_app(database=None, agent=None):
             )
             api_instance.send_transac_email(send_email)
             print(f"[contact] Message from {email} sent to {admin_email}")
+
+            # 2) Confirmation email to the visitor
+            confirm_html = f"""
+            <div style="font-family:Inter,Arial,sans-serif;max-width:560px;margin:auto;padding:32px;background:#F8FAFC;color:#1E293B;border-radius:16px;border:1px solid #EDF2F7">
+              <h2 style="color:#7C3AED;margin-bottom:4px">✓ Hemos recibido tu mensaje</h2>
+              <hr style="border:1px solid #EDF2F7;margin:20px 0">
+              <p>Hola <strong>{safe_name}</strong>,</p>
+              <p>Gracias por escribirnos. Hemos recibido tu mensaje y te responderemos en menos de 24 horas.</p>
+              <hr style="border:1px solid #EDF2F7;margin:20px 0">
+              <p style="color:#64748B;font-size:13px"><strong>Tu mensaje:</strong></p>
+              <div style="background:#FFFFFF;padding:16px;border-radius:8px;border:1px solid #EDF2F7;margin-top:8px;font-size:14px">{safe_message}</div>
+              <hr style="border:1px solid #EDF2F7;margin:20px 0">
+              <p style="color:#64748B;font-size:12px">— El equipo de Small Smart Tools<br><a href="https://smallsmarttools.com" style="color:#7C3AED">smallsmarttools.com</a></p>
+            </div>
+            """
+            confirm_email = sib_api_v3_sdk.SendSmtpEmail(
+                to=[{"email": email, "name": name}],
+                sender={"name": BREVO_SENDER_NAME, "email": BREVO_SENDER_EMAIL},
+                subject="✓ Hemos recibido tu mensaje — Small Smart Tools",
+                html_content=confirm_html,
+            )
+            api_instance.send_transac_email(confirm_email)
+            print(f"[contact] Confirmation sent to {email}")
+
             return jsonify({"ok": True})
         except Exception as e:
             print(f"[contact] Brevo error: {e}")

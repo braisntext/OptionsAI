@@ -3,29 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Monitoriza opciones en tiempo real con inteligencia artificial. Alertas, análisis y opciones chain en una sola herramienta.">
+    <meta name="description" content="Small Smart Tools — herramientas inteligentes de finanzas: monitor de opciones, seguimiento de inversiones alternativas y más. Planes desde gratis.">
     <link rel="canonical" href="https://smallsmarttools.com/">
-    <meta property="og:title" content="Small Smart Tools | Options Monitor">
-    <meta property="og:description" content="Monitoriza opciones con IA. Alertas, análisis y datos en tiempo real.">
+    <meta property="og:title" content="Small Smart Tools — Herramientas financieras inteligentes">
+    <meta property="og:description" content="Monitor de opciones, inversiones alternativas y más. Analítica con IA, alertas y datos en tiempo real.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://smallsmarttools.com/">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧰</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <title>Small Smart Tools | Options Monitor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <title>Small Smart Tools — Herramientas financieras inteligentes</title>
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
-        "@type": "SoftwareApplication",
-        "name": "Small Smart Tools — Options Monitor",
-        "description": "Monitoriza opciones en tiempo real con inteligencia artificial. Alertas, análisis y cadena de opciones.",
-        "applicationCategory": "FinanceApplication",
-        "offers": {
-            "@type": "Offer",
-            "price": "0.95",
-            "priceCurrency": "EUR"
-        }
+        "@type": "Organization",
+        "name": "Small Smart Tools",
+        "description": "Plataforma de herramientas financieras inteligentes: monitor de opciones, seguimiento de inversiones alternativas y más.",
+        "url": "https://smallsmarttools.com"
     }
     </script>
     <link rel="stylesheet" href="/static/landing.css">
@@ -38,7 +33,7 @@
         <a href="/" class="logo">Small Smart Tools</a>
         <ul class="nav-links" id="navMenu">
             <li><a href="#inicio">Inicio</a></li>
-            <li><a href="#caracteristicas">Funciones</a></li>
+            <li><a href="#apps">Apps</a></li>
             <li><a href="#precios">Precios</a></li>
             <li><a href="#contacto">Contacto</a></li>
             <li><a href="/login">Acceder</a></li>
@@ -49,18 +44,53 @@
     </nav>
 
     <main id="contenido-principal">
+        <!-- ═══ HERO ═══ -->
         <header class="hero" id="inicio">
-            <h1>Monitoriza tus Opciones con
-                <span class="highlight">inteligencia</span>
+            <h1>Herramientas financieras
+                <span class="highlight">inteligentes</span>
             </h1>
-            <p>Datos en tiempo real, alertas de spikes, análisis con IA y cadena de opciones completa — todo en una herramienta simple y potente.</p>
-            <a href="/subscribe" class="btn" aria-label="Ver planes de precios">Empieza por €0.95/mes</a>
-            <div class="hero-image">
-                📊 Options Monitor Dashboard
-            </div>
+            <p>Varias aplicaciones especializadas en una sola plataforma. Suscríbete a las que necesites o accede a todas con un solo plan.</p>
+            <a href="#precios" class="btn" aria-label="Ver planes de precios">Ver planes desde gratis</a>
         </header>
 
-        <section class="features" id="caracteristicas" aria-label="Funciones principales">
+        <!-- ═══ APPS CATALOGUE ═══ -->
+        <section id="apps" aria-labelledby="apps-title" style="padding:80px 5%;max-width:1200px;margin:0 auto;">
+            <div style="text-align:center;margin-bottom:3rem;">
+                <h2 id="apps-title" style="font-size:2.2rem;margin-bottom:0.75rem;">Nuestras Apps</h2>
+                <p style="color:var(--text-muted);font-size:1.1rem;">Cada herramienta resuelve un problema real de inversión.</p>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:2rem;">
+                <!-- APP 1: Options Monitor -->
+                <article class="feature-card" style="display:flex;flex-direction:column;">
+                    <span class="feature-icon" aria-hidden="true">📊</span>
+                    <div class="badge badge-gradient" style="align-self:flex-start;margin-bottom:12px;">Disponible</div>
+                    <h3>Options Monitor</h3>
+                    <p style="flex:1">Monitoriza opciones en tiempo real con IA. Datos de mercado ES y US, alertas de spikes, cadena de opciones completa, backtesting y chat con Claude AI.</p>
+                    <div style="margin-top:1.5rem;display:flex;gap:10px;flex-wrap:wrap;">
+                        <a href="/subscribe" class="btn btn-sm">Empezar</a>
+                        <a href="#options-features" class="btn btn-outline btn-sm">Más info ↓</a>
+                    </div>
+                </article>
+
+                <!-- APP 2: Alternative Investments Tracker -->
+                <article class="feature-card" style="display:flex;flex-direction:column;">
+                    <span class="feature-icon" aria-hidden="true">🏦</span>
+                    <div class="badge" style="align-self:flex-start;margin-bottom:12px;background:var(--info-bg);color:var(--info-text);">Próximamente</div>
+                    <h3>Alt Investments Tracker</h3>
+                    <p style="flex:1">Seguimiento de inversiones alternativas en banca privada: private equity, venture capital, real estate, hedge funds y productos estructurados. Consolida tu cartera alternativa.</p>
+                    <div style="margin-top:1.5rem;display:flex;gap:10px;flex-wrap:wrap;">
+                        <a href="/alt-investments" class="btn btn-outline btn-sm">Saber más →</a>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <!-- ═══ OPTIONS MONITOR FEATURES ═══ -->
+        <section class="features" id="options-features" aria-label="Funciones de Options Monitor">
+            <div style="grid-column:1/-1;text-align:center;margin-bottom:1rem;">
+                <h2 style="font-size:1.8rem;">📊 Options Monitor — Funciones</h2>
+            </div>
             <article class="feature-card">
                 <span class="feature-icon" aria-hidden="true">📈</span>
                 <h3>Datos en Tiempo Real</h3>
@@ -93,40 +123,61 @@
             </article>
         </section>
 
+        <!-- ═══ PRICING ═══ -->
         <section class="pricing" id="precios" aria-labelledby="pricing-title">
             <div class="pricing-header">
                 <h2 id="pricing-title">Planes simples y transparentes</h2>
-                <p>Empieza con el plan básico y mejora cuando necesites más.</p>
+                <p>Empieza gratis, mejora cuando lo necesites. Accede a una app o a todas.</p>
             </div>
-            <div class="pricing-grid">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.5rem;align-items:start;">
+
+                <!-- FREE -->
                 <article class="pricing-card">
-                    <h3>Básico</h3>
+                    <h3>Free</h3>
+                    <div class="price">€0<span>/mes</span></div>
+                    <ul class="pricing-features">
+                        <li>1 app incluida</li>
+                        <li>Hasta 3 empresas en watchlist</li>
+                        <li>Hasta 3 alertas</li>
+                        <li>Datos en tiempo real</li>
+                        <li>Acceso desde cualquier dispositivo</li>
+                    </ul>
+                    <a href="/subscribe?plan=free" class="btn btn-outline btn-block">Crear cuenta gratis</a>
+                </article>
+
+                <!-- BASIC -->
+                <article class="pricing-card">
+                    <h3>Basic</h3>
                     <div class="price">€0.95<span>/mes</span></div>
                     <ul class="pricing-features">
-                        <li>Watchlist hasta 25 tickers</li>
-                        <li>Datos en tiempo real (ES + US)</li>
+                        <li>1 app incluida</li>
+                        <li>Hasta 25 empresas</li>
+                        <li>Hasta 20 alertas configuradas</li>
                         <li>5 consultas IA al día</li>
-                        <li>Alertas de spikes (20 configs)</li>
                         <li>Cadena de opciones completa</li>
+                        <li>Backtesting de señales</li>
                     </ul>
-                    <a href="/subscribe" class="btn btn-block" aria-label="Suscribirse al plan básico">Suscribirse</a>
+                    <a href="/subscribe?plan=basic" class="btn btn-block">Suscribirse</a>
                 </article>
+
+                <!-- UNLIMITED -->
                 <article class="pricing-card pro">
-                    <div class="badge badge-gradient" style="position:absolute;top:-12px;right:20px;">Superuser</div>
-                    <h3>Pro</h3>
-                    <div class="price">Contacto<span></span></div>
+                    <div class="badge badge-gradient" style="position:absolute;top:-12px;right:20px;">Mejor valor</div>
+                    <h3>Unlimited</h3>
+                    <div class="price">€9.95<span>/mes</span></div>
                     <ul class="pricing-features">
-                        <li>Tickers ilimitados</li>
+                        <li><strong>Todas las apps</strong> incluidas</li>
+                        <li>Empresas y alertas ilimitadas</li>
                         <li>Consultas IA ilimitadas</li>
-                        <li>Alertas ilimitadas</li>
-                        <li>Acceso lifetime</li>
+                        <li>Acceso prioritario a nuevas apps</li>
                         <li>Soporte prioritario</li>
                     </ul>
-                    <a href="#contacto" class="btn btn-outline btn-block" aria-label="Contactar para plan Pro">Contactar</a>
+                    <a href="/subscribe?plan=unlimited" class="btn btn-block">Suscribirse</a>
                 </article>
             </div>
         </section>
 
+        <!-- ═══ CONTACT ═══ -->
         <section class="contact" id="contacto">
             <h2>¿Tienes preguntas?</h2>
             <p>Escríbenos y te responderemos en menos de 24 horas.</p>
@@ -219,7 +270,7 @@
                 });
                 const data = await res.json();
                 if (data.ok) {
-                    showContactMsg('✓ Mensaje enviado. Te responderemos pronto.', 'success');
+                    showContactMsg('✓ Mensaje enviado. Revisa tu email — te hemos enviado una confirmación.', 'success');
                     document.getElementById('contactForm').reset();
                     btn.textContent = '✓ Enviado';
                 } else {

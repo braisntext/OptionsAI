@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Alt Investments Tracker — Seguimiento de inversiones alternativas en banca privada. Private equity, venture capital, real estate y más.">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏦</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <title>Alt Investments Tracker — Small Smart Tools</title>
+    <link rel="stylesheet" href="/static/landing.css">
+</head>
+<body>
+
+    <a href="#contenido-principal" class="skip-link">Saltar al contenido</a>
+
+    <nav class="site-nav" aria-label="Navegación principal">
+        <a href="/" class="logo">Small Smart Tools</a>
+        <ul class="nav-links" id="navMenu">
+            <li><a href="/">Inicio</a></li>
+            <li><a href="/#apps">Apps</a></li>
+            <li><a href="/#precios">Precios</a></li>
+            <li><a href="/#contacto">Contacto</a></li>
+            <li><a href="/login">Acceder</a></li>
+        </ul>
+        <button class="menu-toggle" aria-label="Abrir menú de navegación" aria-expanded="false" aria-controls="navMenu" id="menuToggle">
+            <span></span><span></span><span></span>
+        </button>
+    </nav>
+
+    <main id="contenido-principal">
+        <!-- ═══ HERO ═══ -->
+        <header class="hero">
+            <div class="badge" style="background:var(--info-bg);color:var(--info-text);margin-bottom:1rem;font-size:0.9rem;">Próximamente</div>
+            <h1>Controla tus inversiones
+                <span class="highlight">alternativas</span>
+            </h1>
+            <p>Consolida y visualiza tu cartera de banca privada: private equity, venture capital, real estate, hedge funds y productos estructurados en una sola herramienta.</p>
+            <a href="#notificarme" class="btn">Avísame cuando esté listo</a>
+        </header>
+
+        <!-- ═══ PROBLEMA ═══ -->
+        <section style="padding:60px 5%;max-width:800px;margin:0 auto;text-align:center;">
+            <h2 style="font-size:1.8rem;margin-bottom:1rem;">El problema</h2>
+            <p style="color:var(--text-muted);font-size:1.1rem;line-height:1.8;">
+                Las inversiones alternativas en banca privada son opacas, difíciles de seguir y suelen estar dispersas en múltiples informes PDF. No hay una herramienta sencilla para consolidar tu exposición, comparar rendimientos y recibir alertas sobre capital calls, distribuciones o vencimientos.
+            </p>
+        </section>
+
+        <!-- ═══ FEATURES ═══ -->
+        <section class="features" aria-label="Funciones principales">
+            <div style="grid-column:1/-1;text-align:center;margin-bottom:1rem;">
+                <h2 style="font-size:1.8rem;">Funciones previstas</h2>
+            </div>
+
+            <article class="feature-card">
+                <span class="feature-icon" aria-hidden="true">🏢</span>
+                <h3>Private Equity & VC</h3>
+                <p>Seguimiento de fondos, capital comprometido vs. desplegado, vintage year, TVPI, DPI y curva J de cada inversión.</p>
+            </article>
+            <article class="feature-card">
+                <span class="feature-icon" aria-hidden="true">🏠</span>
+                <h3>Real Estate</h3>
+                <p>Consolida posiciones inmobiliarias: REITs, fondos directos, proyectos de desarrollo. Valoración, yield y flujos de caja.</p>
+            </article>
+            <article class="feature-card">
+                <span class="feature-icon" aria-hidden="true">📐</span>
+                <h3>Productos Estructurados</h3>
+                <p>Seguimiento de autocallables, reverse convertibles y notas con barrera. Alertas de knock-in, cupones y vencimientos.</p>
+            </article>
+            <article class="feature-card">
+                <span class="feature-icon" aria-hidden="true">📊</span>
+                <h3>Consolidación de Cartera</h3>
+                <p>Vista unificada de todas tus inversiones alternativas con asignación por activo, geografía y divisa.</p>
+            </article>
+            <article class="feature-card">
+                <span class="feature-icon" aria-hidden="true">🔔</span>
+                <h3>Alertas Inteligentes</h3>
+                <p>Notificaciones de capital calls, distribuciones, vencimientos de estructurados y cambios de NAV significativos.</p>
+            </article>
+            <article class="feature-card">
+                <span class="feature-icon" aria-hidden="true">📄</span>
+                <h3>Importación de Informes</h3>
+                <p>Sube los PDFs de tu banca privada y extrae automáticamente posiciones, valoraciones y movimientos.</p>
+            </article>
+        </section>
+
+        <!-- ═══ TIMELINE ═══ -->
+        <section style="padding:60px 5%;max-width:700px;margin:0 auto;text-align:center;">
+            <h2 style="font-size:1.8rem;margin-bottom:2rem;">Hoja de ruta</h2>
+            <div style="text-align:left;display:flex;flex-direction:column;gap:1.5rem;">
+                <div class="feature-card" style="display:flex;align-items:center;gap:16px;">
+                    <div class="badge badge-gradient" style="min-width:60px;text-align:center;">Q2 26</div>
+                    <div>
+                        <strong>MVP</strong>
+                        <p style="color:var(--text-muted);margin:4px 0 0;font-size:.9rem;">Dashboard con consolidación básica de cartera, seguimiento manual de posiciones PE/VC/RE.</p>
+                    </div>
+                </div>
+                <div class="feature-card" style="display:flex;align-items:center;gap:16px;">
+                    <div class="badge" style="background:var(--info-bg);color:var(--info-text);min-width:60px;text-align:center;">Q3 26</div>
+                    <div>
+                        <strong>Productos Estructurados</strong>
+                        <p style="color:var(--text-muted);margin:4px 0 0;font-size:.9rem;">Seguimiento de autocallables, alertas de barrera y vencimientos, importación de term sheets.</p>
+                    </div>
+                </div>
+                <div class="feature-card" style="display:flex;align-items:center;gap:16px;">
+                    <div class="badge" style="background:var(--info-bg);color:var(--info-text);min-width:60px;text-align:center;">Q4 26</div>
+                    <div>
+                        <strong>IA y Reporting</strong>
+                        <p style="color:var(--text-muted);margin:4px 0 0;font-size:.9rem;">Importación automática de PDFs, análisis con IA y generación de informes personalizados.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ NOTIFY ME ═══ -->
+        <section class="contact" id="notificarme">
+            <h2>¿Te interesa?</h2>
+            <p>Déjanos tu email y te avisaremos cuando esté disponible. Sin spam, solo el lanzamiento.</p>
+            <form id="notifyForm" style="text-align:left;max-width:420px;margin:0 auto;">
+                <div style="margin-bottom:1rem">
+                    <label class="form-label" for="notify-name">Nombre</label>
+                    <input type="text" id="notify-name" class="form-input" placeholder="Tu nombre" required maxlength="100">
+                </div>
+                <div style="margin-bottom:1.5rem">
+                    <label class="form-label" for="notify-email">Email</label>
+                    <input type="email" id="notify-email" class="form-input" placeholder="tu@email.com" required maxlength="200">
+                </div>
+                <div id="notify-msg" class="msg" style="margin-bottom:1rem"></div>
+                <button type="submit" class="btn btn-block" id="notify-btn">Avísame del lanzamiento</button>
+            </form>
+        </section>
+
+        <!-- ═══ BACK TO HOME ═══ -->
+        <div style="text-align:center;padding:0 5% 60px;">
+            <a href="/" class="btn btn-outline">← Volver a Small Smart Tools</a>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <p>&copy; <span id="year">2025</span> Small Smart Tools. Todos los derechos reservados.</p>
+    </footer>
+
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+
+        const toggle = document.getElementById('menuToggle');
+        const menu   = document.getElementById('navMenu');
+        toggle.addEventListener('click', () => {
+            const open = menu.classList.toggle('active');
+            toggle.classList.toggle('active');
+            toggle.setAttribute('aria-expanded', open);
+        });
+        menu.querySelectorAll('a').forEach(l => l.addEventListener('click', () => {
+            menu.classList.remove('active');
+            toggle.classList.remove('active');
+        }));
+
+        // ── Notify form → reuses /api/contact ──
+        document.getElementById('notifyForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('notify-btn');
+            const msg = document.getElementById('notify-msg');
+            const name  = document.getElementById('notify-name').value.trim();
+            const email = document.getElementById('notify-email').value.trim();
+
+            if (!name || !email) {
+                showMsg('Todos los campos son obligatorios.', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Enviando...';
+            msg.style.display = 'none';
+
+            try {
+                const res = await fetch('/api/contact', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({
+                        name,
+                        email,
+                        message: '[Alt Investments Tracker] Quiero que me avisen del lanzamiento.'
+                    })
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    showMsg('✓ ¡Registrado! Te avisaremos cuando lancemos. Revisa tu email.', 'success');
+                    document.getElementById('notifyForm').reset();
+                    btn.textContent = '✓ Registrado';
+                } else {
+                    showMsg(data.error || 'Error al enviar.', 'error');
+                    btn.disabled = false;
+                    btn.textContent = 'Avísame del lanzamiento';
+                }
+            } catch {
+                showMsg('Error de red. Inténtalo de nuevo.', 'error');
+                btn.disabled = false;
+                btn.textContent = 'Avísame del lanzamiento';
+            }
+        });
+
+        function showMsg(text, type) {
+            const el = document.getElementById('notify-msg');
+            el.textContent = text;
+            el.className = 'msg ' + type;
+            el.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

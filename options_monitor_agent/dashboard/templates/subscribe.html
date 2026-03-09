@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Subscribe — Options Monitor</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+  <title>Suscribirse — Small Smart Tools</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧰</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/landing.css">
 </head>
 <body>
@@ -24,34 +24,76 @@
     </button>
   </nav>
 
-  <div class="page-center">
-    <div class="page-card" style="max-width:480px;text-align:center;">
-      <span class="badge badge-gradient" style="margin-bottom:16px">Options Monitor</span>
-      {% if request.args.get('cancelled') %}
-      <div class="alert-info" style="text-align:left">Your subscription has been cancelled. We hope to see you again!</div>
-      {% endif %}
-      <h1 style="font-size:2rem;font-weight:800;margin-bottom:8px">⚡ Get Access</h1>
-      <p style="color:var(--text-muted);margin-top:8px">Real-time options flow, alerts &amp; AI analysis</p>
-      <div style="font-size:3.5rem;font-weight:900;color:var(--primary-text);line-height:1;margin:24px 0 4px">0.95<span style="font-size:1.2rem;color:var(--text-muted);font-weight:400">€</span></div>
-      <div style="color:var(--text-muted);margin-bottom:2rem">per month · cancel anytime</div>
-      <ul class="sub-features">
-        <li>Live options flow &amp; unusual activity</li>
-        <li>AI-powered market analysis (Claude)</li>
-        <li>Premium spike alerts</li>
-        <li>Full options chain viewer</li>
-        <li>Backtesting signals</li>
-        <li>Magic-link login — no password needed</li>
-      </ul>
-      <a href="/payment" class="btn btn-block">⚡ Subscribe for €0.95/month</a>
-      <div style="margin-top:20px;color:var(--text-muted);font-size:.9rem">
-        Already subscribed? <a href="/login" style="color:var(--primary-text);text-decoration:none">Sign in</a>
-      </div>
-      <div style="margin-top:16px;color:var(--text-muted);font-size:.8rem">Cancel anytime. No hidden fees. Experimental project.</div>
+  <main style="padding:60px 5%;max-width:1000px;margin:0 auto;">
+
+    {% if request.args.get('cancelled') %}
+    <div class="alert-info" style="max-width:500px;margin:0 auto 2rem;">Tu suscripción ha sido cancelada. Esperamos verte de nuevo.</div>
+    {% endif %}
+
+    <div style="text-align:center;margin-bottom:3rem;">
+      <h1 style="font-size:2.2rem;font-weight:800;margin-bottom:8px;">Elige tu plan</h1>
+      <p style="color:var(--text-muted);font-size:1.1rem;">Empieza gratis, mejora cuando lo necesites.</p>
     </div>
-  </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.5rem;align-items:start;">
+
+      <!-- FREE -->
+      <div class="pricing-card" style="text-align:center;">
+        <h3 style="font-size:1.4rem;margin-bottom:4px;">Free</h3>
+        <div style="font-size:3rem;font-weight:900;color:var(--primary-text);line-height:1;margin:16px 0 4px;">€0<span style="font-size:1rem;color:var(--text-muted);font-weight:400">/mes</span></div>
+        <p style="color:var(--text-muted);margin-bottom:1.5rem;font-size:.9rem;">Para empezar a explorar</p>
+        <ul class="sub-features">
+          <li>1 app incluida</li>
+          <li>Hasta 3 empresas en watchlist</li>
+          <li>Hasta 3 alertas</li>
+          <li>Datos en tiempo real</li>
+          <li>Magic-link login</li>
+        </ul>
+        <a href="/login" class="btn btn-outline btn-block">Crear cuenta gratis</a>
+      </div>
+
+      <!-- BASIC -->
+      <div class="pricing-card" style="text-align:center;">
+        <h3 style="font-size:1.4rem;margin-bottom:4px;">Basic</h3>
+        <div style="font-size:3rem;font-weight:900;color:var(--primary-text);line-height:1;margin:16px 0 4px;">€0.95<span style="font-size:1rem;color:var(--text-muted);font-weight:400">/mes</span></div>
+        <p style="color:var(--text-muted);margin-bottom:1.5rem;font-size:.9rem;">Para inversores activos</p>
+        <ul class="sub-features">
+          <li>1 app incluida</li>
+          <li>Hasta 25 empresas</li>
+          <li>Hasta 20 alertas configuradas</li>
+          <li>5 consultas IA al día</li>
+          <li>Cadena de opciones completa</li>
+          <li>Backtesting de señales</li>
+        </ul>
+        <a href="/payment?plan=basic" class="btn btn-block">Suscribirse — €0.95/mes</a>
+      </div>
+
+      <!-- UNLIMITED -->
+      <div class="pricing-card pro" style="text-align:center;">
+        <div class="badge badge-gradient" style="position:absolute;top:-12px;right:20px;">Mejor valor</div>
+        <h3 style="font-size:1.4rem;margin-bottom:4px;">Unlimited</h3>
+        <div style="font-size:3rem;font-weight:900;color:var(--primary-text);line-height:1;margin:16px 0 4px;">€9.95<span style="font-size:1rem;color:var(--text-muted);font-weight:400">/mes</span></div>
+        <p style="color:var(--text-muted);margin-bottom:1.5rem;font-size:.9rem;">Todas las apps, sin límites</p>
+        <ul class="sub-features">
+          <li><strong>Todas las apps</strong> incluidas</li>
+          <li>Empresas y alertas ilimitadas</li>
+          <li>Consultas IA ilimitadas</li>
+          <li>Acceso prioritario a nuevas apps</li>
+          <li>Soporte prioritario</li>
+        </ul>
+        <a href="/payment?plan=unlimited" class="btn btn-block">Suscribirse — €9.95/mes</a>
+      </div>
+
+    </div>
+
+    <div style="text-align:center;margin-top:2rem;color:var(--text-muted);font-size:.85rem;">
+      ¿Ya tienes cuenta? <a href="/login" style="color:var(--primary-text);text-decoration:none;">Inicia sesión</a>
+      · Cancela en cualquier momento · Sin compromisos
+    </div>
+  </main>
 
   <footer class="site-footer">
-    <p>&copy; <span id="year">2025</span> Small Smart Tools. All rights reserved.</p>
+    <p>&copy; <span id="year">2025</span> Small Smart Tools. Todos los derechos reservados.</p>
   </footer>
 
   <script>
