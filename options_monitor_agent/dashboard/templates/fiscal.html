@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>Importador Fiscal — Small Smart Tools</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧾</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/landing.css">
+  <style>
+    body { background: var(--bg); color: var(--text); }
+    .fiscal-container { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+    .fiscal-header { text-align: center; margin-bottom: 2rem; }
+    .fiscal-header h1 { font-size: 2rem; font-weight: 800; margin-bottom: .25rem; }
+    .fiscal-header p { color: var(--text-muted); font-size: .95rem; }
+
+    /* Upload zone */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 16px;
+      padding: 2.5rem 2rem;
+      text-align: center;
+      background: var(--card);
+      transition: border-color .2s, background .2s;
+      cursor: pointer;
+      margin-bottom: 2rem;
+    }
+    .upload-zone.drag-over { border-color: var(--primary-text); background: var(--info-bg); }
+    .upload-zone h3 { margin: 0 0 .5rem; font-weight: 700; }
+    .upload-zone p { color: var(--text-muted); font-size: .85rem; margin: 0; }
+    .upload-zone input[type="file"] { display: none; }
+    .upload-zone .upload-icon { font-size: 2.5rem; margin-bottom: .5rem; }
+    .upload-progress { display: none; margin-top: 1rem; }
+    .upload-progress .progress-bar {
+      height: 6px; border-radius: 3px; background: var(--border); overflow: hidden;
+    }
+    .upload-progress .progress-fill {
+      height: 100%; width: 0; background: var(--primary-text); border-radius: 3px;
+      transition: width .3s;
+    }
+    .upload-msg { margin-top: .5rem; font-size: .85rem; }
+    .upload-msg.error { color: var(--danger); }
+    .upload-msg.success { color: var(--success); }
+
+    /* Statement selector */
+    .stmt-selector { margin-bottom: 1.5rem; display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; }
+    .stmt-selector select {
+      padding: .5rem .75rem; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--card); color: var(--text); font-size: .9rem;
+      min-width: 280px;
+    }
+    .stmt-selector .btn-delete {
+      padding: .4rem .75rem; border-radius: 8px; border: 1px solid var(--border);
+      background: transparent; color: var(--danger); cursor: pointer;
+      font-size: .8rem; transition: background .2s;
+    }
+    .stmt-selector .btn-delete:hover { background: var(--danger-bg); }
+
+    /* Tax summary cards */
+    .casilla-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1rem; margin-bottom: 2rem;
+    }
+    .casilla-card {
+      background: var(--card); border-radius: 12px; padding: 1.25rem;
+      border: 1px solid var(--border); transition: transform .15s;
+    }
+    .casilla-card:hover { transform: translateY(-2px); }
+    .casilla-card .casilla-num {
+      font-size: .75rem; font-weight: 700; color: var(--primary-text);
+      text-transform: uppercase; letter-spacing: .05em;
+    }
+    .casilla-card .casilla-amount {
+      font-size: 1.6rem; font-weight: 800; margin: .25rem 0;
+    }
+    .casilla-card .casilla-amount.positive { color: var(--success); }
+    .casilla-card .casilla-amount.negative { color: var(--danger); }
+    .casilla-card .casilla-desc {
+      font-size: .78rem; color: var(--text-muted); line-height: 1.4;
+    }
+    .casilla-card .casilla-items {
+      font-size: .7rem; color: var(--text-muted); margin-top: .25rem;
+    }
+
+    /* Tabs */
+    .tab-bar {
+      display: flex; gap: 0; border-bottom: 2px solid var(--border);
+      margin-bottom: 1.5rem; overflow-x: auto;
+    }
+    .tab-btn {
+      padding: .6rem 1.2rem; border: none; background: none; cursor: pointer;
+      font-size: .85rem; font-weight: 600; color: var(--text-muted);
+      border-bottom: 2px solid transparent; margin-bottom: -2px; white-space: nowrap;
+      transition: color .2s, border-color .2s;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--primary-text); border-bottom-color: var(--primary-text); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Data tables */
+    .data-table-wrap { overflow-x: auto; margin-bottom: 1rem; }
+    .data-table {
+      width: 100%; border-collapse: collapse; font-size: .82rem;
+    }
+    .data-table th {
+      text-align: left; padding: .6rem .75rem; font-weight: 700;
+      border-bottom: 2px solid var(--border); font-size: .72rem;
+      text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .data-table td {
+      padding: .5rem .75rem; border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .data-table tr:hover td { background: var(--card); }
+    .data-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .data-table .positive { color: var(--success); }
+    .data-table .negative { color: var(--danger); }
+    .data-table .muted { color: var(--text-muted); font-size: .78rem; }
+    .data-table .tag {
+      display: inline-block; padding: 2px 6px; border-radius: 4px;
+      font-size: .72rem; font-weight: 600;
+    }
+    .tag-stock { background: rgba(52,152,219,.15); color: #2980b9; }
+    .tag-option { background: rgba(155,89,182,.15); color: #8e44ad; }
+    .tag-forex { background: rgba(241,196,15,.15); color: #f39c12; }
+    .tag-expired { background: rgba(231,76,60,.1); color: #e74c3c; }
+    .tag-assigned { background: rgba(230,126,34,.15); color: #e67e22; }
+
+    /* Empty state */
+    .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
+    .empty-state .empty-icon { font-size: 3rem; margin-bottom: .5rem; }
+
+    /* Spinner */
+    .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin .6s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .fiscal-container { padding: 1rem; }
+      .casilla-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+      .casilla-card .casilla-amount { font-size: 1.3rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="site-nav" aria-label="Navegación principal">
+    <a href="/" class="logo">Small Smart Tools</a>
+    <ul class="nav-links" id="navMenu">
+      <li><a href="/">Inicio</a></li>
+      <li><a href="/dashboard">Options Monitor</a></li>
+      <li><a href="/fiscal" style="color:var(--primary-text)">Importador Fiscal</a></li>
+      <li><a href="/account">Mi Cuenta</a></li>
+    </ul>
+    <button class="menu-toggle" aria-label="Abrir menú" aria-expanded="false" aria-controls="navMenu" id="menuToggle">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <div class="fiscal-container">
+    <div class="fiscal-header">
+      <h1>🧾 Importador Fiscal</h1>
+      <p>Importa extractos de tu broker, calcula impuestos y obtén las casillas para tu Declaración de la Renta</p>
+    </div>
+
+    <!-- Upload Zone -->
+    <div class="upload-zone" id="uploadZone" role="button" tabindex="0"
+         aria-label="Arrastra un CSV o haz clic para seleccionar">
+      <div class="upload-icon">📤</div>
+      <h3>Sube tu extracto del broker</h3>
+      <p>Arrastra un archivo CSV aquí o haz clic para seleccionar · Máx 5 MB · Formato CSV de IBKR</p>
+      <input type="file" id="fileInput" accept=".csv">
+      <div class="upload-progress" id="uploadProgress">
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="upload-msg" id="uploadMsg"></div>
+      </div>
+    </div>
+
+    <!-- Statement Selector -->
+    <div class="stmt-selector" id="stmtSelector" style="display:none;">
+      <label for="stmtSelect" style="font-weight:600;font-size:.9rem;">Extracto:</label>
+      <select id="stmtSelect" onchange="loadStatement()"></select>
+      <button class="btn-delete" onclick="deleteStatement()" title="Eliminar extracto">🗑️ Eliminar</button>
+    </div>
+
+    <!-- Results container (hidden until data loaded) -->
+    <div id="resultsContainer" style="display:none;">
+
+      <!-- Casillas Summary -->
+      <h2 style="font-size:1.2rem;font-weight:700;margin-bottom:1rem;">📊 Resumen Fiscal — Casillas IRPF</h2>
+      <div class="casilla-grid" id="casillaGrid"></div>
+
+      <!-- Data Tabs -->
+      <div class="tab-bar" id="tabBar">
+        <button class="tab-btn active" data-tab="trades" onclick="switchTab('trades')">Operaciones</button>
+        <button class="tab-btn" data-tab="dividends" onclick="switchTab('dividends')">Dividendos</button>
+        <button class="tab-btn" data-tab="interest" onclick="switchTab('interest')">Intereses</button>
+        <button class="tab-btn" data-tab="withholdings" onclick="switchTab('withholdings')">Retenciones</button>
+        <button class="tab-btn" data-tab="forex" onclick="switchTab('forex')">Forex</button>
+        <button class="tab-btn" data-tab="positions" onclick="switchTab('positions')">Posiciones Abiertas</button>
+      </div>
+
+      <!-- Trades Panel -->
+      <div class="tab-panel active" id="panel-trades">
+        <div class="data-table-wrap">
+          <table class="data-table" id="tradesTable">
+            <thead>
+              <tr>
+                <th>Fecha</th><th>Tipo</th><th>Símbolo</th><th>Cant.</th>
+                <th class="num">Precio</th><th class="num">Importe €</th>
+                <th class="num">Coste €</th><th class="num">P/L €</th><th>Código</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Dividends Panel -->
+      <div class="tab-panel" id="panel-dividends">
+        <div class="data-table-wrap">
+          <table class="data-table" id="dividendsTable">
+            <thead>
+              <tr><th>Fecha</th><th>Símbolo</th><th>Descripción</th><th class="num">Importe bruto</th><th class="num">Importe € </th><th>Tipo</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Interest Panel -->
+      <div class="tab-panel" id="panel-interest">
+        <div class="data-table-wrap">
+          <table class="data-table" id="interestTable">
+            <thead>
+              <tr><th>Fecha</th><th>Descripción</th><th class="num">Importe</th><th class="num">Importe €</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Withholdings Panel -->
+      <div class="tab-panel" id="panel-withholdings">
+        <div class="data-table-wrap">
+          <table class="data-table" id="withholdingsTable">
+            <thead>
+              <tr><th>Fecha</th><th>Símbolo</th><th>País</th><th>Tipo</th><th class="num">Importe</th><th class="num">Importe €</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Forex Panel -->
+      <div class="tab-panel" id="panel-forex">
+        <div class="data-table-wrap">
+          <table class="data-table" id="forexTable">
+            <thead>
+              <tr><th>Fecha</th><th>Par</th><th class="num">Cant.</th><th class="num">Precio</th><th class="num">Importe</th><th class="num">Com. €</th><th>Auto</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Positions Panel -->
+      <div class="tab-panel" id="panel-positions">
+        <div class="data-table-wrap">
+          <table class="data-table" id="positionsTable">
+            <thead>
+              <tr><th>Tipo</th><th>Símbolo</th><th class="num">Cant.</th><th class="num">Coste €</th><th class="num">Valor €</th><th class="num">P/L no realizado €</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /resultsContainer -->
+
+    <!-- Empty state -->
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">📂</div>
+      <p>No hay extractos importados todavía.<br>Sube un CSV de tu broker para empezar.</p>
+    </div>
+
+  </div><!-- /fiscal-container -->
+
+  <script>
+  /* ── Globals ────────────────────────────────────────────────── */
+  const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
+  let currentStmtId = null;
+
+  /* ── Upload ─────────────────────────────────────────────────── */
+  const zone = document.getElementById('uploadZone');
+  const fileInput = document.getElementById('fileInput');
+
+  zone.addEventListener('click', () => fileInput.click());
+  zone.addEventListener('keydown', e => { if (e.key === 'Enter') fileInput.click(); });
+
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    const files = e.dataTransfer.files;
+    if (files.length) uploadFile(files[0]);
+  });
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files.length) uploadFile(fileInput.files[0]);
+  });
+
+  function uploadFile(file) {
+    const progress = document.getElementById('uploadProgress');
+    const fill = document.getElementById('progressFill');
+    const msg = document.getElementById('uploadMsg');
+
+    progress.style.display = 'block';
+    fill.style.width = '10%';
+    msg.textContent = 'Subiendo y procesando...';
+    msg.className = 'upload-msg';
+
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('_csrf_token', CSRF);
+
+    fetch('/api/fiscal/upload', { method: 'POST', body: fd })
+      .then(r => r.json())
+      .then(data => {
+        fill.style.width = '100%';
+        if (data.status === 'ok') {
+          msg.textContent = `✅ ${data.broker} ${data.tax_year} — ${data.summary.trades} operaciones, ${data.summary.dividends} dividendos`;
+          msg.className = 'upload-msg success';
+          loadStatements(data.statement_id);
+        } else {
+          msg.textContent = '❌ ' + (data.message || 'Error desconocido');
+          msg.className = 'upload-msg error';
+        }
+      })
+      .catch(err => {
+        fill.style.width = '100%';
+        msg.textContent = '❌ Error de conexión';
+        msg.className = 'upload-msg error';
+      });
+  }
+
+  /* ── Statement List ─────────────────────────────────────────── */
+  function loadStatements(selectId) {
+    fetch('/api/fiscal/statements')
+      .then(r => r.json())
+      .then(data => {
+        if (data.status !== 'ok' || !data.statements.length) {
+          document.getElementById('stmtSelector').style.display = 'none';
+          document.getElementById('resultsContainer').style.display = 'none';
+          document.getElementById('emptyState').style.display = 'block';
+          return;
+        }
+        document.getElementById('emptyState').style.display = 'none';
+        document.getElementById('stmtSelector').style.display = 'flex';
+
+        const sel = document.getElementById('stmtSelect');
+        sel.innerHTML = data.statements.map(s =>
+          `<option value="${s.id}" ${s.id === selectId ? 'selected' : ''}>${s.broker} — ${s.tax_year} — ${s.filename} (${s.uploaded_at.slice(0,10)})</option>`
+        ).join('');
+
+        loadStatement();
+      });
+  }
+
+  function loadStatement() {
+    const sel = document.getElementById('stmtSelect');
+    const stmtId = sel.value;
+    if (!stmtId) return;
+    currentStmtId = parseInt(stmtId);
+
+    // Load taxes + full data in parallel
+    Promise.all([
+      fetch(`/api/fiscal/statement/${stmtId}/taxes`).then(r => r.json()),
+      fetch(`/api/fiscal/statement/${stmtId}`).then(r => r.json()),
+    ]).then(([taxData, fullData]) => {
+      if (taxData.status === 'ok') renderCasillas(taxData.summary, taxData.casilla_descriptions);
+      if (fullData.status === 'ok') {
+        renderTrades(fullData.trades);
+        renderDividends(fullData.dividends);
+        renderInterest(fullData.interest);
+        renderWithholdings(fullData.withholdings);
+        renderForex(fullData.forex);
+        renderPositions(fullData.positions);
+      }
+      document.getElementById('resultsContainer').style.display = 'block';
+    });
+  }
+
+  function deleteStatement() {
+    if (!currentStmtId) return;
+    if (!confirm('¿Eliminar este extracto y todos sus datos?')) return;
+    fetch(`/api/fiscal/statement/${currentStmtId}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF },
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.status === 'ok') loadStatements();
+    });
+  }
+
+  /* ── Casilla Cards ──────────────────────────────────────────── */
+  function renderCasillas(summary, descriptions) {
+    const grid = document.getElementById('casillaGrid');
+    const order = ['0328', '0029', '0027', '0588', 'retenciones'];
+    const icons = { '0328': '📈', '0029': '💰', '0027': '🏦', '0588': '🌍', 'retenciones': '🏛️' };
+
+    let html = '';
+    for (const key of order) {
+      const data = summary[key];
+      if (!data) continue;
+      const total = data.total;
+      const cls = total >= 0 ? 'positive' : 'negative';
+      const icon = icons[key] || '📋';
+      const desc = descriptions[key] || key;
+      const label = key === 'retenciones' ? 'Retenciones' : `Casilla ${key}`;
+
+      html += `
+        <div class="casilla-card">
+          <div class="casilla-num">${icon} ${label}</div>
+          <div class="casilla-amount ${cls}">${fmtEur(total)}</div>
+          <div class="casilla-desc">${esc(desc)}</div>
+          <div class="casilla-items">${data.items.length} concepto${data.items.length !== 1 ? 's' : ''}</div>
+        </div>`;
+    }
+
+    // Add any extra casillas not in the predefined order
+    for (const [key, data] of Object.entries(summary)) {
+      if (order.includes(key)) continue;
+      const total = data.total;
+      const cls = total >= 0 ? 'positive' : 'negative';
+      html += `
+        <div class="casilla-card">
+          <div class="casilla-num">📋 Casilla ${esc(key)}</div>
+          <div class="casilla-amount ${cls}">${fmtEur(total)}</div>
+          <div class="casilla-desc">${esc(descriptions[key] || '')}</div>
+          <div class="casilla-items">${data.items.length} concepto${data.items.length !== 1 ? 's' : ''}</div>
+        </div>`;
+    }
+
+    grid.innerHTML = html || '<p style="color:var(--text-muted)">Sin resultados fiscales</p>';
+  }
+
+  /* ── Trades Table ───────────────────────────────────────────── */
+  function renderTrades(trades) {
+    const tbody = document.querySelector('#tradesTable tbody');
+    if (!trades.length) { tbody.innerHTML = '<tr><td colspan="9" class="muted" style="text-align:center">Sin operaciones</td></tr>'; return; }
+
+    tbody.innerHTML = trades.map(t => {
+      const cat = t.asset_category === 'Options' ? '<span class="tag tag-option">Opción</span>' : '<span class="tag tag-stock">Acción</span>';
+      const codes = (t.code || '').split(';').map(c => c.trim());
+      let codeTag = esc(t.code || '');
+      if (codes.includes('Ep')) codeTag = '<span class="tag tag-expired">Expirada</span>';
+      else if (codes.includes('A')) codeTag = '<span class="tag tag-assigned">Asignada</span>';
+
+      const plClass = (t.realized_pl_eur || 0) >= 0 ? 'positive' : 'negative';
+
+      return `<tr>
+        <td>${esc(t.trade_date)}</td>
+        <td>${cat}</td>
+        <td title="${esc(t.description || '')}">${esc(t.symbol)}</td>
+        <td class="num">${fmtNum(t.quantity)}</td>
+        <td class="num">${fmtNum(t.trade_price)} ${esc(t.currency)}</td>
+        <td class="num">${fmtEur(t.proceeds_eur)}</td>
+        <td class="num">${fmtEur(t.basis_eur)}</td>
+        <td class="num ${plClass}">${fmtEur(t.realized_pl_eur)}</td>
+        <td>${codeTag}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  /* ── Dividends Table ────────────────────────────────────────── */
+  function renderDividends(divs) {
+    const tbody = document.querySelector('#dividendsTable tbody');
+    if (!divs.length) { tbody.innerHTML = '<tr><td colspan="6" class="muted" style="text-align:center">Sin dividendos</td></tr>'; return; }
+
+    tbody.innerHTML = divs.map(d => `<tr>
+      <td>${esc(d.pay_date)}</td>
+      <td>${esc(d.symbol)}</td>
+      <td class="muted" title="${esc(d.description || '')}">${truncate(d.description || '', 50)}</td>
+      <td class="num">${fmtNum(d.gross_amount)} ${esc(d.currency)}</td>
+      <td class="num">${fmtEur(d.gross_amount_eur)}</td>
+      <td>${d.is_in_lieu ? '<span class="tag tag-expired">In Lieu</span>' : 'Dividendo'}</td>
+    </tr>`).join('');
+  }
+
+  /* ── Interest Table ─────────────────────────────────────────── */
+  function renderInterest(items) {
+    const tbody = document.querySelector('#interestTable tbody');
+    if (!items.length) { tbody.innerHTML = '<tr><td colspan="4" class="muted" style="text-align:center">Sin intereses</td></tr>'; return; }
+
+    tbody.innerHTML = items.map(i => `<tr>
+      <td>${esc(i.pay_date)}</td>
+      <td class="muted">${truncate(i.description || '', 60)}</td>
+      <td class="num">${fmtNum(i.amount)} ${esc(i.currency)}</td>
+      <td class="num">${fmtEur(i.amount_eur)}</td>
+    </tr>`).join('');
+  }
+
+  /* ── Withholdings Table ─────────────────────────────────────── */
+  function renderWithholdings(items) {
+    const tbody = document.querySelector('#withholdingsTable tbody');
+    if (!items.length) { tbody.innerHTML = '<tr><td colspan="6" class="muted" style="text-align:center">Sin retenciones</td></tr>'; return; }
+
+    tbody.innerHTML = items.map(w => `<tr>
+      <td>${esc(w.pay_date)}</td>
+      <td>${esc(w.symbol || '-')}</td>
+      <td>${esc(w.country || '-')}</td>
+      <td>${esc(w.tax_type || '-')}</td>
+      <td class="num negative">${fmtNum(w.amount)} ${esc(w.currency)}</td>
+      <td class="num negative">${fmtEur(w.amount_eur)}</td>
+    </tr>`).join('');
+  }
+
+  /* ── Forex Table ────────────────────────────────────────────── */
+  function renderForex(items) {
+    const tbody = document.querySelector('#forexTable tbody');
+    if (!items.length) { tbody.innerHTML = '<tr><td colspan="7" class="muted" style="text-align:center">Sin operaciones forex</td></tr>'; return; }
+
+    tbody.innerHTML = items.map(f => `<tr>
+      <td>${esc(f.trade_date)}</td>
+      <td>${esc(f.symbol)}</td>
+      <td class="num">${fmtNum(f.quantity)}</td>
+      <td class="num">${fmtNum(f.trade_price, 5)}</td>
+      <td class="num">${fmtNum(f.proceeds)} ${esc(f.currency)}</td>
+      <td class="num">${fmtEur(f.commission_eur)}</td>
+      <td>${f.is_auto_fx ? '<span class="tag tag-forex">AFx</span>' : 'Manual'}</td>
+    </tr>`).join('');
+  }
+
+  /* ── Positions Table ────────────────────────────────────────── */
+  function renderPositions(items) {
+    const tbody = document.querySelector('#positionsTable tbody');
+    if (!items.length) { tbody.innerHTML = '<tr><td colspan="6" class="muted" style="text-align:center">Sin posiciones abiertas</td></tr>'; return; }
+
+    tbody.innerHTML = items.map(p => {
+      const cat = p.asset_category === 'Options' ? '<span class="tag tag-option">Opción</span>' : '<span class="tag tag-stock">Acción</span>';
+      const plClass = (p.unrealized_pl_eur || 0) >= 0 ? 'positive' : 'negative';
+      return `<tr>
+        <td>${cat}</td>
+        <td>${esc(p.symbol)}</td>
+        <td class="num">${fmtNum(p.quantity)}</td>
+        <td class="num">${fmtEur(p.cost_basis_eur)}</td>
+        <td class="num">${fmtEur(p.market_value_eur)}</td>
+        <td class="num ${plClass}">${fmtEur(p.unrealized_pl_eur)}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  /* ── Tab switching ──────────────────────────────────────────── */
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === `panel-${tab}`));
+  }
+
+  /* ── Helpers ────────────────────────────────────────────────── */
+  function fmtEur(val) {
+    if (val == null) return '-';
+    return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2 }).format(val);
+  }
+  function fmtNum(val, decimals) {
+    if (val == null) return '-';
+    return new Intl.NumberFormat('es-ES', { minimumFractionDigits: decimals ?? 2, maximumFractionDigits: decimals ?? 4 }).format(val);
+  }
+  function esc(s) {
+    if (!s) return '';
+    const d = document.createElement('div');
+    d.textContent = String(s);
+    return d.innerHTML;
+  }
+  function truncate(s, n) {
+    if (!s) return '';
+    return s.length > n ? esc(s.slice(0, n)) + '…' : esc(s);
+  }
+
+  /* ── Nav menu toggle ────────────────────────────────────────── */
+  document.getElementById('menuToggle')?.addEventListener('click', function() {
+    const nav = document.getElementById('navMenu');
+    const open = this.getAttribute('aria-expanded') === 'true';
+    this.setAttribute('aria-expanded', !open);
+    nav.classList.toggle('open', !open);
+  });
+
+  /* ── Init ───────────────────────────────────────────────────── */
+  loadStatements();
+  </script>
+</body>
+</html>

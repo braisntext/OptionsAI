@@ -105,6 +105,8 @@ def create_app(database=None, agent=None):
     app.register_blueprint(auth_bp)
     from billing import billing_bp
     app.register_blueprint(billing_bp)
+    from options_monitor_agent.fiscal.routes import fiscal_bp
+    app.register_blueprint(fiscal_bp)
 
     # ── CSRF protection ──────────────────────────────────────────────────────
     def _generate_csrf_token():
@@ -230,6 +232,12 @@ def create_app(database=None, agent=None):
     def alt_investments():
         """Public informational page for Alt Investments Tracker."""
         return render_template("alt_investments.html")
+
+    @app.route("/fiscal")
+    @login_required
+    def fiscal():
+        """Fiscal Import dashboard — upload and review broker statements."""
+        return render_template("fiscal.html")
 
     @app.route("/dashboard")
     @login_required
