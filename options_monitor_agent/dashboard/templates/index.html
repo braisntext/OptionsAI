@@ -4,12 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>🤖 Options Monitor Agent</title>
+    <title>Dashboard — Options Monitor</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/landing.css">
     <link rel="stylesheet" href="/static/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="/static/i18n.js?v=11"></script>
 </head>
-<body>
+<body class="dashboard-body">
+
+    <nav class="site-nav" aria-label="Main navigation">
+      <a href="/" class="logo">Small Smart Tools</a>
+      <ul class="nav-links" id="navMenu">
+        <li><a href="/">Inicio</a></li>
+        <li><a href="/dashboard" style="color:var(--primary-text)">Dashboard</a></li>
+        <li><a href="/account">Mi Cuenta</a></li>
+      </ul>
+      <button class="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="navMenu" id="menuToggle">
+        <span></span><span></span><span></span>
+      </button>
+    </nav>
     <div class="container">
         <header class="header">
             <div class="header-title">
@@ -22,7 +39,7 @@
                 <button class="btn btn-warning lang-flag" data-lang="en" style="margin-left:10px;" onclick="setLanguage('en')">🇬🇧 EN</button>
                 <button class="btn btn-warning lang-flag" data-lang="es" style="margin-left:5px;" onclick="setLanguage('es')">🇪🇸 ES</button>
                 <span data-i18n="last">Last:</span> <span id="last-update" class="last-update">-</span>
-                <span id="usage-badge" style="font-size:0.7rem;color:#94a3b8;margin-left:8px;"></span>
+                <span id="usage-badge" style="font-size:0.7rem;color:var(--text-muted);margin-left:8px;"></span>
             </div>
             </div>
         </header>
@@ -136,7 +153,7 @@
             </div>
         </div>
 
-        <footer class="footer"><p><span data-i18n="footerText">Options Monitor Agent v2.0 | Claude AI | Yahoo Finance</span></p></footer>
+        <footer class="site-footer"><p>Options Monitor Agent v2.0 | Small Smart Tools</p></footer>
     </div>
 
             <script>
@@ -226,36 +243,35 @@
 
 <!-- PREMIUM SPIKE ALERTS SECTION -->
 <div class="card" id="spike-alerts-section" style="margin-top:20px">
-  <h2 class="card-title">&#9889; Premium Spike Alerts <span id="spike-count" style="font-size:0.7em;color:#aaa"></span></h2>
+  <h2 class="card-title">&#9889; Premium Spike Alerts <span id="spike-count" style="font-size:0.7em;color:var(--text-muted)"></span></h2>
 
   <!-- Alert Configurator -->
-  <div id="spike-config-panel" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;">
-    <h3 style="margin:0 0 12px;font-size:0.95rem;color:var(--accent-cyan);">🔧 Alert Configuration</h3>
+  <div id="spike-config-panel" style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;margin-bottom:16px;">
+    <h3 style="margin:0 0 12px;font-size:0.95rem;color:var(--primary-text);">🔧 Alert Configuration</h3>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;">
       <div style="flex:1;min-width:140px;">
-        <label style="display:block;font-size:0.75rem;color:#94a3b8;margin-bottom:4px;">Ticker</label>
-        <select id="spike-cfg-ticker" style="width:100%;padding:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);font-size:0.85rem;">
+        <label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Ticker</label>
+        <select id="spike-cfg-ticker" class="form-select" style="width:100%;">
           <option value="">Select ticker...</option>
         </select>
       </div>
       <div style="min-width:100px;">
-        <label style="display:block;font-size:0.75rem;color:#94a3b8;margin-bottom:4px;">Threshold %</label>
-        <input type="number" id="spike-cfg-threshold" value="25" min="1" max="500" step="1"
-               style="width:100%;padding:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);font-size:0.85rem;">
+        <label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Threshold %</label>
+        <input type="number" id="spike-cfg-threshold" value="25" min="1" max="500" step="1" class="form-input" style="padding:8px;">
       </div>
       <div style="min-width:100px;">
-        <label style="display:block;font-size:0.75rem;color:#94a3b8;margin-bottom:4px;">Option Type</label>
-        <select id="spike-cfg-type" style="width:100%;padding:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);font-size:0.85rem;">
+        <label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Option Type</label>
+        <select id="spike-cfg-type" class="form-select" style="width:100%;">
           <option value="ALL">ALL</option>
           <option value="CALL">CALL</option>
           <option value="PUT">PUT</option>
         </select>
       </div>
       <div style="display:flex;gap:12px;align-items:center;min-width:140px;">
-        <label style="display:flex;align-items:center;gap:4px;font-size:0.8rem;color:#94a3b8;cursor:pointer;">
-          <input type="checkbox" id="spike-cfg-push" checked style="accent-color:var(--accent-cyan);"> Push
+        <label style="display:flex;align-items:center;gap:4px;font-size:0.8rem;color:var(--text-muted);cursor:pointer;">
+          <input type="checkbox" id="spike-cfg-push" checked style="accent-color:var(--primary);"> Push
         </label>
-        <label style="display:flex;align-items:center;gap:4px;font-size:0.8rem;color:#94a3b8;cursor:pointer;">
+        <label style="display:flex;align-items:center;gap:4px;font-size:0.8rem;color:var(--text-muted);cursor:pointer;">
           <input type="checkbox" id="spike-cfg-email"> Email
         </label>
       </div>
@@ -266,10 +282,10 @@
     <div id="spike-configs-list" style="margin-top:12px;"></div>
   </div>
 
-  <p style="color:#aaa;font-size:0.85em;margin:0 0 12px"><span data-i18n="spikeAlertsDesc">>25% vs previous cycle. Sent to iPhone + Email.</span></p>
+  <p style="color:var(--text-muted);font-size:0.85em;margin:0 0 12px"><span data-i18n="spikeAlertsDesc">>25% vs previous cycle. Sent to iPhone + Email.</span></p>
   <table style="width:100%;border-collapse:collapse">
     <thead>
-      <tr style="color:#00d4ff;font-size:0.8em;text-transform:uppercase">
+      <tr style="color:var(--primary-text);font-size:0.8em;text-transform:uppercase">
         <th style="padding:8px;text-align:left" data-i18n="time">TIME</th>
         <th style="padding:8px;text-align:left" data-i18n="ticker">TICKER</th>
         <th style="padding:8px;text-align:left" data-i18n="type">TYPE</th>
@@ -281,7 +297,7 @@
       </tr>
     </thead>
     <tbody id="spike-alerts-body">
-      <tr><td colspan="8" style="padding:12px;color:#666;text-align:center" data-i18n="noSpikes">No spike alerts yet. Run a cycle to detect.</td></tr>
+      <tr><td colspan="8" style="padding:12px;color:var(--text-muted);text-align:center" data-i18n="noSpikes">No spike alerts yet. Run a cycle to detect.</td></tr>
     </tbody>
   </table>
 </div>
@@ -296,10 +312,10 @@ async function loadSpikeConfigs() {
     if (!el) return;
     const configs = (d.configs || []);
     if (!configs.length) {
-      el.innerHTML = '<p style="color:#666;font-size:0.8rem;margin:4px 0 0;">No alert rules configured. Add one above.</p>';
+      el.innerHTML = '<p style="color:var(--text-muted);font-size:0.8rem;margin:4px 0 0;">No alert rules configured. Add one above.</p>';
       return;
     }
-    el.innerHTML = '<table style="width:100%;border-collapse:collapse;margin-top:6px;"><thead><tr style="color:#64748b;font-size:0.7rem;text-transform:uppercase;">' +
+    el.innerHTML = '<table style="width:100%;border-collapse:collapse;margin-top:6px;"><thead><tr style="color:var(--text-muted);font-size:0.7rem;text-transform:uppercase;">' +
       '<th style="padding:6px;text-align:left;">Ticker</th>' +
       '<th style="padding:6px;text-align:left;">Threshold</th>' +
       '<th style="padding:6px;text-align:left;">Type</th>' +
@@ -308,12 +324,12 @@ async function loadSpikeConfigs() {
       '<th style="padding:6px;text-align:center;">Status</th>' +
       '<th style="padding:6px;text-align:center;"></th></tr></thead><tbody>' +
       configs.map(c => {
-        const statusColor = c.enabled ? '#10b981' : '#64748b';
+        const statusColor = c.enabled ? 'var(--success)' : 'var(--text-muted)';
         const statusText = c.enabled ? 'Active' : 'Paused';
         return `<tr style="border-bottom:1px solid var(--border);">` +
           `<td style="padding:6px;font-weight:bold;">${c.ticker}</td>` +
           `<td style="padding:6px;">${c.threshold}%</td>` +
-          `<td style="padding:6px;color:${c.option_type==='CALL'?'#00d4ff':c.option_type==='PUT'?'#ff9900':'#94a3b8'}">${c.option_type}</td>` +
+          `<td style="padding:6px;color:${c.option_type==='CALL'?'var(--success)':c.option_type==='PUT'?'var(--danger)':'var(--text-muted)'}">${c.option_type}</td>` +
           `<td style="padding:6px;">${c.notify_push ? '✅' : '—'}</td>` +
           `<td style="padding:6px;">${c.notify_email ? '✅' : '—'}</td>` +
           `<td style="padding:6px;text-align:center;"><button onclick="toggleSpikeConfig(${c.id})" style="background:none;border:none;color:${statusColor};cursor:pointer;font-size:0.8rem;font-weight:600;">${statusText}</button></td>` +
@@ -383,24 +399,24 @@ async function loadSpikeAlerts() {
     const countEl = document.getElementById("spike-count");
     if (!tbody) return;
     if (!d.data || d.data.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="8" style="padding:12px;color:#666;text-align:center">No spike alerts in the last 48h. Run a cycle to detect.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="8" style="padding:12px;color:var(--text-muted);text-align:center">No spike alerts in the last 48h. Run a cycle to detect.</td></tr>`;
       if (countEl) countEl.textContent = "(0)";
       return;
     }
     if (countEl) countEl.textContent = `(${d.data.length})`;
     tbody.innerHTML = d.data.map(s => {
       const pct = parseFloat(s.pct_change);
-      const color = pct >= 0 ? "#00ff88" : "#ff4444";
+      const color = pct >= 0 ? "var(--success)" : "var(--danger)";
       const arrow = pct >= 0 ? "⬆" : "⬇";
       const sign = pct >= 0 ? "+" : "";
       const time = s.timestamp ? s.timestamp.split(" ")[1] : "";
-      return `<tr style="border-bottom:1px solid #1e2a3a">
-        <td style="padding:7px;color:#aaa;font-size:0.85em">${time}</td>
+      return `<tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:7px;color:var(--text-muted);font-size:0.85em">${time}</td>
         <td style="padding:7px;font-weight:bold">${s.ticker}</td>
-        <td style="padding:7px;color:${s.option_type==='CALL'?'#00d4ff':'#ff9900'}">${s.option_type}</td>
+        <td style="padding:7px;color:${s.option_type==='CALL'?'var(--success)':'var(--danger)'}">${s.option_type}</td>
         <td style="padding:7px">$${s.strike}</td>
-        <td style="padding:7px;color:#aaa;font-size:0.85em">${s.expiration}</td>
-        <td style="padding:7px;color:#aaa">$${parseFloat(s.prev_mid).toFixed(2)}</td>
+        <td style="padding:7px;color:var(--text-muted);font-size:0.85em">${s.expiration}</td>
+        <td style="padding:7px;color:var(--text-muted)">$${parseFloat(s.prev_mid).toFixed(2)}</td>
         <td style="padding:7px;color:${color};font-weight:bold">$${parseFloat(s.curr_mid).toFixed(2)}</td>
         <td style="padding:7px;color:${color};font-weight:bold;font-size:1.1em">${sign}${pct.toFixed(1)}% ${arrow}</td>
       </tr>`;
@@ -415,6 +431,16 @@ document.addEventListener("DOMContentLoaded", () => {
     if(d.status==="ok") populateSpikeTickerSelect(d.watchlist);
   }).catch(()=>{});
   setInterval(loadSpikeAlerts, 60000);
+  // Hamburger menu toggle
+  const toggle = document.getElementById('menuToggle');
+  const menu = document.getElementById('navMenu');
+  if (toggle && menu) {
+    toggle.addEventListener('click', () => {
+      menu.classList.toggle('active');
+      toggle.classList.toggle('active');
+      toggle.setAttribute('aria-expanded', menu.classList.contains('active'));
+    });
+  }
 });
 </script>
 </body>

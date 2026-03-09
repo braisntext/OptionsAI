@@ -232,6 +232,88 @@ def create_app(database=None, agent=None):
         return render_template("index.html")
 
     # =========================================================================
+    # ROUTES – CONTACT FORM (public, rate-limited)
+    # =========================================================================
+    _contact_attempts: dict = defaultdict(list)
+    CONTACT_RATE_LIMIT = 3
+    CONTACT_RATE_WINDOW = 600  # 10 minutes
+
+    @app.route("/api/contact", methods=["POST"])
+    def api_contact():
+        # Rate limit by IP
+        ip = request.remote_addr
+        now = time.time()
+        cutoff = now - CONTACT_RATE_WINDOW
+        _contact_attempts[ip] = [t for t in _contact_attempts[ip] if t > cutoff]
+        if len(_contact_attempts[ip]) >= CONTACT_RATE_LIMIT:
+            return jsonify({"ok": False, "error": "Demasiados mensajes. Espera unos minutos."}), 429
+        _contact_attempts[ip].append(now)
+
+        data = request.get_json(silent=True) or {}
+        name = (data.get("name") or "").strip()[:100]
+        email = (data.get("email") or "").strip()[:200]
+        message = (data.get("message") or "").strip()[:2000]
+
+        if not name or not email or not message:
+            return jsonify({"ok": False, "error": "Todos los campos son obligatorios."}), 400
+        if "@" not in email or "." not in email:
+            return jsonify({"ok": False, "error": "Email no válido."}), 400
+
+        try:
+            from config import BREVO_API_KEY, BREVO_SENDER_EMAIL, BREVO_SENDER_NAME, SUPERADMIN_EMAILS
+        except ImportError:
+            BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
+            BREVO_SENDER_EMAIL = os.getenv("BREVO_SENDER_EMAIL", "")
+            BREVO_SENDER_NAME = os.getenv("BREVO_SENDER_NAME", "Options Monitor")
+            SUPERADMIN_EMAILS = [os.getenv("SUPERADMIN_EMAIL", "braisnatural@gmail.com")]
+
+        if not BREVO_API_KEY or not BREVO_SENDER_EMAIL:
+            print("[contact] Brevo not configured")
+            return jsonify({"ok": False, "error": "Servicio no disponible. Inténtalo más tarde."}), 503
+
+        admin_email = SUPERADMIN_EMAILS[0] if SUPERADMIN_EMAILS else "braisnatural@gmail.com"
+
+        import html as html_mod
+        safe_name = html_mod.escape(name)
+        safe_email = html_mod.escape(email)
+        safe_message = html_mod.escape(message).replace("\n", "<br>")
+
+        html_body = f"""
+        <div style="font-family:Inter,Arial,sans-serif;max-width:560px;margin:auto;padding:32px;background:#F8FAFC;color:#1E293B;border-radius:16px;border:1px solid #EDF2F7">
+          <h2 style="color:#7C3AED;margin-bottom:4px">📬 Nuevo mensaje de contacto</h2>
+          <hr style="border:1px solid #EDF2F7;margin:20px 0">
+          <p><strong>Nombre:</strong> {safe_name}</p>
+          <p><strong>Email:</strong> <a href="mailto:{safe_email}">{safe_email}</a></p>
+          <hr style="border:1px solid #EDF2F7;margin:20px 0">
+          <p><strong>Mensaje:</strong></p>
+          <div style="background:#FFFFFF;padding:16px;border-radius:8px;border:1px solid #EDF2F7;margin-top:8px">{safe_message}</div>
+          <hr style="border:1px solid #EDF2F7;margin:20px 0">
+          <p style="color:#64748B;font-size:12px">Enviado desde el formulario de contacto de Small Smart Tools</p>
+        </div>
+        """
+
+        try:
+            import sib_api_v3_sdk
+            configuration = sib_api_v3_sdk.Configuration()
+            configuration.api_key["api-key"] = BREVO_API_KEY
+            api_instance = sib_api_v3_sdk.TransactionalEmailsApi(
+                sib_api_v3_sdk.ApiClient(configuration)
+            )
+            send_email = sib_api_v3_sdk.SendSmtpEmail(
+                to=[{"email": admin_email}],
+                sender={"name": BREVO_SENDER_NAME, "email": BREVO_SENDER_EMAIL},
+                reply_to={"email": email, "name": name},
+                subject=f"📬 Contacto SST: {name}",
+                html_content=html_body,
+            )
+            api_instance.send_transac_email(send_email)
+            print(f"[contact] Message from {email} sent to {admin_email}")
+            return jsonify({"ok": True})
+        except Exception as e:
+            print(f"[contact] Brevo error: {e}")
+            return jsonify({"ok": False, "error": "Error al enviar. Inténtalo más tarde."}), 500
+
+    # =========================================================================
     # ROUTES – DATA
     # =========================================================================
 

@@ -122,7 +122,7 @@
                         <li>Acceso lifetime</li>
                         <li>Soporte prioritario</li>
                     </ul>
-                    <a href="mailto:braisnatural@gmail.com" class="btn btn-outline btn-block" aria-label="Contactar para plan Pro">Contactar</a>
+                    <a href="#contacto" class="btn btn-outline btn-block" aria-label="Contactar para plan Pro">Contactar</a>
                 </article>
             </div>
         </section>
@@ -130,7 +130,22 @@
         <section class="contact" id="contacto">
             <h2>¿Tienes preguntas?</h2>
             <p>Escríbenos y te responderemos en menos de 24 horas.</p>
-            <a href="mailto:braisnatural@gmail.com" class="btn">Contáctanos</a>
+            <form id="contactForm" style="text-align:left;max-width:480px;margin:0 auto;">
+                <div style="margin-bottom:1rem">
+                    <label class="form-label" for="contact-name">Nombre</label>
+                    <input type="text" id="contact-name" class="form-input" placeholder="Tu nombre" required maxlength="100">
+                </div>
+                <div style="margin-bottom:1rem">
+                    <label class="form-label" for="contact-email">Email</label>
+                    <input type="email" id="contact-email" class="form-input" placeholder="tu@email.com" required maxlength="200">
+                </div>
+                <div style="margin-bottom:1.5rem">
+                    <label class="form-label" for="contact-message">Mensaje</label>
+                    <textarea id="contact-message" class="form-input" rows="4" placeholder="¿En qué podemos ayudarte?" required maxlength="2000" style="resize:vertical"></textarea>
+                </div>
+                <div id="contact-msg" class="msg" style="margin-bottom:1rem"></div>
+                <button type="submit" class="btn btn-block" id="contact-btn">Enviar mensaje</button>
+            </form>
         </section>
     </main>
 
@@ -174,6 +189,57 @@
                 closeMenu();
             }
         });
+
+        // ── Contact form ──────────────────────────────────────────────
+        document.getElementById('contactForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('contact-btn');
+            const msg = document.getElementById('contact-msg');
+            const name    = document.getElementById('contact-name').value.trim();
+            const email   = document.getElementById('contact-email').value.trim();
+            const message = document.getElementById('contact-message').value.trim();
+
+            if (!name || !email || !message) {
+                showContactMsg('Todos los campos son obligatorios.', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Enviando...';
+            msg.style.display = 'none';
+
+            try {
+                const res = await fetch('/api/contact', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({ name, email, message })
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    showContactMsg('✓ Mensaje enviado. Te responderemos pronto.', 'success');
+                    document.getElementById('contactForm').reset();
+                    btn.textContent = '✓ Enviado';
+                } else {
+                    showContactMsg(data.error || 'Error al enviar.', 'error');
+                    btn.disabled = false;
+                    btn.textContent = 'Enviar mensaje';
+                }
+            } catch {
+                showContactMsg('Error de red. Inténtalo de nuevo.', 'error');
+                btn.disabled = false;
+                btn.textContent = 'Enviar mensaje';
+            }
+        });
+
+        function showContactMsg(text, type) {
+            const el = document.getElementById('contact-msg');
+            el.textContent = text;
+            el.className = 'msg ' + type;
+            el.style.display = 'block';
+        }
     </script>
 </body>
 </html>

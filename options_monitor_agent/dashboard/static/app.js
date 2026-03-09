@@ -3,6 +3,20 @@ const API="";
 let _csrfToken="";
 function _esc(s){const d=document.createElement('div');d.appendChild(document.createTextNode(s));return d.innerHTML;}
 
+// Theme-aware chart colors
+function _chartColors(){
+    const s=getComputedStyle(document.documentElement);
+    return {
+        text: s.getPropertyValue('--text-muted').trim()||'#64748B',
+        grid: s.getPropertyValue('--border').trim()||'#EDF2F7',
+        green: '#22C55E',
+        red: '#EF4444',
+        yellow: '#F59E0B',
+        primary: s.getPropertyValue('--primary-text').trim()||'#7C3AED',
+        cyan: '#7C3AED'
+    };
+}
+
 function _loadCsrf(){
     const meta=document.querySelector('meta[name="csrf-token"]');
     if(meta&&meta.content){_csrfToken=meta.content;return Promise.resolve()}
@@ -56,10 +70,10 @@ function updateMarketBadge(market){
         if(market.es_open)parts.push("ES");
         if(market.us_open)parts.push("US");
         badge.textContent="🟢 "+parts.join("+")+(" Open ("+market.now_cet+" CET)");
-        badge.style.background="rgba(16,185,129,0.15)";badge.style.color="#10b981";
+        badge.style.background="rgba(34,197,94,0.12)";badge.style.color="#22c55e";
     }else{
         badge.textContent="🔴 Markets Closed"+(market.now_cet?" ("+market.now_cet+" CET)":"");
-        badge.style.background="rgba(239,68,68,0.15)";badge.style.color="#ef4444";
+        badge.style.background="rgba(239,68,68,0.12)";badge.style.color="#ef4444";
     }
     // Show last update time
     if(market.last_update){
@@ -67,7 +81,7 @@ function updateMarketBadge(market){
         if(!lu){
             lu=document.createElement("span");
             lu.id="data-freshness";
-            lu.style.cssText="margin-left:12px;font-size:0.75rem;color:#94a3b8;";
+            lu.style.cssText="margin-left:12px;font-size:0.75rem;color:var(--text-muted,#64748B);";
             badge.parentNode.insertBefore(lu,badge.nextSibling);
         }
         lu.textContent="Data: "+new Date(market.last_update).toLocaleString();
@@ -135,17 +149,18 @@ function updateCharts(data,watchlist){
         pi.push(d?d.put_iv||0:0);
         pc.push(d?d.pcr_volume||0:0);
     });
+    const cc=_chartColors();
     const ctx1=document.getElementById("iv-chart").getContext("2d");
     if(ivChart)ivChart.destroy();
-    ivChart=new Chart(ctx1,{type:"bar",data:{labels:t,datasets:[{label:"Call IV%",data:ci,backgroundColor:"rgba(16,185,129,0.7)",borderRadius:6},{label:"Put IV%",data:pi,backgroundColor:"rgba(239,68,68,0.7)",borderRadius:6}]},options:{responsive:true,maintainAspectRatio:true,aspectRatio:2.5,plugins:{legend:{labels:{color:"#94a3b8"}}},scales:{x:{ticks:{color:"#94a3b8",maxRotation:45,minRotation:0},grid:{color:"rgba(45,55,72,0.5)"}},y:{ticks:{color:"#94a3b8"},grid:{color:"rgba(45,55,72,0.5)"}}}}});
+    ivChart=new Chart(ctx1,{type:"bar",data:{labels:t,datasets:[{label:"Call IV%",data:ci,backgroundColor:"rgba(34,197,94,0.7)",borderRadius:6},{label:"Put IV%",data:pi,backgroundColor:"rgba(239,68,68,0.7)",borderRadius:6}]},options:{responsive:true,maintainAspectRatio:true,aspectRatio:2.5,plugins:{legend:{labels:{color:cc.text}}},scales:{x:{ticks:{color:cc.text,maxRotation:45,minRotation:0},grid:{color:cc.grid}},y:{ticks:{color:cc.text},grid:{color:cc.grid}}}}});
     const ctx2=document.getElementById("pcr-chart").getContext("2d");
     if(pcrChart)pcrChart.destroy();
-    pcrChart=new Chart(ctx2,{type:"bar",data:{labels:t,datasets:[{label:"P/C Ratio",data:pc,backgroundColor:pc.map(p=>p>1.2?"rgba(239,68,68,0.7)":p<0.8?"rgba(16,185,129,0.7)":"rgba(245,158,11,0.7)"),borderRadius:6}]},options:{responsive:true,maintainAspectRatio:true,aspectRatio:2.5,plugins:{legend:{labels:{color:"#94a3b8"}}},scales:{x:{ticks:{color:"#94a3b8",maxRotation:45,minRotation:0},grid:{color:"rgba(45,55,72,0.5)"}},y:{ticks:{color:"#94a3b8"},grid:{color:"rgba(45,55,72,0.5)"}}}}});
+    pcrChart=new Chart(ctx2,{type:"bar",data:{labels:t,datasets:[{label:"P/C Ratio",data:pc,backgroundColor:pc.map(p=>p>1.2?"rgba(239,68,68,0.7)":p<0.8?"rgba(34,197,94,0.7)":"rgba(245,158,11,0.7)"),borderRadius:6}]},options:{responsive:true,maintainAspectRatio:true,aspectRatio:2.5,plugins:{legend:{labels:{color:cc.text}}},scales:{x:{ticks:{color:cc.text,maxRotation:45,minRotation:0},grid:{color:cc.grid}},y:{ticks:{color:cc.text},grid:{color:cc.grid}}}}});
     const validPc=pc.filter(p=>p>0);
     const avg=validPc.length?validPc.reduce((a,b)=>a+b,0)/validPc.length:0;
     const se=document.getElementById("sentiment-value"),pe=document.getElementById("pcr-value");
     pe.textContent=avg.toFixed(3);
-    if(avg>1.2){se.textContent="🐻 BEARISH";se.style.color="#ef4444"}else if(avg<0.8){se.textContent="🐂 BULLISH";se.style.color="#10b981"}else{se.textContent="😐 NEUTRAL";se.style.color="#f59e0b"}
+    if(avg>1.2){se.textContent="🐻 BEARISH";se.style.color="#ef4444"}else if(avg<0.8){se.textContent="🐂 BULLISH";se.style.color="#22c55e"}else{se.textContent="😐 NEUTRAL";se.style.color="#f59e0b"}
 }
 
 function updateAlerts(alerts){
@@ -196,7 +211,8 @@ async function loadTickerHistory(){
     const ivAll=ci.concat(pi).filter(v=>v>0),ivMin=ivAll.length?Math.min(...ivAll):0,ivMax=ivAll.length?Math.max(...ivAll):100,ivPad=ivMax===ivMin?Math.max(ivMax*0.1,1):0;
     const ctx=document.getElementById("history-chart").getContext("2d");
     if(historyChart)historyChart.destroy();
-    historyChart=new Chart(ctx,{type:"line",data:{labels:l,datasets:[{label:t+" Price",data:p,borderColor:"#06b6d4",yAxisID:"y1",tension:.3,fill:false,pointRadius:3,pointBackgroundColor:"#06b6d4"},{label:"Call IV%",data:ci,borderColor:"#10b981",borderDash:[5,5],yAxisID:"y2",tension:.3,pointRadius:3,pointBackgroundColor:"#10b981"},{label:"Put IV%",data:pi,borderColor:"#ef4444",borderDash:[5,5],yAxisID:"y2",tension:.3,pointRadius:3,pointBackgroundColor:"#ef4444"}]},options:{responsive:true,interaction:{intersect:false,mode:"index"},plugins:{legend:{labels:{color:"#94a3b8"}},tooltip:{enabled:true}},scales:{x:{ticks:{color:"#94a3b8",maxTicksLimit:12},grid:{color:"rgba(45,55,72,0.3)"}},y1:{position:"left",min:pMin-pPad,max:pMax+pPad,ticks:{color:"#06b6d4"},grid:{color:"rgba(45,55,72,0.3)"},title:{display:true,text:"Price ($)",color:"#06b6d4"}},y2:{position:"right",min:Math.max(0,ivMin-ivPad),max:ivMax+ivPad,ticks:{color:"#10b981"},grid:{display:false},title:{display:true,text:"IV (%)",color:"#10b981"}}}}})
+    const hc=_chartColors();
+    historyChart=new Chart(ctx,{type:"line",data:{labels:l,datasets:[{label:t+" Price",data:p,borderColor:hc.primary,yAxisID:"y1",tension:.3,fill:false,pointRadius:3,pointBackgroundColor:hc.primary},{label:"Call IV%",data:ci,borderColor:hc.green,borderDash:[5,5],yAxisID:"y2",tension:.3,pointRadius:3,pointBackgroundColor:hc.green},{label:"Put IV%",data:pi,borderColor:hc.red,borderDash:[5,5],yAxisID:"y2",tension:.3,pointRadius:3,pointBackgroundColor:hc.red}]},options:{responsive:true,interaction:{intersect:false,mode:"index"},plugins:{legend:{labels:{color:hc.text}},tooltip:{enabled:true}},scales:{x:{ticks:{color:hc.text,maxTicksLimit:12},grid:{color:hc.grid}},y1:{position:"left",min:pMin-pPad,max:pMax+pPad,ticks:{color:hc.primary},grid:{color:hc.grid},title:{display:true,text:"Price ($)",color:hc.primary}},y2:{position:"right",min:Math.max(0,ivMin-ivPad),max:ivMax+ivPad,ticks:{color:hc.green},grid:{display:false},title:{display:true,text:"IV (%)",color:hc.green}}}}})
 }
 async function runCycle(){
     const b=document.getElementById("btn-run-cycle");
@@ -232,9 +248,9 @@ async function sendChat(){
 }
 
 function showNotif(msg,type="info"){
-    const c={info:"#3b82f6",success:"#10b981",error:"#ef4444"}[type]||"#3b82f6";
+    const c={info:"#A78BFA",success:"#22C55E",error:"#EF4444"}[type]||"#A78BFA";
     const n=document.createElement("div");
-    n.style.cssText=`position:fixed;top:20px;right:20px;padding:14px 24px;background:${c};color:white;border-radius:10px;font-weight:600;z-index:10000;box-shadow:0 4px 12px rgba(0,0,0,0.3)`;
+    n.style.cssText=`position:fixed;top:20px;right:20px;padding:14px 24px;background:${c};color:white;border-radius:10px;font-weight:600;z-index:10000;box-shadow:0 4px 12px rgba(0,0,0,0.15);font-family:Inter,system-ui,sans-serif`;
     n.textContent=msg;document.body.appendChild(n);
     setTimeout(()=>{n.style.opacity="0";n.style.transition="opacity 0.3s";setTimeout(()=>n.remove(),300)},3000)
 }
