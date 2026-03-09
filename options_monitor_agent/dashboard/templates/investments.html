@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>Gestión Inversiones — Small Smart Tools</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💼</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/landing.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    body { background: var(--bg); color: var(--text); }
+    .inv-container { max-width: 1300px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+    .inv-header { text-align: center; margin-bottom: 2rem; }
+    .inv-header h1 { font-size: 2rem; font-weight: 800; margin-bottom: .25rem; }
+    .inv-header p { color: var(--text-muted); font-size: .95rem; }
+
+    /* Summary cards */
+    .summary-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem; margin-bottom: 2rem;
+    }
+    .summary-card {
+      background: var(--card); border-radius: 12px; padding: 1.25rem;
+      border: 1px solid var(--border); text-align: center;
+    }
+    .summary-card .label { font-size: .75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+    .summary-card .value { font-size: 1.5rem; font-weight: 800; margin-top: .25rem; }
+    .summary-card .value.positive { color: var(--success); }
+    .summary-card .value.negative { color: var(--danger); }
+
+    /* Actions bar */
+    .actions-bar {
+      display: flex; gap: .75rem; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center;
+    }
+    .actions-bar select, .actions-bar input {
+      padding: .5rem .75rem; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--card); color: var(--text); font-size: .9rem;
+    }
+
+    /* Tabs */
+    .tab-bar {
+      display: flex; gap: 0; border-bottom: 2px solid var(--border);
+      margin-bottom: 1.5rem; overflow-x: auto;
+    }
+    .tab-btn {
+      padding: .6rem 1.2rem; border: none; background: none; cursor: pointer;
+      font-size: .85rem; font-weight: 600; color: var(--text-muted);
+      border-bottom: 2px solid transparent; margin-bottom: -2px; white-space: nowrap;
+      transition: color .2s, border-color .2s;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--primary-text); border-bottom-color: var(--primary-text); }
+
+    /* Tab content */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Positions list */
+    .positions-list { display: flex; flex-direction: column; gap: .75rem; }
+    .position-row {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 1rem 1.25rem; display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr 1fr auto;
+      gap: 1rem; align-items: center; cursor: pointer;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .position-row:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,.08); }
+    .position-row .sym { font-weight: 700; font-size: 1rem; }
+    .position-row .sym-name { font-size: .75rem; color: var(--text-muted); }
+    .position-row .cell-label { font-size: .7rem; color: var(--text-muted); text-transform: uppercase; }
+    .position-row .cell-value { font-weight: 600; }
+    .position-row .pl-positive { color: var(--success); }
+    .position-row .pl-negative { color: var(--danger); }
+    .position-row .expand-btn {
+      background: none; border: none; cursor: pointer; font-size: 1.2rem;
+      color: var(--text-muted); transition: transform .2s;
+    }
+
+    /* Detail panel */
+    .detail-panel {
+      display: none; background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem;
+    }
+    .detail-panel.active { display: block; }
+    .detail-panel h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; }
+    .detail-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;
+    }
+    .chart-container { position: relative; height: 300px; }
+    .chart-controls {
+      display: flex; gap: .5rem; margin-bottom: .75rem; flex-wrap: wrap;
+    }
+    .chart-controls button {
+      padding: .3rem .7rem; border-radius: 6px; border: 1px solid var(--border);
+      background: var(--card); color: var(--text); font-size: .78rem; cursor: pointer;
+    }
+    .chart-controls button.active { background: var(--primary-text); color: #fff; border-color: var(--primary-text); }
+
+    /* Data tables */
+    .data-table {
+      width: 100%; border-collapse: collapse; font-size: .85rem;
+    }
+    .data-table th {
+      text-align: left; padding: .5rem .75rem; font-size: .75rem;
+      text-transform: uppercase; color: var(--text-muted); border-bottom: 2px solid var(--border);
+      font-weight: 600; letter-spacing: .04em; position: sticky; top: 0;
+      background: var(--card);
+    }
+    .data-table td { padding: .5rem .75rem; border-bottom: 1px solid var(--border); }
+    .data-table tr:hover { background: var(--info-bg); }
+    .table-wrap { max-height: 400px; overflow-y: auto; border-radius: 8px; border: 1px solid var(--border); }
+
+    /* Forms / modals */
+    .modal-overlay {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,.4); z-index: 1000; justify-content: center; align-items: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-box {
+      background: var(--card); border-radius: 16px; padding: 2rem; width: 90%;
+      max-width: 500px; max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,.2);
+    }
+    .modal-box h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 1rem; }
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { display: block; font-size: .8rem; font-weight: 600; margin-bottom: .25rem; color: var(--text-muted); }
+    .form-group input, .form-group select {
+      width: 100%; padding: .5rem .75rem; border-radius: 8px;
+      border: 1px solid var(--border); background: var(--bg); color: var(--text);
+      font-size: .9rem;
+    }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .form-actions { display: flex; gap: .75rem; justify-content: flex-end; margin-top: 1.5rem; }
+
+    /* Search */
+    .search-box {
+      position: relative;
+    }
+    .search-results {
+      position: absolute; top: 100%; left: 0; right: 0; z-index: 100;
+      background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+      max-height: 200px; overflow-y: auto; display: none;
+      box-shadow: 0 8px 24px rgba(0,0,0,.15);
+    }
+    .search-results.active { display: block; }
+    .search-result-item {
+      padding: .5rem .75rem; cursor: pointer; font-size: .85rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .search-result-item:hover { background: var(--info-bg); }
+    .search-result-item .sr-symbol { font-weight: 700; }
+    .search-result-item .sr-name { color: var(--text-muted); font-size: .78rem; }
+
+    /* Import section */
+    .import-section { margin-bottom: 2rem; }
+    .fiscal-stmt-item {
+      background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+      padding: 1rem; display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: .5rem;
+    }
+    .fiscal-stmt-item.imported { opacity: .6; }
+    .fiscal-stmt-info { font-size: .9rem; }
+    .fiscal-stmt-info .broker { font-weight: 700; }
+    .fiscal-stmt-info .meta { font-size: .78rem; color: var(--text-muted); }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center; padding: 3rem 2rem; color: var(--text-muted);
+    }
+    .empty-state .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+    .empty-state h3 { color: var(--text); margin-bottom: .5rem; }
+    .empty-state p { font-size: .9rem; max-width: 500px; margin: 0 auto .5rem; }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 2rem; right: 2rem; z-index: 2000;
+      padding: .75rem 1.25rem; border-radius: 10px; font-size: .85rem;
+      font-weight: 600; display: none; animation: slideUp .3s ease;
+    }
+    .toast.success { background: var(--success-bg); color: var(--success); }
+    .toast.error { background: var(--danger-bg); color: var(--danger); }
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+    /* Loading */
+    .loading { text-align: center; padding: 2rem; color: var(--text-muted); }
+    .spinner { display: inline-block; width: 24px; height: 24px; border: 3px solid var(--border); border-top-color: var(--primary-text); border-radius: 50%; animation: spin .6s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 900px) {
+      .position-row { grid-template-columns: 1fr 1fr; }
+      .detail-grid { grid-template-columns: 1fr; }
+      .summary-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+      .inv-container { padding: 1rem; }
+      .position-row { grid-template-columns: 1fr; }
+      .form-row { grid-template-columns: 1fr; }
+      .summary-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="site-nav" aria-label="Navegación principal">
+    <a href="/" class="logo">Small Smart Tools</a>
+    <ul class="nav-links" id="navMenu">
+      <li><a href="/">Inicio</a></li>
+      <li><a href="/dashboard">Options Monitor</a></li>
+      <li><a href="/fiscal">Importador Fiscal</a></li>
+      <li><a href="/investments" style="color:var(--primary-text)">Inversiones</a></li>
+      <li><a href="/account">Mi Cuenta</a></li>
+    </ul>
+    <button class="menu-toggle" aria-label="Abrir menú" aria-expanded="false" aria-controls="navMenu" id="menuToggle">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <div class="inv-container">
+
+    <!-- Header -->
+    <div class="inv-header">
+      <h1>💼 Gestión de Inversiones</h1>
+      <p>Cartera de inversiones, dividendos y seguimiento de posiciones con FIFO</p>
+    </div>
+
+    <!-- Portfolio Summary -->
+    <div class="summary-grid" id="summaryGrid">
+      <div class="summary-card">
+        <div class="label">Invertido</div>
+        <div class="value" id="sumInvested">—</div>
+      </div>
+      <div class="summary-card">
+        <div class="label">Valor Mercado</div>
+        <div class="value" id="sumMarketValue">—</div>
+      </div>
+      <div class="summary-card">
+        <div class="label">P&L No Realizado</div>
+        <div class="value" id="sumUnrealized">—</div>
+      </div>
+      <div class="summary-card">
+        <div class="label">P&L Realizado</div>
+        <div class="value" id="sumRealized">—</div>
+      </div>
+      <div class="summary-card">
+        <div class="label">Dividendos Total</div>
+        <div class="value" id="sumDividends">—</div>
+      </div>
+      <div class="summary-card">
+        <div class="label">Posiciones</div>
+        <div class="value" id="sumPositions">—</div>
+      </div>
+    </div>
+
+    <!-- Actions bar -->
+    <div class="actions-bar">
+      <button class="btn btn-primary" onclick="openAddTxModal()">+ Nueva Operación</button>
+      <button class="btn btn-outline" onclick="openAddDivModal()">+ Dividendo</button>
+      <button class="btn btn-outline" onclick="openImportModal()">📥 Importar</button>
+      <button class="btn btn-outline" onclick="openAccountsModal()">🏦 Cuentas</button>
+      <div style="flex:1"></div>
+      <button class="btn btn-sm" onclick="refreshAll()" title="Actualizar precios">🔄 Actualizar</button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="positions" onclick="switchTab('positions')">📊 Posiciones</button>
+      <button class="tab-btn" data-tab="transactions" onclick="switchTab('transactions')">📋 Operaciones</button>
+      <button class="tab-btn" data-tab="dividends" onclick="switchTab('dividends')">💰 Dividendos</button>
+      <button class="tab-btn" data-tab="closed" onclick="switchTab('closed')">✅ Realizadas</button>
+    </div>
+
+    <!-- Tab: Positions -->
+    <div class="tab-content active" id="tab-positions">
+      <div id="positionsContainer">
+        <div class="loading"><div class="spinner"></div><p>Cargando posiciones...</p></div>
+      </div>
+      <!-- Detail panel (shown when a position is clicked) -->
+      <div class="detail-panel" id="detailPanel">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+          <h3 id="detailTitle">—</h3>
+          <button class="btn btn-sm btn-outline" onclick="closeDetail()">✕ Cerrar</button>
+        </div>
+        <div class="detail-grid">
+          <div>
+            <div class="chart-controls" id="chartControls">
+              <button class="active" onclick="loadChart(selectedSymbol,'1m')">1M</button>
+              <button onclick="loadChart(selectedSymbol,'3m')">3M</button>
+              <button onclick="loadChart(selectedSymbol,'6m')">6M</button>
+              <button onclick="loadChart(selectedSymbol,'1y')">1A</button>
+              <button onclick="loadChart(selectedSymbol,'5y')">5A</button>
+              <button onclick="loadChart(selectedSymbol,'max')">Max</button>
+            </div>
+            <div class="chart-container">
+              <canvas id="priceChart"></canvas>
+            </div>
+          </div>
+          <div>
+            <h4 style="font-size:.9rem;margin-bottom:.75rem;">Lotes abiertos (FIFO)</h4>
+            <div class="table-wrap" id="lotsTable"></div>
+            <h4 style="font-size:.9rem;margin:1rem 0 .75rem;">Últimas operaciones</h4>
+            <div class="table-wrap" id="detailTxTable"></div>
+            <h4 style="font-size:.9rem;margin:1rem 0 .75rem;">Dividendos</h4>
+            <div class="table-wrap" id="detailDivTable"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Transactions -->
+    <div class="tab-content" id="tab-transactions">
+      <div id="transactionsContainer">
+        <div class="loading"><div class="spinner"></div><p>Cargando operaciones...</p></div>
+      </div>
+    </div>
+
+    <!-- Tab: Dividends -->
+    <div class="tab-content" id="tab-dividends">
+      <div id="dividendsContainer">
+        <div class="loading"><div class="spinner"></div><p>Cargando dividendos...</p></div>
+      </div>
+    </div>
+
+    <!-- Tab: Closed -->
+    <div class="tab-content" id="tab-closed">
+      <div id="closedContainer">
+        <div class="loading"><div class="spinner"></div><p>Cargando posiciones cerradas...</p></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Modal: Add Transaction -->
+  <div class="modal-overlay" id="txModal">
+    <div class="modal-box">
+      <h3>Nueva Operación</h3>
+      <form id="txForm" onsubmit="return submitTx(event)">
+        <div class="form-group">
+          <label>Cuenta</label>
+          <select id="txAccount" required></select>
+        </div>
+        <div class="form-group search-box">
+          <label>Símbolo</label>
+          <input id="txSymbol" type="text" placeholder="Ej: AAPL, MSFT..." autocomplete="off" required
+                 oninput="searchSymbol(this.value)" onfocus="searchSymbol(this.value)">
+          <div class="search-results" id="symbolResults"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tipo</label>
+            <select id="txType" required>
+              <option value="buy">Compra</option>
+              <option value="sell">Venta</option>
+              <option value="split">Split</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Fecha</label>
+            <input id="txDate" type="date" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Cantidad</label>
+            <input id="txQty" type="number" step="any" min="0.0001" required>
+          </div>
+          <div class="form-group">
+            <label>Precio por unidad</label>
+            <input id="txPrice" type="number" step="any" min="0" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Divisa</label>
+            <select id="txCurrency">
+              <option value="EUR">EUR</option>
+              <option value="USD">USD</option>
+              <option value="GBP">GBP</option>
+              <option value="CHF">CHF</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Comisión</label>
+            <input id="txCommission" type="number" step="any" min="0" value="0">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Notas (opcional)</label>
+          <input id="txNotes" type="text" placeholder="Notas...">
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-outline" onclick="closeModal('txModal')">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Add Dividend -->
+  <div class="modal-overlay" id="divModal">
+    <div class="modal-box">
+      <h3>Registrar Dividendo</h3>
+      <form id="divForm" onsubmit="return submitDiv(event)">
+        <div class="form-group">
+          <label>Cuenta</label>
+          <select id="divAccount" required></select>
+        </div>
+        <div class="form-group search-box">
+          <label>Símbolo</label>
+          <input id="divSymbol" type="text" placeholder="Ej: AAPL..." autocomplete="off" required
+                 oninput="searchSymbolDiv(this.value)">
+          <div class="search-results" id="symbolResultsDiv"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Fecha de pago</label>
+            <input id="divDate" type="date" required>
+          </div>
+          <div class="form-group">
+            <label>Importe bruto</label>
+            <input id="divAmount" type="number" step="any" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Divisa</label>
+            <select id="divCurrency">
+              <option value="EUR">EUR</option>
+              <option value="USD">USD</option>
+              <option value="GBP">GBP</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Retención</label>
+            <input id="divWithholding" type="number" step="any" min="0" value="0">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-outline" onclick="closeModal('divModal')">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Import -->
+  <div class="modal-overlay" id="importModal">
+    <div class="modal-box" style="max-width:600px;">
+      <h3>📥 Importar Datos</h3>
+      <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:1rem;">
+        Importa operaciones y dividendos desde tus extractos fiscales ya procesados.
+      </p>
+      <div id="fiscalStatements">
+        <div class="loading"><div class="spinner"></div></div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-outline" onclick="closeModal('importModal')">Cerrar</button>
+        <button type="button" class="btn btn-primary" id="importBtn" onclick="doFiscalImport()" disabled>Importar seleccionados</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Accounts -->
+  <div class="modal-overlay" id="accountsModal">
+    <div class="modal-box">
+      <h3>🏦 Cuentas de Inversión</h3>
+      <div id="accountsList" style="margin-bottom:1rem;"></div>
+      <hr style="border:none;border-top:1px solid var(--border);margin:1rem 0;">
+      <h4 style="font-size:.9rem;margin-bottom:.75rem;">Añadir cuenta</h4>
+      <form id="accountForm" onsubmit="return submitAccount(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Broker</label>
+            <input id="acctBroker" type="text" placeholder="Ej: IBKR, DEGIRO..." required>
+          </div>
+          <div class="form-group">
+            <label>Nombre (opcional)</label>
+            <input id="acctName" type="text" placeholder="Ej: Principal...">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-outline" onclick="closeModal('accountsModal')">Cerrar</button>
+          <button type="submit" class="btn btn-primary">Añadir</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year">2025</span> Small Smart Tools. Todos los derechos reservados.</p>
+  </footer>
+
+  <script src="/static/investments.js"></script>
+</body>
+</html>

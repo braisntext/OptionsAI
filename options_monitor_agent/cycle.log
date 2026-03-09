@@ -1,9 +1,0 @@
-Scraping 4 tickers: ['ACX.MC', 'ENG.MC', 'NTGY.MC', 'VIS.MC']
-  ACX.MC: MEFF cache
-  ENG.MC: MEFF cache
-  NTGY.MC: MEFF cache
-  VIS.MC: MEFF cache
-Computing Greeks...
-Analyzing...
-Saving to DB...
-ERROR: DB not available
