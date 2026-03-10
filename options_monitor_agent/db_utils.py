@@ -11,6 +11,8 @@ that transparently handles dialect differences.
 import os
 import re
 import sqlite3
+import threading
+from functools import lru_cache
 
 # ── Detect backend ───────────────────────────────────────────────────────────
 
@@ -24,13 +26,16 @@ DATABASE_URL = _raw_url
 # ── PostgreSQL pool (lazy init — safe with Gunicorn pre-fork) ────────────────
 
 _pool = None
+_pool_lock = threading.Lock()
 
 
 def _get_pool():
     global _pool
     if _pool is None:
-        import psycopg2.pool
-        _pool = psycopg2.pool.ThreadedConnectionPool(1, 5, DATABASE_URL)
+        with _pool_lock:
+            if _pool is None:
+                import psycopg2.pool
+                _pool = psycopg2.pool.ThreadedConnectionPool(1, 5, DATABASE_URL)
     return _pool
 
 
@@ -85,10 +90,9 @@ class _SqliteConnWrapper:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_type is None:
-            self._conn.commit()
-        else:
+        if exc_type is not None:
             self._conn.rollback()
+        self._conn.close()
         return False
 
 
@@ -106,8 +110,12 @@ class _PgConnWrapper:
     def __init__(self, conn):
         self._conn = conn
         self.total_changes = 0
+        # Cache the cursor factory at import time
+        import psycopg2.extras
+        self._dict_cursor = psycopg2.extras.DictCursor
 
     @staticmethod
+    @lru_cache(maxsize=256)
     def _translate(sql):
         if sql.strip().upper().startswith('PRAGMA'):
             return None
@@ -121,8 +129,7 @@ class _PgConnWrapper:
         sql = self._translate(sql)
         if sql is None:
             return _NullCursor()
-        import psycopg2.extras
-        cur = self._conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur = self._conn.cursor(cursor_factory=self._dict_cursor)
         cur.execute(sql, params or ())
         self.total_changes = cur.rowcount
         return cur
@@ -133,6 +140,7 @@ class _PgConnWrapper:
             return _NullCursor()
         cur = self._conn.cursor()
         cur.executemany(sql, params_list)
+        self.total_changes = cur.rowcount
         return cur
 
     def commit(self):
@@ -151,9 +159,7 @@ class _PgConnWrapper:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_type is None:
-            self._conn.commit()
-        else:
+        if exc_type is not None:
             self._conn.rollback()
         self.close()
         return False

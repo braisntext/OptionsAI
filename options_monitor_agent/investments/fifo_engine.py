@@ -47,10 +47,7 @@ def _get_rebuild_scopes(email, account_id=None, symbol=None):
 
 def _get_account_symbols(email, account_id):
     """Get distinct symbols with buy/sell/split transactions in an account."""
-    txs = db.get_transactions_for_fifo(email, account_id, '%')
-    # get_transactions_for_fifo uses exact match, so query directly
-    from . import database as _db
-    with _db._conn() as c:
+    with db._conn() as c:
         rows = c.execute(
             '''SELECT DISTINCT symbol FROM investment_transactions
                WHERE email = ? COLLATE NOCASE AND account_id = ?
@@ -195,3 +192,5 @@ def _rebuild_single(email, account_id, symbol):
     except Exception:
         conn.rollback()
         raise
+    finally:
+        db.close_shared_conn()
