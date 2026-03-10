@@ -33,6 +33,25 @@
     .upload-zone p { color: var(--text-muted); font-size: .85rem; margin: 0; }
     .upload-zone input[type="file"] { display: none; }
     .upload-zone .upload-icon { font-size: 2.5rem; margin-bottom: .5rem; }
+
+    /* Broker selector */
+    .broker-select-row { display: flex; gap: .75rem; align-items: center; justify-content: center; margin-bottom: 1.25rem; }
+    .broker-select-row label { font-weight: 600; font-size: .9rem; }
+    .broker-select-row select { padding: .4rem .75rem; border-radius: 8px; border: 1px solid var(--border); background: var(--card); font-size: .9rem; }
+
+    /* TR dual-file upload */
+    .tr-upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; }
+    @media (max-width: 600px) { .tr-upload-grid { grid-template-columns: 1fr; } }
+    .tr-file-box {
+      border: 2px dashed var(--border); border-radius: 12px; padding: 1.5rem 1rem;
+      text-align: center; cursor: pointer; transition: border-color .2s, background .2s;
+      background: var(--bg);
+    }
+    .tr-file-box.drag-over { border-color: var(--primary-text); background: var(--info-bg); }
+    .tr-file-box .tr-icon { font-size: 1.8rem; margin-bottom: .4rem; }
+    .tr-file-box .tr-label { font-weight: 600; font-size: .85rem; margin-bottom: .25rem; }
+    .tr-file-box .tr-desc { color: var(--text-muted); font-size: .75rem; }
+    .tr-file-box .tr-file-name { color: var(--success); font-size: .8rem; font-weight: 600; margin-top: .5rem; }
     .upload-progress { display: none; margin-top: 1rem; }
     .upload-progress .progress-bar {
       height: 6px; border-radius: 3px; background: var(--border); overflow: hidden;
@@ -256,16 +275,58 @@
       <p>Importa extractos de tu broker, calcula impuestos y obtén las casillas para tu Declaración de la Renta</p>
     </div>
 
-    <!-- Upload Zone -->
+    <!-- Broker Selector -->
+    <div class="broker-select-row">
+      <label for="brokerChoice">Broker:</label>
+      <select id="brokerChoice" onchange="onBrokerChoice()">
+        <option value="auto">Autodetectar</option>
+        <option value="IBKR">Interactive Brokers (CSV)</option>
+        <option value="TRADE_REPUBLIC">Trade Republic (2 PDFs)</option>
+      </select>
+    </div>
+
+    <!-- Generic Upload Zone (IBKR / Auto) -->
     <div class="upload-zone" id="uploadZone" role="button" tabindex="0"
          aria-label="Arrastra un CSV o PDF o haz clic para seleccionar">
       <div class="upload-icon">📤</div>
       <h3>Sube tu extracto del broker</h3>
-      <p>Arrastra un archivo aquí o haz clic para seleccionar · Máx 5 MB · CSV (IBKR) o PDF (Trade Republic)</p>
+      <p>Arrastra un archivo aquí o haz clic para seleccionar · Máx 5 MB · CSV o PDF</p>
       <input type="file" id="fileInput" accept=".csv,.pdf">
       <div class="upload-progress" id="uploadProgress">
         <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
         <div class="upload-msg" id="uploadMsg"></div>
+      </div>
+    </div>
+
+    <!-- Trade Republic Dual Upload Zone -->
+    <div id="trUploadZone" style="display:none; margin-bottom:2rem;">
+      <div style="text-align:center;margin-bottom:.75rem;">
+        <h3 style="margin:0 0 .25rem;font-weight:700;">📤 Trade Republic — sube los dos PDFs</h3>
+        <p style="color:var(--text-muted);font-size:.85rem;margin:0;">Se requieren ambos archivos para importar operaciones, dividendos e intereses</p>
+      </div>
+      <div class="tr-upload-grid">
+        <div class="tr-file-box" id="trBox1" tabindex="0">
+          <div class="tr-icon">📊</div>
+          <div class="tr-label">Informe Fiscal</div>
+          <div class="tr-desc">"Informe de Actividad" — operaciones de compra/venta</div>
+          <div class="tr-file-name" id="trFile1Name"></div>
+          <input type="file" id="trFileInput1" accept=".pdf" style="display:none">
+        </div>
+        <div class="tr-file-box" id="trBox2" tabindex="0">
+          <div class="tr-icon">🧾</div>
+          <div class="tr-label">Extracto de Cuenta</div>
+          <div class="tr-desc">"Resumen de Estado de Cuenta" — dividendos e intereses</div>
+          <div class="tr-file-name" id="trFile2Name"></div>
+          <input type="file" id="trFileInput2" accept=".pdf" style="display:none">
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:1rem;">
+        <button class="btn-primary" id="trUploadBtn" onclick="uploadTR()" disabled
+                style="padding:.6rem 2rem;border-radius:10px;font-weight:700;cursor:pointer;">Importar Trade Republic</button>
+      </div>
+      <div class="upload-progress" id="trUploadProgress" style="display:none;margin-top:.75rem;">
+        <div class="progress-bar"><div class="progress-fill" id="trProgressFill"></div></div>
+        <div class="upload-msg" id="trUploadMsg"></div>
       </div>
     </div>
 
@@ -412,7 +473,14 @@
   let currentStmtId = null;
   let currentYear = null;
 
-  /* ── Upload ─────────────────────────────────────────────────── */
+  /* ── Broker Choice Toggle ──────────────────────────────────── */
+  function onBrokerChoice() {
+    const choice = document.getElementById('brokerChoice').value;
+    document.getElementById('uploadZone').style.display = choice === 'TRADE_REPUBLIC' ? 'none' : '';
+    document.getElementById('trUploadZone').style.display = choice === 'TRADE_REPUBLIC' ? '' : 'none';
+  }
+
+  /* ── Generic Upload (IBKR / Auto) ──────────────────────────── */
   const zone = document.getElementById('uploadZone');
   const fileInput = document.getElementById('fileInput');
 
@@ -460,6 +528,71 @@
         }
       })
       .catch(err => {
+        fill.style.width = '100%';
+        msg.textContent = '❌ Error de conexión';
+        msg.className = 'upload-msg error';
+      });
+  }
+
+  /* ── Trade Republic Dual Upload ─────────────────────────────── */
+  let trFile1 = null, trFile2 = null;
+  const trBox1 = document.getElementById('trBox1');
+  const trBox2 = document.getElementById('trBox2');
+  const trInput1 = document.getElementById('trFileInput1');
+  const trInput2 = document.getElementById('trFileInput2');
+
+  function setupTrBox(box, input, setFile, nameEl) {
+    box.addEventListener('click', () => input.click());
+    box.addEventListener('keydown', e => { if (e.key === 'Enter') input.click(); });
+    box.addEventListener('dragover', e => { e.preventDefault(); box.classList.add('drag-over'); });
+    box.addEventListener('dragleave', () => box.classList.remove('drag-over'));
+    box.addEventListener('drop', e => {
+      e.preventDefault(); box.classList.remove('drag-over');
+      if (e.dataTransfer.files.length) { setFile(e.dataTransfer.files[0]); nameEl.textContent = '✅ ' + e.dataTransfer.files[0].name; updateTrBtn(); }
+    });
+    input.addEventListener('change', () => {
+      if (input.files.length) { setFile(input.files[0]); nameEl.textContent = '✅ ' + input.files[0].name; updateTrBtn(); }
+    });
+  }
+  setupTrBox(trBox1, trInput1, f => { trFile1 = f; }, document.getElementById('trFile1Name'));
+  setupTrBox(trBox2, trInput2, f => { trFile2 = f; }, document.getElementById('trFile2Name'));
+
+  function updateTrBtn() {
+    document.getElementById('trUploadBtn').disabled = !(trFile1 && trFile2);
+  }
+
+  function uploadTR() {
+    if (!trFile1 || !trFile2) return;
+    const progress = document.getElementById('trUploadProgress');
+    const fill = document.getElementById('trProgressFill');
+    const msg = document.getElementById('trUploadMsg');
+
+    progress.style.display = 'block';
+    fill.style.width = '10%';
+    msg.textContent = 'Procesando ambos PDFs...';
+    msg.className = 'upload-msg';
+
+    const fd = new FormData();
+    fd.append('file', trFile1);
+    fd.append('file2', trFile2);
+    fd.append('broker', 'TRADE_REPUBLIC');
+    fd.append('_csrf_token', CSRF);
+
+    fetch('/api/fiscal/upload', { method: 'POST', body: fd })
+      .then(r => r.json())
+      .then(data => {
+        fill.style.width = '100%';
+        if (data.status === 'ok') {
+          msg.textContent = `✅ ${data.broker} ${data.tax_year} — ${data.summary.trades} operaciones, ${data.summary.dividends} dividendos, ${data.summary.interest} intereses`;
+          msg.className = 'upload-msg success';
+          loadYears(data.tax_year);
+          loadStatements(data.statement_id);
+        } else {
+          msg.textContent = '❌ ' + (data.message || 'Error desconocido');
+          msg.className = 'upload-msg error';
+        }
+      })
+      .catch(() => {
         fill.style.width = '100%';
         msg.textContent = '❌ Error de conexión';
         msg.className = 'upload-msg error';

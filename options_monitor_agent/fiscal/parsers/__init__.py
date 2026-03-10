@@ -46,7 +46,7 @@ class BrokerParser(ABC):
         ...
 
     @abstractmethod
-    def parse(self, content: str) -> ParsedStatement:
+    def parse(self, content: str, **kwargs) -> ParsedStatement:
         """Parse file content into a normalized ParsedStatement."""
         ...
 

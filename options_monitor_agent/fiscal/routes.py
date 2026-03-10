@@ -93,6 +93,14 @@ def upload_statement():
     if error:
         return jsonify({'status': 'error', 'message': error}), 400
 
+    # Optional second file (required for Trade Republic)
+    extra_content = None
+    file_obj2 = request.files.get('file2')
+    if file_obj2 and file_obj2.filename:
+        extra_content, error2 = _validate_file(file_obj2)
+        if error2:
+            return jsonify({'status': 'error', 'message': f'Segundo archivo: {error2}'}), 400
+
     # Detect or use specified broker
     broker_name = request.form.get('broker', '').strip()
     if broker_name:
@@ -102,13 +110,15 @@ def upload_statement():
                            'message': f'Broker no soportado: {broker_name}'}), 400
     else:
         parser = detect_broker(content)
+        if not parser and extra_content:
+            parser = detect_broker(extra_content)
         if not parser:
             return jsonify({'status': 'error',
                            'message': 'No se pudo detectar el broker. Selecciónelo manualmente.'}), 400
 
-    # Parse
+    # Parse (pass extra_content for brokers that need multiple files)
     try:
-        parsed = parser.parse(content)
+        parsed = parser.parse(content, extra_content=extra_content)
     except Exception as e:
         return jsonify({'status': 'error',
                        'message': f'Error al parsear el archivo: {str(e)[:200]}'}), 400

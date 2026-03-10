@@ -63,7 +63,7 @@ class IBKRParser(BrokerParser):
         first_lines = content[:500]
         return 'BrokerName' in first_lines and 'Activity Statement' in first_lines
 
-    def parse(self, content):
+    def parse(self, content, **kwargs):
         """Parse full IBKR Activity Statement CSV."""
         reader = csv.reader(io.StringIO(content))
         rows = list(reader)
