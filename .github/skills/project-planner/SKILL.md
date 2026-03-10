@@ -18,7 +18,7 @@ Plan and organize project work into actionable, trackable tasks.
 ## Procedure
 
 ### 1. Gather Context
-- Read [workspace instructions](../../../.github/copilot-instructions.md) for project context
+- Read [workspace instructions](../../copilot-instructions.md) for project context
 - Explore the relevant codebase area using a read-only subagent
 - If clarification is needed, ask targeted questions
 
@@ -84,5 +84,5 @@ Return:
 4. Any questions or risks that need user input
 
 ## References
-- [Workspace instructions](../../../.github/copilot-instructions.md)
+- [Workspace instructions](../../copilot-instructions.md)
 - [Project structure](../../../README.txt)

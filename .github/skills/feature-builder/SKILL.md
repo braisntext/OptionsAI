@@ -90,5 +90,5 @@ After each phase, report:
 4. Ready for next phase / blocked by [issue]
 
 ## References
-- [Workspace instructions](../../../.github/copilot-instructions.md)
+- [Workspace instructions](../../copilot-instructions.md)
 - [Project structure](../../../README.txt)
