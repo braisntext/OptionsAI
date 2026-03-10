@@ -8,7 +8,7 @@ from flask import Blueprint, request, jsonify, session
 from . import database as db
 from .fifo_engine import rebuild_positions
 from .import_fiscal import get_available_fiscal_statements, import_fiscal_statements
-from .price_service import search_symbols, refresh_prices, get_price_history
+from .price_service import search_symbols, refresh_prices, get_price_history, _fetch_yahoo_http, get_live_price
 
 investments_bp = Blueprint('investments', __name__)
 
@@ -509,3 +509,27 @@ def get_closed():
         'closed': rows,
         'total_realized_pl_eur': round(total_realized, 2),
     })
+
+
+# ── Price diagnostic (admin only) ─────────────────────────────────────────
+@investments_bp.route('/api/investments/price-check')
+def price_check():
+    """Diagnostic: test price fetching for a symbol. ?symbol=AAPL"""
+    email, err = _auth_guard()
+    if err:
+        return err
+    sym = (request.args.get('symbol') or 'AAPL').strip().upper()
+    results = {}
+    # Test 1: direct Yahoo HTTP
+    try:
+        price, curr = _fetch_yahoo_http(sym)
+        results['yahoo_http'] = {'price': price, 'currency': curr}
+    except Exception as e:
+        results['yahoo_http'] = {'error': str(e)}
+    # Test 2: full get_live_price
+    try:
+        lp = get_live_price(sym)
+        results['get_live_price'] = lp
+    except Exception as e:
+        results['get_live_price'] = {'error': str(e)}
+    return jsonify({'status': 'ok', 'symbol': sym, 'results': results})

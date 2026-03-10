@@ -1,10 +1,10 @@
 """
-Price service — lightweight yfinance wrapper.
-Uses fast_info (not .info) to avoid downloading huge payloads.
-Reuses fiscal.exchange_rates.to_eur() for EUR conversion.
+Price service — fetches live prices via direct Yahoo Finance HTTP API,
+with yfinance as fallback.  Reuses fiscal.exchange_rates.to_eur() for EUR.
 """
 
 import logging
+import requests as _requests
 import yfinance as yf
 from datetime import datetime, timedelta
 from . import database as db
@@ -18,6 +18,37 @@ except Exception:
     log.warning('[price] Could not import to_eur — EUR conversion disabled')
     def to_eur(amount, currency, date):
         return None
+
+# ── Direct Yahoo HTTP helpers (no yfinance dependency) ───────────────────────
+_YF_CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
+_YF_HEADERS = {"User-Agent": "Mozilla/5.0"}
+
+
+def _fetch_yahoo_http(symbol):
+    """Fetch price + currency directly from Yahoo Finance chart API.
+    Returns (price, currency) or (None, None)."""
+    try:
+        url = _YF_CHART_URL.format(symbol=symbol)
+        r = _requests.get(url, headers=_YF_HEADERS, timeout=10,
+                          params={"range": "5d", "interval": "1d"})
+        r.raise_for_status()
+        data = r.json()
+        result = data["chart"]["result"][0]
+        meta = result["meta"]
+        currency = meta.get("currency", "EUR")
+        # regularMarketPrice is the most current
+        price = meta.get("regularMarketPrice")
+        if price and float(price) > 0:
+            return float(price), currency
+        # Fallback: last close from the time series
+        closes = result.get("indicators", {}).get("quote", [{}])[0].get("close", [])
+        for c in reversed(closes):
+            if c is not None and float(c) > 0:
+                return float(c), currency
+        return None, currency
+    except Exception as exc:
+        log.warning('[price] %s: Yahoo HTTP fallback failed: %s', symbol, exc)
+        return None, None
 
 
 # ── Symbol search ────────────────────────────────────────────────────────────
@@ -70,7 +101,7 @@ def search_symbols(query):
 # ── Live prices ──────────────────────────────────────────────────────────────
 
 def get_live_price(symbol):
-    """Get current price using fast_info (low memory). Returns dict or None."""
+    """Get current price. Tries: 1) DB cache, 2) Yahoo HTTP API, 3) yfinance fast_info."""
     cached = db.get_cached_symbol(symbol)
     if cached and cached.get('last_updated'):
         try:
@@ -86,95 +117,67 @@ def get_live_price(symbol):
         except (ValueError, TypeError):
             pass
 
-    try:
-        ticker = yf.Ticker(symbol)
-        fi = ticker.fast_info
+    price, currency = None, None
 
-        # Try multiple price sources — fast_info attribute access is most reliable
-        price = None
-        for attr in ('last_price', 'previous_close', 'regular_market_previous_close'):
-            try:
-                val = getattr(fi, attr, None)
-                if val is not None and val > 0:
-                    price = float(val)
-                    break
-            except Exception:
-                continue
+    # ── Source 1: Direct Yahoo HTTP API (most reliable on cloud) ──────────
+    price, currency = _fetch_yahoo_http(symbol)
 
-        # Fallback: dict-style access
-        if price is None:
-            for key in ('lastPrice', 'previousClose', 'regularMarketPreviousClose'):
+    # ── Source 2: yfinance fast_info (fallback) ──────────────────────────
+    if price is None:
+        try:
+            ticker = yf.Ticker(symbol)
+            fi = ticker.fast_info
+            for attr in ('last_price', 'previous_close', 'regular_market_previous_close'):
                 try:
-                    val = fi.get(key)
-                    if val is not None and val != 'N/A' and float(val) > 0:
+                    val = getattr(fi, attr, None)
+                    if val is not None and val > 0:
                         price = float(val)
                         break
                 except Exception:
                     continue
+            if not currency:
+                try:
+                    currency = getattr(fi, 'currency', None) or fi.get('currency', 'EUR')
+                except Exception:
+                    pass
+        except Exception as exc:
+            log.warning('[price] %s: yfinance fast_info failed: %s', symbol, exc)
 
-        # Last resort: use recent history
-        if price is None:
-            try:
-                hist = ticker.history(period='5d')
-                if not hist.empty:
-                    price = float(hist['Close'].iloc[-1])
-            except Exception:
-                pass
+    if not currency:
+        currency = 'EUR'
 
-        currency = None
-        try:
-            currency = getattr(fi, 'currency', None)
-        except Exception:
-            pass
-        if not currency:
-            currency = fi.get('currency', 'EUR') or 'EUR'
-
-        if price is None:
-            log.warning('[price] %s: no price found from fast_info or history', symbol)
-            return None
-
-        today = datetime.utcnow().strftime('%Y-%m-%d')
-        price_eur = price
-        if currency != 'EUR':
-            try:
-                price_eur = to_eur(price, currency, today)
-            except Exception as exc:
-                log.warning('[price] %s: to_eur failed: %s', symbol, exc)
-            # If to_eur returned None, keep raw price as fallback
-            if price_eur is None:
-                price_eur = price
-
-        # Cache name from existing cache or leave blank (avoid .info)
-        name = (cached or {}).get('name', '')
-
-        db.upsert_symbol_cache(
-            symbol=symbol,
-            name=name or None,
-            currency=currency,
-            last_price=price,
-            last_price_eur=price_eur,
-        )
-
-        log.info('[price] %s: %.2f %s -> %.2f EUR', symbol, price, currency, price_eur)
-        return {
-            'symbol': symbol,
-            'price': price,
-            'price_eur': price_eur,
-            'currency': currency,
-            'name': name,
-        }
-    except Exception as exc:
-        log.error('[price] %s: exception in get_live_price: %s', symbol, exc)
-        # Return stale cache as fallback
-        if cached and cached.get('last_price'):
-            return {
-                'symbol': cached['symbol'],
-                'price': cached['last_price'],
-                'price_eur': cached['last_price_eur'],
-                'currency': cached.get('currency', 'EUR'),
-                'name': cached.get('name', ''),
-            }
+    if price is None:
+        log.warning('[price] %s: no price from any source', symbol)
         return None
+
+    today = datetime.utcnow().strftime('%Y-%m-%d')
+    price_eur = price
+    if currency != 'EUR':
+        try:
+            price_eur = to_eur(price, currency, today)
+        except Exception as exc:
+            log.warning('[price] %s: to_eur failed: %s', symbol, exc)
+        if price_eur is None:
+            price_eur = price
+
+    name = (cached or {}).get('name', '')
+
+    db.upsert_symbol_cache(
+        symbol=symbol,
+        name=name or None,
+        currency=currency,
+        last_price=price,
+        last_price_eur=price_eur,
+    )
+
+    log.info('[price] %s: %.2f %s -> %.2f EUR', symbol, price, currency, price_eur)
+    return {
+        'symbol': symbol,
+        'price': price,
+        'price_eur': price_eur,
+        'currency': currency,
+        'name': name,
+    }
 
 
 def refresh_prices(symbols):
