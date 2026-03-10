@@ -8,7 +8,7 @@ from flask import Blueprint, request, jsonify, session
 from . import database as db
 from .fifo_engine import rebuild_positions
 from .import_fiscal import get_available_fiscal_statements, import_fiscal_statements
-from .price_service import search_symbols, refresh_prices, get_price_history, _fetch_yahoo_http, get_live_price
+from .price_service import search_symbols, refresh_prices, get_price_history
 
 investments_bp = Blueprint('investments', __name__)
 
@@ -511,78 +511,4 @@ def get_closed():
     })
 
 
-# ── Price diagnostic (admin only) ─────────────────────────────────────────
-@investments_bp.route('/api/investments/price-check')
-def price_check():
-    """Diagnostic: test price fetching for a symbol. ?symbol=AAPL"""
-    email, err = _auth_guard()
-    if err:
-        return err
-    sym = (request.args.get('symbol') or 'AAPL').strip().upper()
-    results = {}
-    # Test 1: direct Yahoo HTTP
-    try:
-        price, curr = _fetch_yahoo_http(sym)
-        results['yahoo_http'] = {'price': price, 'currency': curr}
-    except Exception as e:
-        results['yahoo_http'] = {'error': str(e)}
-    # Test 2: full get_live_price
-    try:
-        lp = get_live_price(sym)
-        results['get_live_price'] = lp
-    except Exception as e:
-        results['get_live_price'] = {'error': str(e)}
-    return jsonify({'status': 'ok', 'symbol': sym, 'results': results})
 
-
-@investments_bp.route('/api/investments/debug-positions')
-def debug_positions():
-    """Diagnostic: see exactly what the positions endpoint computes."""
-    email, err = _auth_guard()
-    if err:
-        return err
-    positions = db.get_positions(email)
-    symbols = list({p['symbol'] for p in positions})
-    # Try refreshing prices for all symbols
-    prices = {}
-    errors = {}
-    for sym in symbols:
-        try:
-            r = get_live_price(sym)
-            if r:
-                prices[sym] = r
-            else:
-                errors[sym] = 'get_live_price returned None'
-        except Exception as e:
-            errors[sym] = str(e)
-
-    debug_rows = []
-    for p in positions:
-        sym = p['symbol']
-        lp = None
-        if sym in prices and prices[sym].get('price_eur'):
-            lp = prices[sym]['price_eur']
-            source = 'refresh'
-        elif p.get('last_price_eur'):
-            lp = p['last_price_eur']
-            source = 'db_cache'
-        else:
-            source = 'none'
-        debug_rows.append({
-            'symbol': sym,
-            'quantity': p.get('quantity'),
-            'total_cost_eur': p.get('total_cost_eur'),
-            'db_last_price_eur': p.get('last_price_eur'),
-            'refreshed_price_eur': prices.get(sym, {}).get('price_eur'),
-            'final_lp': lp,
-            'source': source,
-            'market_value': round(p['quantity'] * lp, 2) if lp and p.get('quantity') else None,
-        })
-    return jsonify({
-        'status': 'ok',
-        'email': email,
-        'num_positions': len(positions),
-        'symbols': symbols,
-        'price_errors': errors,
-        'positions_debug': debug_rows,
-    })
