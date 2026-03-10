@@ -240,7 +240,7 @@
     <a href="/" class="logo">Small Smart Tools</a>
     <ul class="nav-links" id="navMenu">
       <li><a href="/">Inicio</a></li>
-      <li><a href="/dashboard">Options Monitor</a></li>
+      <li><a href="/dashboard">Opciones</a></li>
       <li><a href="/fiscal" style="color:var(--primary-text)">Fiscal</a></li>
       <li><a href="/investments">Inversiones</a></li>
       <li><a href="/account">Mi Cuenta</a></li>
@@ -906,12 +906,18 @@
   }
 
   /* ── Nav menu toggle ────────────────────────────────────────── */
-  document.getElementById('menuToggle')?.addEventListener('click', function() {
-    const nav = document.getElementById('navMenu');
-    const open = this.getAttribute('aria-expanded') === 'true';
-    this.setAttribute('aria-expanded', !open);
-    nav.classList.toggle('open', !open);
-  });
+  const _toggle = document.getElementById('menuToggle');
+  const _menu   = document.getElementById('navMenu');
+  if (_toggle && _menu) {
+    _toggle.addEventListener('click', () => {
+      const open = _menu.classList.toggle('active');
+      _toggle.classList.toggle('active');
+      _toggle.setAttribute('aria-expanded', open);
+    });
+    _menu.querySelectorAll('a').forEach(l => l.addEventListener('click', () => {
+      _menu.classList.remove('active'); _toggle.classList.remove('active');
+    }));
+  }
 
   /* ── Init ───────────────────────────────────────────────────── */
   loadStatements();

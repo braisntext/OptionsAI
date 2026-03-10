@@ -23,6 +23,11 @@ FREE_LIMITS = {
     'ask_agent_max':   0,
 }
 
+# ── App access per plan ───────────────────────────────────────────────────────
+# Free: Options + Investments only.  Paid apps require monthly/basic+.
+FREE_APPS = {'options', 'investments'}
+ALL_APPS  = {'options', 'investments', 'fiscal', 'alt_investments'}
+
 def _conn():
     return get_conn(_SQLITE_PATH)
 
@@ -420,6 +425,21 @@ def get_user_plan(email: str) -> str:
             "SELECT plan FROM subscribers WHERE email = ? COLLATE NOCASE", (email,)
         ).fetchone()
     return row['plan'] if row else 'free'
+
+
+def has_app_access(email: str, app_name: str) -> bool:
+    """Check if user can access a specific app."""
+    if is_superuser(email):
+        return True
+    plan = get_user_plan(email)
+    if plan in ('unlimited', 'lifetime'):
+        return True
+    if plan == 'free':
+        return app_name in FREE_APPS
+    # Paid plans (monthly/basic) get all current apps
+    if not is_subscribed(email):
+        return app_name in FREE_APPS
+    return True
 
 
 def check_limit(email: str, usage_type: str) -> tuple:

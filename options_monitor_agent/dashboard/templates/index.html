@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Dashboard — Options Monitor</title>
+    <title>Dashboard — Small Smart Tools</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,7 +20,7 @@
       <a href="/" class="logo">Small Smart Tools</a>
       <ul class="nav-links" id="navMenu">
         <li><a href="/">Inicio</a></li>
-        <li><a href="/dashboard" style="color:var(--primary-text)">Dashboard</a></li>
+        <li><a href="/dashboard" style="color:var(--primary-text)">Opciones</a></li>
         <li><a href="/fiscal">Fiscal</a></li>
         <li><a href="/investments">Inversiones</a></li>
         <li><a href="/account">Mi Cuenta</a></li>
@@ -153,12 +153,73 @@
                 <h2 class="card-title">📊 <span data-i18n="backtestResults">Backtest Results</span></h2>
                 <div id="backtest-container"><p class="loading"><span data-i18n="loading">Loading...</span></p></div>
             </div>
-        </div>
 
-        <footer class="site-footer"><p>Options Monitor Agent v2.0 | Small Smart Tools</p></footer>
+<!-- PREMIUM SPIKE ALERTS SECTION (inside main-grid) -->
+<div class="card full-width" id="spike-alerts-section">
+  <h2 class="card-title">&#9889; Premium Spike Alerts <span id="spike-count" style="font-size:0.7em;color:var(--text-muted)"></span></h2>
+
+  <!-- Alert Configurator -->
+  <div id="spike-config-panel" style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;margin-bottom:16px;">
+    <h3 style="margin:0 0 12px;font-size:0.95rem;color:var(--primary-text);">🔧 Alert Configuration</h3>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;">
+      <div style="flex:1;min-width:140px;">
+        <label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Ticker</label>
+        <select id="spike-cfg-ticker" class="form-select" style="width:100%;">
+          <option value="">Select ticker...</option>
+        </select>
+      </div>
+      <div style="min-width:100px;">
+        <label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Threshold %</label>
+        <input type="number" id="spike-cfg-threshold" value="25" min="1" max="500" step="1" class="form-input" style="padding:8px;">
+      </div>
+      <div style="min-width:100px;">
+        <label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Option Type</label>
+        <select id="spike-cfg-type" class="form-select" style="width:100%;">
+          <option value="ALL">ALL</option>
+          <option value="CALL">CALL</option>
+          <option value="PUT">PUT</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:12px;align-items:center;min-width:140px;">
+        <label style="display:flex;align-items:center;gap:4px;font-size:0.8rem;color:var(--text-muted);cursor:pointer;">
+          <input type="checkbox" id="spike-cfg-push" checked style="accent-color:var(--primary);"> Push
+        </label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:0.8rem;color:var(--text-muted);cursor:pointer;">
+          <input type="checkbox" id="spike-cfg-email"> Email
+        </label>
+      </div>
+      <button class="btn btn-primary" onclick="addSpikeConfig()" style="white-space:nowrap;">➕ Add Alert</button>
     </div>
+    <div id="spike-configs-list" style="margin-top:12px;"></div>
+  </div>
 
-            <script>
+  <p style="color:var(--text-muted);font-size:0.85em;margin:0 0 12px"><span data-i18n="spikeAlertsDesc">>25% vs previous cycle. Sent to iPhone + Email.</span></p>
+  <div class="table-container">
+  <table style="width:100%;border-collapse:collapse">
+    <thead>
+      <tr style="color:var(--primary-text);font-size:0.8em;text-transform:uppercase">
+        <th style="padding:8px;text-align:left" data-i18n="time">TIME</th>
+        <th style="padding:8px;text-align:left" data-i18n="ticker">TICKER</th>
+        <th style="padding:8px;text-align:left" data-i18n="type">TYPE</th>
+        <th style="padding:8px;text-align:left" data-i18n="strike">STRIKE</th>
+        <th style="padding:8px;text-align:left" data-i18n="expiry">EXPIRY</th>
+        <th style="padding:8px;text-align:left" data-i18n="prev">PREV</th>
+        <th style="padding:8px;text-align:left" data-i18n="curr">CURR</th>
+        <th style="padding:8px;text-align:left" data-i18n="change">CHANGE</th>
+      </tr>
+    </thead>
+    <tbody id="spike-alerts-body">
+      <tr><td colspan="8" style="padding:12px;color:var(--text-muted);text-align:center" data-i18n="noSpikes">No spike alerts yet. Run a cycle to detect.</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+        </div><!-- /.main-grid -->
+
+        <footer class="site-footer"><p>Small Smart Tools · Options Monitor v2.0</p></footer>
+    </div><!-- /.container -->
+
+    <script>
         // Options Chain functionality
         function showOptionsChain(ticker) {
             document.getElementById('selected-ticker').textContent = ticker;
@@ -242,67 +303,6 @@
         // Initialize click handlers when page loads
         // (ticker click is handled by selectTicker in app.js)
     </script><script src="/static/app.js?v=14"></script>
-
-<!-- PREMIUM SPIKE ALERTS SECTION -->
-<div class="card" id="spike-alerts-section" style="margin-top:20px">
-  <h2 class="card-title">&#9889; Premium Spike Alerts <span id="spike-count" style="font-size:0.7em;color:var(--text-muted)"></span></h2>
-
-  <!-- Alert Configurator -->
-  <div id="spike-config-panel" style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;margin-bottom:16px;">
-    <h3 style="margin:0 0 12px;font-size:0.95rem;color:var(--primary-text);">🔧 Alert Configuration</h3>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;">
-      <div style="flex:1;min-width:140px;">
-        <label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Ticker</label>
-        <select id="spike-cfg-ticker" class="form-select" style="width:100%;">
-          <option value="">Select ticker...</option>
-        </select>
-      </div>
-      <div style="min-width:100px;">
-        <label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Threshold %</label>
-        <input type="number" id="spike-cfg-threshold" value="25" min="1" max="500" step="1" class="form-input" style="padding:8px;">
-      </div>
-      <div style="min-width:100px;">
-        <label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Option Type</label>
-        <select id="spike-cfg-type" class="form-select" style="width:100%;">
-          <option value="ALL">ALL</option>
-          <option value="CALL">CALL</option>
-          <option value="PUT">PUT</option>
-        </select>
-      </div>
-      <div style="display:flex;gap:12px;align-items:center;min-width:140px;">
-        <label style="display:flex;align-items:center;gap:4px;font-size:0.8rem;color:var(--text-muted);cursor:pointer;">
-          <input type="checkbox" id="spike-cfg-push" checked style="accent-color:var(--primary);"> Push
-        </label>
-        <label style="display:flex;align-items:center;gap:4px;font-size:0.8rem;color:var(--text-muted);cursor:pointer;">
-          <input type="checkbox" id="spike-cfg-email"> Email
-        </label>
-      </div>
-      <button class="btn btn-primary" onclick="addSpikeConfig()" style="white-space:nowrap;">➕ Add Alert</button>
-    </div>
-
-    <!-- Existing configs -->
-    <div id="spike-configs-list" style="margin-top:12px;"></div>
-  </div>
-
-  <p style="color:var(--text-muted);font-size:0.85em;margin:0 0 12px"><span data-i18n="spikeAlertsDesc">>25% vs previous cycle. Sent to iPhone + Email.</span></p>
-  <table style="width:100%;border-collapse:collapse">
-    <thead>
-      <tr style="color:var(--primary-text);font-size:0.8em;text-transform:uppercase">
-        <th style="padding:8px;text-align:left" data-i18n="time">TIME</th>
-        <th style="padding:8px;text-align:left" data-i18n="ticker">TICKER</th>
-        <th style="padding:8px;text-align:left" data-i18n="type">TYPE</th>
-        <th style="padding:8px;text-align:left" data-i18n="strike">STRIKE</th>
-        <th style="padding:8px;text-align:left" data-i18n="expiry">EXPIRY</th>
-        <th style="padding:8px;text-align:left" data-i18n="prev">PREV</th>
-        <th style="padding:8px;text-align:left" data-i18n="curr">CURR</th>
-        <th style="padding:8px;text-align:left" data-i18n="change">CHANGE</th>
-      </tr>
-    </thead>
-    <tbody id="spike-alerts-body">
-      <tr><td colspan="8" style="padding:12px;color:var(--text-muted);text-align:center" data-i18n="noSpikes">No spike alerts yet. Run a cycle to detect.</td></tr>
-    </tbody>
-  </table>
-</div>
 
 <script>
 // ── Spike alert configs ─────────────────────────────────────────────────────

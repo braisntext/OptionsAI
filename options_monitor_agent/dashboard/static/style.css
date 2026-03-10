@@ -273,13 +273,15 @@ tr:hover { background: var(--bg-card-hover); }
     .main-grid { grid-template-columns: 1fr; }
     .card.full-width { grid-column: 1; }
     .stats-bar { grid-template-columns: repeat(3, 1fr); }
+    #spike-config-panel > div { flex-direction: column; }
+    #spike-config-panel > div > div { min-width: 0 !important; width: 100%; }
 }
 
 @media (max-width: 768px) {
     .container { padding: 12px; }
     .header { flex-direction: column; align-items: flex-start; padding: 16px; gap: 12px; }
     .header h1 { font-size: 1.4rem; }
-    .header-actions { width: 100%; justify-content: flex-start; gap: 8px; }
+    .header-actions { width: 100%; justify-content: flex-start; gap: 8px; flex-wrap: wrap; }
     .container .btn { padding: 7px 14px; font-size: 0.85rem; }
     .stats-bar { grid-template-columns: repeat(2, 1fr); gap: 10px; }
     .stat-card { padding: 14px 10px; }
@@ -287,6 +289,7 @@ tr:hover { background: var(--bg-card-hover); }
     .main-grid { gap: 12px; }
     .card { padding: 16px; }
     .card-title { font-size: 1rem; }
+    .table-container { margin: 0 -16px; padding: 0 16px; }
     th { padding: 10px 10px; font-size: 0.78rem; }
     td { padding: 8px 10px; font-size: 0.85rem; }
     .alerts-list { max-height: 350px; }
@@ -294,6 +297,8 @@ tr:hover { background: var(--bg-card-hover); }
     .chat-input-row input, .chat-input-container input { width: 100%; }
     .chat-input-row .btn, .chat-input-container .btn { width: 100%; }
     canvas { max-height: 250px; }
+    .ticker-search-bar { flex-direction: column; }
+    .ticker-search-bar > div { min-width: 0 !important; width: 100%; }
 }
 
 @media (max-width: 480px) {

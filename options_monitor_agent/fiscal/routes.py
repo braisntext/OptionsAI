@@ -22,6 +22,19 @@ from .export import generate_csv, generate_html
 
 fiscal_bp = Blueprint('fiscal', __name__)
 
+
+@fiscal_bp.before_request
+def _check_fiscal_access():
+    """Fiscal app requires a paid plan."""
+    email = session.get('email', '').lower()
+    if not email:
+        return jsonify({'status': 'error', 'message': 'No autenticado'}), 401
+    # Import here to avoid circular imports at module level
+    sys.path.insert(0, _DASHBOARD_DIR) if _DASHBOARD_DIR not in sys.path else None
+    from subscribers import has_app_access
+    if not has_app_access(email, 'fiscal'):
+        return jsonify({'status': 'error', 'message': 'Fiscal requiere un plan de pago'}), 403
+
 # Max upload size: 5 MB
 MAX_FILE_SIZE = 5 * 1024 * 1024
 ALLOWED_EXTENSIONS = {'.csv'}

@@ -73,7 +73,7 @@
     <a href="/" class="logo">Small Smart Tools</a>
     <ul class="nav-links" id="navMenu">
       <li><a href="/">Inicio</a></li>
-      <li><a href="/dashboard">Options Monitor</a></li>
+      <li><a href="/dashboard">Opciones</a></li>
       <li><a href="/fiscal">Fiscal</a></li>
       <li><a href="/investments">Inversiones</a></li>
       <li><a href="/account" style="color:var(--primary-text)">Mi Cuenta</a></li>
@@ -154,13 +154,13 @@
       </div>
 
       <!-- Gestión de Inversiones -->
-      <div class="app-card {{ '' if can_fiscal else 'locked' }}">
+      <div class="app-card {{ '' if can_investments else 'locked' }}">
         <div class="app-icon">💼</div>
-        {% if not can_fiscal %}<div class="lock-overlay">🔒 No incluida</div>{% endif %}
+        {% if not can_investments %}<div class="lock-overlay">🔒 No incluida</div>{% endif %}
         <h3>Gestión de Inversiones</h3>
         <p>Cartera de inversiones con FIFO, seguimiento de dividendos, gráficas e importación desde Fiscal.</p>
         <div class="app-action">
-          {% if can_fiscal %}
+          {% if can_investments %}
           <a href="/investments" class="btn btn-sm btn-block">Abrir Inversiones</a>
           {% else %}
           <a href="/subscribe" class="btn btn-outline btn-sm btn-block">Desbloquear →</a>

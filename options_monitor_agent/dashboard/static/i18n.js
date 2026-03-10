@@ -5,7 +5,7 @@
 const TRANSLATIONS = {
   en: {
     // Header
-    title: "Options Monitor Agent",
+    title: "Options Monitor",
     subtitle: "Real-time Options Analytics | Powered by Claude AI",
     refresh: "Refresh",
     runCycle: "Run Cycle",
@@ -75,13 +75,13 @@ const TRANSLATIONS = {
     noSpikes: "No spike alerts yet. Run a cycle to detect.",
     
     // Footer
-    footerText: "Options Monitor Agent v2.0 | Claude AI | Yahoo Finance",
+    footerText: "Small Smart Tools · Options Monitor v2.0",
     spikeDesc: "Options where premium jumped >25% vs previous cycle. Sent to iPhone + Email.",
   },
   
   es: {
     // Header
-    title: "Agente Monitor de Opciones",
+    title: "Monitor de Opciones",
     subtitle: "Análisis de Opciones en Tiempo Real | Potenciado por Claude AI",
     refresh: "Actualizar",
     runCycle: "Ejecutar Ciclo",
@@ -151,7 +151,7 @@ const TRANSLATIONS = {
     noSpikes: "Sin alertas de picos aún. Ejecuta un ciclo para detectar.",
     
     // Footer
-    footerText: "Agente Monitor de Opciones v2.0 | Claude AI | Yahoo Finance",
+    footerText: "Small Smart Tools · Monitor de Opciones v2.0",
     spikeDesc: "Opciones donde la prima saltó >25% vs ciclo previo. Enviado a iPhone + Email.",
   }
 };

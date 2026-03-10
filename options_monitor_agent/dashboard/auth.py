@@ -16,7 +16,7 @@ try:
 except ImportError:
     BREVO_API_KEY = os.getenv('BREVO_API_KEY', '')
     BREVO_SENDER_EMAIL = os.getenv('BREVO_SENDER_EMAIL', '')
-    BREVO_SENDER_NAME = os.getenv('BREVO_SENDER_NAME', 'Options Monitor')
+    BREVO_SENDER_NAME = os.getenv('BREVO_SENDER_NAME', 'Small Smart Tools')
 
 from subscribers import is_subscribed, add_free_subscriber, store_magic_token, consume_magic_token
 
@@ -54,7 +54,7 @@ def _send_magic_email(to_email: str, link: str) -> bool:
         return False
     html = f"""
     <div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;padding:32px;background:#0f1117;color:#e2e8f0;border-radius:12px">
-      <h2 style="color:#3b82f6;margin-bottom:4px">&#9889; Options Monitor</h2>
+      <h2 style="color:#3b82f6;margin-bottom:4px">&#9889; Small Smart Tools</h2>
       <p style="color:#94a3b8;margin-top:0">Your secure login link</p>
       <hr style="border:1px solid #1e293b;margin:24px 0">
       <p>Click the button below to sign in. This link expires in <strong>{TOKEN_TTL_MINUTES} minutes</strong> and can only be used once.</p>
@@ -129,11 +129,19 @@ def auth_request():
     if not _is_allowed(email):
         return jsonify({'ok': True})  # silent deny
     # ── Subscription gate — auto-register free tier ───────────────────────
-    if not is_subscribed(email):
-        add_free_subscriber(email)
+    try:
+        if not is_subscribed(email):
+            add_free_subscriber(email)
+    except Exception as exc:
+        print(f'[auth] DB error during subscription check: {exc}')
+        return jsonify({'ok': False, 'error': 'Server error. Please try again.'}), 500
     token      = secrets.token_urlsafe(32)
     expires_at = datetime.utcnow() + timedelta(minutes=TOKEN_TTL_MINUTES)
-    store_magic_token(token, email, expires_at)
+    try:
+        store_magic_token(token, email, expires_at)
+    except Exception as exc:
+        print(f'[auth] DB error storing token: {exc}')
+        return jsonify({'ok': False, 'error': 'Server error. Please try again.'}), 500
     link = url_for('auth.auth_verify', token=token, _external=True)
     sent = _send_magic_email(email, link)
     if not sent:
@@ -142,7 +150,11 @@ def auth_request():
 
 @auth_bp.route('/auth/verify/<token>')
 def auth_verify(token):
-    entry = consume_magic_token(token)
+    try:
+        entry = consume_magic_token(token)
+    except Exception as exc:
+        print(f'[auth] DB error consuming token: {exc}')
+        return render_template('login.html', error='Server error. Please request a new link.')
     if not entry:
         return render_template('login.html', error='Invalid or already used link.')
     if datetime.utcnow() > entry['expires_at']:

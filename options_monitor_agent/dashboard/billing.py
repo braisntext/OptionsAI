@@ -6,7 +6,8 @@ from flask import (
 )
 from subscribers import (
     is_subscribed, get_subscriber, add_subscriber,
-    cancel_subscriber, list_subscribers, list_payments
+    cancel_subscriber, list_subscribers, list_payments,
+    has_app_access
 )
 
 billing_bp = Blueprint('billing', __name__)
@@ -88,6 +89,7 @@ def account():
     has_all_apps = False
     can_options = False
     can_fiscal = False
+    can_investments = False
 
     if sub:
         plan = (sub['plan'] or '').lower()
@@ -111,17 +113,15 @@ def account():
         else:
             plan_label = plan.capitalize() if plan else 'Free'
 
-        if has_all_apps:
-            can_options = True
-            can_fiscal = True
-        else:
-            # Free and Basic plans: both apps available (1-app limit managed elsewhere)
-            can_options = sub['status'] == 'active'
-            can_fiscal = sub['status'] == 'active'
+        can_options = has_app_access(email, 'options')
+        can_fiscal = has_app_access(email, 'fiscal')
+        can_investments = has_app_access(email, 'investments')
+        has_all_apps = can_options and can_fiscal and can_investments
 
     return render_template('account.html', email=email, sub=sub,
                            plan_label=plan_label, has_all_apps=has_all_apps,
-                           can_options=can_options, can_fiscal=can_fiscal)
+                           can_options=can_options, can_fiscal=can_fiscal,
+                           can_investments=can_investments)
 
 @billing_bp.route('/account/cancel', methods=['POST'])
 def cancel():

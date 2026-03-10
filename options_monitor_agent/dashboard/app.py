@@ -120,7 +120,7 @@ def create_app(database=None, agent=None):
     def _inject_csrf():
         return dict(csrf_token=_generate_csrf_token)
 
-    CSRF_EXEMPT_ENDPOINTS = {'billing.stripe_webhook'}
+    CSRF_EXEMPT_ENDPOINTS = {'billing.stripe_webhook', 'auth.auth_request'}
 
     @app.before_request
     def _check_csrf():
@@ -141,6 +141,19 @@ def create_app(database=None, agent=None):
         if os.getenv('RENDER', ''):
             response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
         return response
+
+    # ── Error handlers ─────────────────────────────────────────────────────────
+    @app.errorhandler(404)
+    def _handle_404(e):
+        if request.path.startswith('/api/'):
+            return jsonify({'status': 'error', 'message': 'Not found'}), 404
+        return render_template('login.html', error='Página no encontrada (404)'), 404
+
+    @app.errorhandler(500)
+    def _handle_500(e):
+        if request.path.startswith('/api/'):
+            return jsonify({'status': 'error', 'message': 'Internal server error'}), 500
+        return render_template('login.html', error='Error del servidor (500). Inténtalo de nuevo.'), 500
 
     # ── Helper: DB guard ──────────────────────────────────────────────────────
     def _require_db():
@@ -238,7 +251,10 @@ def create_app(database=None, agent=None):
     @app.route("/fiscal")
     @login_required
     def fiscal():
-        """Fiscal Import dashboard — upload and review broker statements."""
+        """Fiscal Import dashboard — requires paid plan."""
+        from subscribers import has_app_access
+        if not has_app_access(session.get('email', ''), 'fiscal'):
+            return redirect(url_for('billing.account'))
         return render_template("fiscal.html")
 
     @app.route("/investments")
@@ -285,7 +301,7 @@ def create_app(database=None, agent=None):
         except ImportError:
             BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
             BREVO_SENDER_EMAIL = os.getenv("BREVO_SENDER_EMAIL", "")
-            BREVO_SENDER_NAME = os.getenv("BREVO_SENDER_NAME", "Options Monitor")
+            BREVO_SENDER_NAME = os.getenv("BREVO_SENDER_NAME", "Small Smart Tools")
             SUPERADMIN_EMAILS = [os.getenv("SUPERADMIN_EMAIL", "braisnatural@gmail.com")]
 
         if not BREVO_API_KEY or not BREVO_SENDER_EMAIL:

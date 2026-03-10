@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign In — Options Monitor</title>
+  <title>Acceder — Small Smart Tools</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -27,8 +27,8 @@
   <div class="page-center">
     <div class="page-card" style="max-width:420px;">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
-        <span style="font-size:1.8rem">🏆</span>
-        <span style="font-size:1.3rem;font-weight:800;color:var(--primary-text)">Options Monitor</span>
+        <span style="font-size:1.8rem">🧰</span>
+        <span style="font-size:1.3rem;font-weight:800;color:var(--primary-text)">Small Smart Tools</span>
       </div>
       <p style="color:var(--text-muted);font-size:.875rem;margin-bottom:2rem">Secure access via magic link</p>
       {% if error %}<div class="alert-info" style="border-color:var(--danger);background:var(--danger-bg);color:var(--danger)">⚠ {{ error }}</div>{% endif %}
@@ -91,11 +91,6 @@
         if (data.ok) {
           showMsg('\u2713 Magic link sent! Check your inbox (and spam folder).', 'success');
           btn.textContent = '\u2713 Email Sent';
-        } else if (data.not_subscribed) {
-          showMsg('No active subscription for this email. Redirecting to subscribe page...', 'warn');
-          btn.textContent = '\u2192 Subscribe';
-          btn.disabled = false;
-          setTimeout(() => { window.location = '/subscribe?email=' + encodeURIComponent(email); }, 2000);
         } else {
           showMsg('\u26a0 ' + (data.error || data.message || 'Something went wrong.'), 'error');
           btn.disabled = false;
