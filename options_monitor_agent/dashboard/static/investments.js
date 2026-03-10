@@ -105,10 +105,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function refreshAll() {
   await loadAccounts();
-  // Load all tabs in parallel
+  // Load positions first (refreshes prices + caches them),
+  // then summary (uses cached prices), plus other tabs in parallel
+  await loadPositions();
   await Promise.all([
     loadSummary(),
-    loadPositions(),
     loadTransactions(),
     loadDividends(),
     loadClosed(),

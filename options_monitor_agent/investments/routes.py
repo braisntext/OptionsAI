@@ -319,11 +319,21 @@ def portfolio_summary():
     total_market_value = 0
     prices = {}
     if symbols:
-        prices = refresh_prices(symbols)
+        # Use cached prices (already refreshed by positions endpoint)
+        # Only call refresh_prices if explicitly requested
+        do_refresh = request.args.get('refresh', '') == '1'
+        if do_refresh:
+            prices = refresh_prices(symbols)
     for p in positions:
         sym = p['symbol']
+        lp = None
         if sym in prices and prices[sym].get('price_eur'):
-            total_market_value += p['quantity'] * prices[sym]['price_eur']
+            lp = prices[sym]['price_eur']
+        elif p.get('last_price_eur'):
+            lp = p['last_price_eur']
+
+        if lp:
+            total_market_value += p['quantity'] * lp
         else:
             total_market_value += p.get('total_cost_eur') or 0
 
@@ -343,8 +353,13 @@ def portfolio_summary():
     for p in positions:
         sym = p['symbol']
         sym_value = p.get('total_cost_eur') or 0
+        lp2 = None
         if sym in prices and prices[sym].get('price_eur'):
-            sym_value = p['quantity'] * prices[sym]['price_eur']
+            lp2 = prices[sym]['price_eur']
+        elif p.get('last_price_eur'):
+            lp2 = p['last_price_eur']
+        if lp2:
+            sym_value = p['quantity'] * lp2
         allocation.append({
             'symbol': sym,
             'value_eur': round(sym_value, 2),

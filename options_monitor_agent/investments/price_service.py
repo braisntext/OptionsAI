@@ -81,14 +81,59 @@ def get_live_price(symbol):
     try:
         ticker = yf.Ticker(symbol)
         fi = ticker.fast_info
-        price = fi.get('lastPrice') or fi.get('regularMarketPrice')
-        currency = fi.get('currency', 'EUR') or 'EUR'
+
+        # Try multiple price sources — fast_info attribute access is most reliable
+        price = None
+        for attr in ('last_price', 'previous_close', 'regular_market_previous_close'):
+            try:
+                val = getattr(fi, attr, None)
+                if val is not None and val > 0:
+                    price = float(val)
+                    break
+            except Exception:
+                continue
+
+        # Fallback: dict-style access
+        if price is None:
+            for key in ('lastPrice', 'previousClose', 'regularMarketPreviousClose'):
+                try:
+                    val = fi.get(key)
+                    if val is not None and val != 'N/A' and float(val) > 0:
+                        price = float(val)
+                        break
+                except Exception:
+                    continue
+
+        # Last resort: use recent history
+        if price is None:
+            try:
+                hist = ticker.history(period='5d')
+                if not hist.empty:
+                    price = float(hist['Close'].iloc[-1])
+            except Exception:
+                pass
+
+        currency = None
+        try:
+            currency = getattr(fi, 'currency', None)
+        except Exception:
+            pass
+        if not currency:
+            currency = fi.get('currency', 'EUR') or 'EUR'
 
         if price is None:
             return None
 
         today = datetime.utcnow().strftime('%Y-%m-%d')
-        price_eur = to_eur(price, currency, today) if currency != 'EUR' else price
+        price_eur = price
+        if currency != 'EUR':
+            try:
+                price_eur = to_eur(price, currency, today)
+            except Exception:
+                pass
+            # If to_eur returned None, try with previous_close date or keep raw price
+            if price_eur is None:
+                price_eur = price  # Use unconverted as fallback
 
         # Cache name from existing cache or leave blank (avoid .info)
         name = (cached or {}).get('name', '')
