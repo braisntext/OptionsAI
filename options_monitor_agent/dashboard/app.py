@@ -98,7 +98,7 @@ def create_app(database=None, agent=None):
     # ── Flask app ─────────────────────────────────────────────────────────────
     app = Flask(__name__, template_folder="templates", static_folder="static")
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY") or secrets.token_hex(32)
-    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=12)
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
     app.config['SESSION_COOKIE_SECURE'] = os.getenv('RENDER', '') != ''  # True on Render (HTTPS)
     app.config['SESSION_COOKIE_HTTPONLY'] = True
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'

@@ -105,15 +105,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function refreshAll() {
   await loadAccounts();
-  // Load positions first (refreshes prices + caches them),
-  // then summary (uses cached prices), plus other tabs in parallel
-  await loadPositions();
+  // Load everything with cached data first (fast)
   await Promise.all([
+    loadPositions(false),
     loadSummary(),
     loadTransactions(),
     loadDividends(),
     loadClosed(),
   ]);
+  // Then refresh prices in background and update positions + summary
+  loadPositions(true).then(() => loadSummary());
 }
 
 async function loadAccounts() {
@@ -160,9 +161,10 @@ async function loadSummary() {
 
 // ── Positions ────────────────────────────────────────────────────────────────
 
-async function loadPositions() {
+async function loadPositions(refresh = false) {
   const container = document.getElementById('positionsContainer');
-  const res = await api('/api/investments/positions?refresh=1');
+  const url = '/api/investments/positions' + (refresh ? '?refresh=1' : '');
+  const res = await api(url);
   if (res.status !== 'ok') {
     container.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><p>Error cargando posiciones</p></div>';
     return;

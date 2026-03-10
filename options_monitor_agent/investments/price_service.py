@@ -4,12 +4,20 @@ Uses fast_info (not .info) to avoid downloading huge payloads.
 Reuses fiscal.exchange_rates.to_eur() for EUR conversion.
 """
 
+import logging
 import yfinance as yf
 from datetime import datetime, timedelta
 from . import database as db
 
-# Reuse fiscal exchange rate service
-from options_monitor_agent.fiscal.exchange_rates import to_eur
+log = logging.getLogger(__name__)
+
+# Reuse fiscal exchange rate service (graceful fallback if unavailable)
+try:
+    from options_monitor_agent.fiscal.exchange_rates import to_eur
+except Exception:
+    log.warning('[price] Could not import to_eur — EUR conversion disabled')
+    def to_eur(amount, currency, date):
+        return None
 
 
 # ── Symbol search ────────────────────────────────────────────────────────────
@@ -122,6 +130,7 @@ def get_live_price(symbol):
             currency = fi.get('currency', 'EUR') or 'EUR'
 
         if price is None:
+            log.warning('[price] %s: no price found from fast_info or history', symbol)
             return None
 
         today = datetime.utcnow().strftime('%Y-%m-%d')
@@ -129,11 +138,11 @@ def get_live_price(symbol):
         if currency != 'EUR':
             try:
                 price_eur = to_eur(price, currency, today)
-            except Exception:
-                pass
-            # If to_eur returned None, try with previous_close date or keep raw price
+            except Exception as exc:
+                log.warning('[price] %s: to_eur failed: %s', symbol, exc)
+            # If to_eur returned None, keep raw price as fallback
             if price_eur is None:
-                price_eur = price  # Use unconverted as fallback
+                price_eur = price
 
         # Cache name from existing cache or leave blank (avoid .info)
         name = (cached or {}).get('name', '')
@@ -146,6 +155,7 @@ def get_live_price(symbol):
             last_price_eur=price_eur,
         )
 
+        log.info('[price] %s: %.2f %s -> %.2f EUR', symbol, price, currency, price_eur)
         return {
             'symbol': symbol,
             'price': price,
@@ -153,7 +163,8 @@ def get_live_price(symbol):
             'currency': currency,
             'name': name,
         }
-    except Exception:
+    except Exception as exc:
+        log.error('[price] %s: exception in get_live_price: %s', symbol, exc)
         # Return stale cache as fallback
         if cached and cached.get('last_price'):
             return {

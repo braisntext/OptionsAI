@@ -61,12 +61,33 @@
       btn.textContent = 'Sending...';
       msg.style.display = 'none';
       try {
+        // Fetch a fresh CSRF token before sending to avoid stale-token errors
+        let csrfToken = '{{ csrf_token() }}';
+        try {
+          const csrfRes = await fetch('/api/csrf-token');
+          if (csrfRes.ok) {
+            const csrfData = await csrfRes.json();
+            if (csrfData.csrf_token) csrfToken = csrfData.csrf_token;
+          }
+        } catch(_) {}
+
         const res  = await fetch('/auth/request', {
           method: 'POST',
-          headers: {'Content-Type': 'application/json', 'X-CSRF-Token': '{{ csrf_token() }}'},
+          headers: {'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken},
           body: JSON.stringify({email})
         });
-        const data = await res.json();
+
+        let data;
+        try {
+          data = await res.json();
+        } catch(_) {
+          // Server returned non-JSON (HTML error, 502, etc.)
+          showMsg('\u26a0 Server error (' + res.status + '). Please try again.', 'error');
+          btn.disabled = false;
+          btn.textContent = '\u26a1 Send Magic Link';
+          return;
+        }
+
         if (data.ok) {
           showMsg('\u2713 Magic link sent! Check your inbox (and spam folder).', 'success');
           btn.textContent = '\u2713 Email Sent';
@@ -76,12 +97,12 @@
           btn.disabled = false;
           setTimeout(() => { window.location = '/subscribe?email=' + encodeURIComponent(email); }, 2000);
         } else {
-          showMsg('\u26a0 ' + (data.error || 'Something went wrong.'), 'error');
+          showMsg('\u26a0 ' + (data.error || data.message || 'Something went wrong.'), 'error');
           btn.disabled = false;
           btn.textContent = '\u26a1 Send Magic Link';
         }
       } catch(e) {
-        showMsg('\u26a0 Network error. Please try again.', 'error');
+        showMsg('\u26a0 Connection error. Check your internet and try again.', 'error');
         btn.disabled = false;
         btn.textContent = '\u26a1 Send Magic Link';
       }
