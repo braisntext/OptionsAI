@@ -3,23 +3,16 @@ Fiscal database — SQLite storage for imported broker statements and tax data.
 Uses the same pattern as subscribers.py (raw sqlite3, per-user data).
 """
 
-import sqlite3
 import os
 import json
 from datetime import datetime
+from options_monitor_agent.db_utils import get_conn
 
-_PERSISTENT_DIR = '/var/data'
-_LOCAL_FALLBACK = os.path.join(os.path.dirname(__file__), '..', 'dashboard')
-_DB_DIR = _PERSISTENT_DIR if os.path.isdir(_PERSISTENT_DIR) else _LOCAL_FALLBACK
-DB_PATH = os.path.join(_DB_DIR, 'fiscal.db')
+_SQLITE_PATH = os.path.join(os.path.dirname(__file__), '..', 'dashboard', 'fiscal.db')
 
 
 def _conn():
-    c = sqlite3.connect(DB_PATH)
-    c.row_factory = sqlite3.Row
-    c.execute("PRAGMA journal_mode=WAL")
-    c.execute("PRAGMA foreign_keys=ON")
-    return c
+    return get_conn(_SQLITE_PATH)
 
 
 def init_fiscal_db():
@@ -466,8 +459,9 @@ def get_cached_rate(rate_date, currency):
 def cache_rate(rate_date, currency, rate, source='ECB'):
     with _conn() as c:
         c.execute(
-            '''INSERT OR REPLACE INTO exchange_rates (rate_date, currency, rate, source)
-               VALUES (?, ?, ?, ?)''',
+            '''INSERT INTO exchange_rates (rate_date, currency, rate, source)
+               VALUES (?, ?, ?, ?)
+               ON CONFLICT(rate_date, currency) DO UPDATE SET rate=excluded.rate, source=excluded.source''',
             (rate_date, currency, rate, source)
         )
         c.commit()

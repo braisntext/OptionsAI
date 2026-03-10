@@ -5,20 +5,16 @@ Stores snapshots in SQLite and fires alerts + push notifications.
 """
 import json
 import os
-import sqlite3
 import time
 from datetime import datetime
+from options_monitor_agent.db_utils import get_conn
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-_PERSISTENT_DIR = '/var/data'
-_LOCAL_FALLBACK = os.path.join(BASE_DIR, "memory")
-_DB_DIR = _PERSISTENT_DIR if os.path.isdir(_PERSISTENT_DIR) else _LOCAL_FALLBACK
-SNAPSHOT_DB = os.path.join(_DB_DIR, "premium_snapshots.db")
+_SQLITE_PATH = os.path.join(BASE_DIR, "memory", "premium_snapshots.db")
 
 
 def _get_conn():
-    conn = sqlite3.connect(SNAPSHOT_DB)
-    conn.row_factory = sqlite3.Row
+    conn = get_conn(_SQLITE_PATH)
     conn.execute("""
         CREATE TABLE IF NOT EXISTS premium_snapshots (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,

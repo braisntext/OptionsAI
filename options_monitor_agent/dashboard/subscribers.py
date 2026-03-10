@@ -1,11 +1,8 @@
-import sqlite3
 import os
 from datetime import datetime, timedelta
+from options_monitor_agent.db_utils import get_conn
 
-_PERSISTENT_DIR = '/var/data'
-_LOCAL_FALLBACK = os.path.dirname(__file__)
-_DB_DIR = _PERSISTENT_DIR if os.path.isdir(_PERSISTENT_DIR) else _LOCAL_FALLBACK
-DB_PATH = os.path.join(_DB_DIR, 'subscribers.db')
+_SQLITE_PATH = os.path.join(os.path.dirname(__file__), 'subscribers.db')
 
 try:
     from config import SUPERADMIN_EMAILS
@@ -21,9 +18,7 @@ LIMITS = {
 }
 
 def _conn():
-    c = sqlite3.connect(DB_PATH)
-    c.row_factory = sqlite3.Row
-    return c
+    return get_conn(_SQLITE_PATH)
 
 def init_db():
     with _conn() as c:
@@ -55,9 +50,10 @@ def init_db():
         # Seed superuser
         for email in SUPERUSERS:
             c.execute('''
-                INSERT OR IGNORE INTO subscribers
+                INSERT INTO subscribers
                 (email, status, plan, superuser, subscribed_at, expires_at, notes)
                 VALUES (?, 'active', 'lifetime', 1, ?, NULL, 'Superuser - lifetime free')
+                ON CONFLICT(email) DO NOTHING
             ''', (email, datetime.utcnow().isoformat()))
         c.commit()
 
@@ -212,7 +208,7 @@ def add_user_ticker(email: str, ticker: str) -> bool:
     try:
         with _conn() as c:
             c.execute(
-                "INSERT OR IGNORE INTO user_watchlists (email, ticker, added_at) VALUES (?, ?, ?)",
+                "INSERT INTO user_watchlists (email, ticker, added_at) VALUES (?, ?, ?) ON CONFLICT(email, ticker) DO NOTHING",
                 (email, ticker.strip().upper(), datetime.utcnow().isoformat())
             )
             c.commit()
@@ -247,7 +243,7 @@ def seed_user_watchlist(email: str, tickers: list):
     with _conn() as c:
         for ticker in tickers:
             c.execute(
-                "INSERT OR IGNORE INTO user_watchlists (email, ticker, added_at) VALUES (?, ?, ?)",
+                "INSERT INTO user_watchlists (email, ticker, added_at) VALUES (?, ?, ?) ON CONFLICT(email, ticker) DO NOTHING",
                 (email, ticker.strip().upper(), now)
             )
         c.commit()
@@ -337,7 +333,8 @@ def store_magic_token(token: str, email: str, expires_at):
     """Persist a magic-link token to the database."""
     with _conn() as c:
         c.execute(
-            "INSERT OR REPLACE INTO magic_tokens (token, email, expires_at) VALUES (?, ?, ?)",
+            """INSERT INTO magic_tokens (token, email, expires_at) VALUES (?, ?, ?)
+               ON CONFLICT(token) DO UPDATE SET email=excluded.email, expires_at=excluded.expires_at""",
             (token, email.strip().lower(), expires_at.isoformat())
         )
         c.commit()
