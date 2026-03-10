@@ -1097,6 +1097,28 @@ def create_app(database=None, agent=None):
             db.save_alerts(analysis.get("alerts", []))
             db.save_unusual_activity(analysis.get("unusual_activity", []))
 
+            # ── Premium spike detection ──────────────────────────────────
+            try:
+                from tools.premium_spike_tool import detect_spikes as _detect_spikes, save_snapshot as _save_snap
+                from tools.ntfy_notifier import notify_bulk_spikes
+                all_spikes = []
+                for data in raw_data:
+                    if data.get("status") != "success":
+                        continue
+                    t = data.get("ticker", "")
+                    opts = data.get("calls", []) + data.get("puts", [])
+                    if not opts:
+                        continue
+                    spikes = _detect_spikes(t, opts)
+                    if spikes:
+                        all_spikes.extend(spikes)
+                    _save_snap(t, opts)
+                if all_spikes:
+                    _log(f"⚡ {len(all_spikes)} premium spike(s) detected")
+                    notify_bulk_spikes(all_spikes)
+            except Exception as spike_exc:
+                _log(f"Spike detection error: {spike_exc}")
+
             elapsed = time.time() - t0
             _log(f"Done in {elapsed:.1f}s")
             cycle_status.update({"running": False, "completed_at": time.time(),

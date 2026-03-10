@@ -299,8 +299,8 @@ class TradeRepublicParser(BrokerParser):
         words1 = lines[start_idx]
         lines_consumed = 1
 
-        # Extract columns: DATE (x<80), CONTENT (80-420), amount (420+)
-        date_parts, content_parts, tx_amount = self._split_columns(words1)
+        # Extract columns: DATE (x<80), CONTENT (80-420), amounts (420+)
+        date_parts, content_parts, amount_in, amount_out = self._split_columns(words1)
 
         # Check next lines for continuation (not starting with a date pattern)
         for offset in range(1, 4):
@@ -317,11 +317,13 @@ class TradeRepublicParser(BrokerParser):
 
             # Continuation line
             lines_consumed = offset + 1
-            d2, c2, a2 = self._split_columns(next_words)
+            d2, c2, ai2, ao2 = self._split_columns(next_words)
             date_parts.extend(d2)
             content_parts.extend(c2)
-            if a2 and not tx_amount:
-                tx_amount = a2
+            if ai2 and not amount_in:
+                amount_in = ai2
+            if ao2 and not amount_out:
+                amount_out = ao2
 
         # Parse date
         date_str = ' '.join(date_parts).strip()
@@ -334,31 +336,36 @@ class TradeRepublicParser(BrokerParser):
         tipo, desc = self._split_type_desc(content)
 
         return self._classify_transaction(
-            trade_date, tipo, desc, tx_amount
+            trade_date, tipo, desc, amount_in, amount_out
         ), lines_consumed
 
     def _split_columns(self, words_in_line):
-        """Split words into date, content, and transaction amount by x position.
-        We don't distinguish ENTRADA (money in) from SALIDA (money out) here;
-        the classification logic determines direction from the transaction type.
+        """Split words into date, content, amount_in (ENTRADA) and amount_out (SALIDA).
+        Distinguishing columns matters for interest/dividends (detect reversals).
         """
         date_parts = []
         content_parts = []
-        tx_amount = 0.0
+        amount_in = 0.0   # ENTRADA column (money received)
+        amount_out = 0.0  # SALIDA column (money paid)
 
         for x, text in words_in_line:
             if x < _COL_CONTENT:
                 date_parts.append(text)
             elif x < _COL_ENTRADA:
                 content_parts.append(text)
-            elif x < _COL_BALANCE:
-                # Transaction amount — first EUR value in the amount columns
+            elif x < _COL_SALIDA:
+                # ENTRADA column — money in
                 parsed = _parse_eur(text)
-                if parsed > 0 and tx_amount == 0:
-                    tx_amount = parsed
+                if parsed > 0 and amount_in == 0:
+                    amount_in = parsed
+            elif x < _COL_BALANCE:
+                # SALIDA column — money out
+                parsed = _parse_eur(text)
+                if parsed > 0 and amount_out == 0:
+                    amount_out = parsed
             # else: balance column — skip
 
-        return date_parts, content_parts, tx_amount
+        return date_parts, content_parts, amount_in, amount_out
 
     def _split_type_desc(self, content):
         """Split combined 'Comercio Buy trade ES01...' into type and description."""
@@ -370,10 +377,11 @@ class TradeRepublicParser(BrokerParser):
 
     # ── Transaction classification ───────────────────────────────────────
 
-    def _classify_transaction(self, date, tipo, desc, tx_amount):
+    def _classify_transaction(self, date, tipo, desc, amount_in, amount_out):
         """Classify a transaction into trade/dividend/interest/skip.
-        tx_amount is the single monetary amount (direction inferred from type).
+        amount_in = ENTRADA (money received), amount_out = SALIDA (money paid).
         """
+        tx_amount = amount_in or amount_out  # whichever is non-zero
         desc_lower = desc.lower()
         tipo_lower = tipo.lower()
 
@@ -401,6 +409,9 @@ class TradeRepublicParser(BrokerParser):
         # ── Bond / instrument interest (Interest Payment for ISIN) ──
         if 'interest payment for isin' in desc_lower:
             isin = _extract_isin(desc)
+            # SALIDA entries are reversals/debits — skip them
+            if amount_out > 0 and amount_in == 0:
+                return None
             return {
                 'category': 'interest',
                 'data': {
@@ -414,13 +425,14 @@ class TradeRepublicParser(BrokerParser):
         # ── Dividend ──
         if 'cash dividend for isin' in desc_lower:
             isin = _extract_isin(desc)
+            name = _extract_name_after_isin(desc, isin)
             return {
                 'category': 'dividend',
                 'data': {
                     'currency': 'EUR',
                     'pay_date': date,
                     'symbol': isin,
-                    'description': f'Dividend {isin}',
+                    'description': name or f'Dividend {isin}',
                     'gross_amount': tx_amount,
                     'is_in_lieu': 0,
                 },
@@ -438,7 +450,7 @@ class TradeRepublicParser(BrokerParser):
                         'currency': 'EUR',
                         'pay_date': date,
                         'symbol': isin,
-                        'description': f'Distribution {isin} {name}'.strip(),
+                        'description': name or isin,
                         'gross_amount': tx_amount,
                         'is_in_lieu': 0,
                     },
@@ -519,13 +531,19 @@ class TradeRepublicParser(BrokerParser):
             trade_price = total_amount
             quantity = None  # flag for merge step
 
+        # Tax engine convention: positive qty = buy, negative qty = sell
+        if quantity is not None:
+            signed_qty = abs(quantity) if is_buy else -abs(quantity)
+        else:
+            signed_qty = None  # flag for merge step
+
         trade = {
             'asset_category': 'Stocks',
             'currency': 'EUR',
             'symbol': isin,
-            'description': f'{isin} {name}'.strip(),
+            'description': name or isin,
             'trade_date': date,
-            'quantity': abs(quantity) if quantity else None,
+            'quantity': signed_qty,
             'trade_price': abs(trade_price),
             'proceeds': total_amount if not is_buy else 0.0,
             'commission': commission,
@@ -573,7 +591,7 @@ class TradeRepublicParser(BrokerParser):
             total_commission = sum(t['commission'] for t in group)
 
             merged = group[0].copy()
-            merged['quantity'] = 1.0  # single synthetic lot
+            merged['quantity'] = 1.0 if is_buy else -1.0  # signed qty
             merged['trade_price'] = total
             if is_buy:
                 merged['basis'] = total

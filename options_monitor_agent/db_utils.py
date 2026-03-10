@@ -48,7 +48,17 @@ def get_conn(sqlite_path=None):
     Development: uses sqlite_path for a local SQLite file.
     """
     if IS_POSTGRES:
-        raw = _get_pool().getconn()
+        pool = _get_pool()
+        raw = pool.getconn()
+        # Validate connection — Render free-tier drops idle connections
+        try:
+            raw.rollback()  # resets state + checks liveness
+        except Exception:
+            try:
+                pool.putconn(raw, close=True)
+            except Exception:
+                pass
+            raw = pool.getconn()
         return _PgConnWrapper(raw)
     else:
         if not sqlite_path:
@@ -160,8 +170,17 @@ class _PgConnWrapper:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_type is not None:
-            self._conn.rollback()
-        self.close()
+            try:
+                self._conn.rollback()
+            except Exception:
+                pass
+            # Discard potentially dead connection from pool
+            try:
+                _get_pool().putconn(self._conn, close=True)
+            except Exception:
+                pass
+        else:
+            self.close()
         return False
 
 
