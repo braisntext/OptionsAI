@@ -10,11 +10,17 @@ try:
 except ImportError:
     SUPERUSERS = {'braisnatural@gmail.com', 'braisontour@gmail.com'}
 
-# ── Usage limits for normal (paid) users ─────────────────────────────────────
+# ── Usage limits per plan ─────────────────────────────────────────────────────
 LIMITS = {
-    'watchlist_max':  25,   # max tickers in watchlist
-    'alerts_max':     20,   # max spike alert configs
-    'ask_agent_max':   5,   # max agent queries per day
+    'watchlist_max':  25,   # max tickers in watchlist (paid)
+    'alerts_max':     20,   # max spike alert configs (paid)
+    'ask_agent_max':   5,   # max agent queries per day (paid)
+}
+
+FREE_LIMITS = {
+    'watchlist_max':   3,
+    'alerts_max':      3,
+    'ask_agent_max':   0,
 }
 
 def _conn():
@@ -108,6 +114,23 @@ def add_subscriber(email: str, months: int = 1, method: str = 'manual',
             VALUES (?, ?, ?, ?, ?, ?)
         ''', (email, amount * months, method, reference, now.isoformat(), months))
         c.commit()
+
+def add_free_subscriber(email: str):
+    """Register a new user on the free plan (no expiry, limited features)."""
+    email = email.strip().lower()
+    now = datetime.utcnow()
+    with _conn() as c:
+        existing = c.execute(
+            "SELECT id FROM subscribers WHERE email = ? COLLATE NOCASE", (email,)
+        ).fetchone()
+        if existing:
+            return  # Already registered
+        c.execute('''
+            INSERT INTO subscribers (email, status, plan, superuser, subscribed_at, expires_at)
+            VALUES (?, 'active', 'free', 0, ?, NULL)
+        ''', (email, now.isoformat()))
+        c.commit()
+
 
 def cancel_subscriber(email: str):
     email = email.strip().lower()
@@ -387,11 +410,25 @@ def increment_usage(email: str, usage_type: str) -> int:
     return row['count'] if row else 1
 
 
+def get_user_plan(email: str) -> str:
+    """Return the plan name for this user: 'free', 'monthly', 'lifetime', etc."""
+    email = email.strip().lower()
+    if email in {e.lower() for e in SUPERUSERS}:
+        return 'lifetime'
+    with _conn() as c:
+        row = c.execute(
+            "SELECT plan FROM subscribers WHERE email = ? COLLATE NOCASE", (email,)
+        ).fetchone()
+    return row['plan'] if row else 'free'
+
+
 def check_limit(email: str, usage_type: str) -> tuple:
     """Check if user is within limits. Returns (allowed: bool, remaining: int, limit: int)."""
     if is_superuser(email):
         return True, 999, 999
-    limit = LIMITS.get(usage_type, 999)
+    plan = get_user_plan(email)
+    limits = FREE_LIMITS if plan == 'free' else LIMITS
+    limit = limits.get(usage_type, 999)
     used = get_daily_usage(email, usage_type)
     return used < limit, limit - used, limit
 

@@ -18,7 +18,7 @@ except ImportError:
     BREVO_SENDER_EMAIL = os.getenv('BREVO_SENDER_EMAIL', '')
     BREVO_SENDER_NAME = os.getenv('BREVO_SENDER_NAME', 'Options Monitor')
 
-from subscribers import is_subscribed, store_magic_token, consume_magic_token
+from subscribers import is_subscribed, add_free_subscriber, store_magic_token, consume_magic_token
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -128,14 +128,9 @@ def auth_request():
         return jsonify({'ok': False, 'error': 'Invalid email address'}), 400
     if not _is_allowed(email):
         return jsonify({'ok': True})  # silent deny
-    # ── Subscription gate ────────────────────────────────────────────────────
+    # ── Subscription gate — auto-register free tier ───────────────────────
     if not is_subscribed(email):
-        return jsonify({
-            'ok': False,
-            'not_subscribed': True,
-            'error': 'No active subscription found for this email.',
-            'subscribe_url': url_for('billing.subscribe', _external=True)
-        }), 403
+        add_free_subscriber(email)
     token      = secrets.token_urlsafe(32)
     expires_at = datetime.utcnow() + timedelta(minutes=TOKEN_TTL_MINUTES)
     store_magic_token(token, email, expires_at)
