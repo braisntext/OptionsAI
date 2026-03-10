@@ -74,7 +74,7 @@
     <ul class="nav-links" id="navMenu">
       <li><a href="/">Inicio</a></li>
       <li><a href="/dashboard">Options Monitor</a></li>
-      <li><a href="/fiscal">Importador Fiscal</a></li>
+      <li><a href="/fiscal">Fiscal</a></li>
       <li><a href="/investments">Inversiones</a></li>
       <li><a href="/account" style="color:var(--primary-text)">Mi Cuenta</a></li>
     </ul>
@@ -138,11 +138,11 @@
         </div>
       </div>
 
-      <!-- Importador Fiscal -->
+      <!-- Fiscal -->
       <div class="app-card {{ '' if can_fiscal else 'locked' }}">
         <div class="app-icon">🧾</div>
         {% if not can_fiscal %}<div class="lock-overlay">🔒 No incluida</div>{% endif %}
-        <h3>Importador Fiscal</h3>
+        <h3>Fiscal</h3>
         <p>Importa extractos del broker, calcula impuestos y obtén las casillas para tu Declaración de la Renta.</p>
         <div class="app-action">
           {% if can_fiscal %}

@@ -74,6 +74,23 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Drag-and-drop for CSV upload
+  const dropZone = document.getElementById('uploadZoneInv');
+  if (dropZone) {
+    ['dragenter', 'dragover'].forEach(evt => dropZone.addEventListener(evt, e => { e.preventDefault(); dropZone.classList.add('dragover'); }));
+    ['dragleave', 'drop'].forEach(evt => dropZone.addEventListener(evt, e => { e.preventDefault(); dropZone.classList.remove('dragover'); }));
+    dropZone.addEventListener('drop', e => {
+      const file = e.dataTransfer.files[0];
+      if (file) {
+        const input = document.getElementById('csvFileInput');
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        input.files = dt.files;
+        handleCsvUpload(input);
+      }
+    });
+  }
+
   // Set default date to today
   const today = new Date().toISOString().split('T')[0];
   const txDate = document.getElementById('txDate');
@@ -144,7 +161,7 @@ async function loadSummary() {
 
 async function loadPositions() {
   const container = document.getElementById('positionsContainer');
-  const res = await api('/api/investments/positions');
+  const res = await api('/api/investments/positions?refresh=1');
   if (res.status !== 'ok') {
     container.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><p>Error cargando posiciones</p></div>';
     return;
@@ -510,12 +527,30 @@ function openAccountsModal() {
 
 async function openImportModal() {
   openModal('importModal');
+  // Default to upload tab
+  switchImportTab('upload');
+}
+
+function switchImportTab(tab) {
+  const isUpload = tab === 'upload';
+  document.getElementById('importTabUpload').classList.toggle('active', isUpload);
+  document.getElementById('importTabUpload').style.borderBottomColor = isUpload ? 'var(--primary-text)' : 'transparent';
+  document.getElementById('importTabFiscal').classList.toggle('active', !isUpload);
+  document.getElementById('importTabFiscal').style.borderBottomColor = !isUpload ? 'var(--primary-text)' : 'transparent';
+  document.getElementById('importPanelUpload').style.display = isUpload ? 'block' : 'none';
+  document.getElementById('importPanelFiscal').style.display = isUpload ? 'none' : 'block';
+  document.getElementById('importBtn').style.display = isUpload ? 'none' : 'inline-flex';
+
+  if (!isUpload) loadFiscalStatements();
+}
+
+async function loadFiscalStatements() {
   const container = document.getElementById('fiscalStatements');
   container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
 
   const res = await api('/api/investments/import/fiscal/available');
   if (res.status !== 'ok' || !res.statements.length) {
-    container.innerHTML = '<p style="color:var(--text-muted);font-size:.9rem;">No hay extractos fiscales disponibles para importar. Sube primero un extracto en el <a href="/fiscal" style="color:var(--primary-text)">Importador Fiscal</a>.</p>';
+    container.innerHTML = '<p style="color:var(--text-muted);font-size:.9rem;">No hay extractos fiscales disponibles para importar. Sube un CSV en la pestaña anterior.</p>';
     document.getElementById('importBtn').disabled = true;
     return;
   }
@@ -537,7 +572,6 @@ async function openImportModal() {
   }
   container.innerHTML = html;
 
-  // Enable/disable import button based on selection
   container.querySelectorAll('.fiscal-import-cb').forEach(cb => {
     cb.addEventListener('change', () => {
       const anyChecked = container.querySelector('.fiscal-import-cb:checked');
@@ -545,6 +579,48 @@ async function openImportModal() {
     });
   });
   document.getElementById('importBtn').disabled = true;
+}
+
+async function handleCsvUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const statusEl = document.getElementById('uploadStatus');
+  statusEl.style.display = 'block';
+  statusEl.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;vertical-align:middle;"></div> Procesando...';
+  statusEl.style.color = 'var(--text-muted)';
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const res = await fetch('/api/fiscal/upload', {
+      method: 'POST',
+      headers: { 'X-CSRF-Token': CSRF },
+      body: formData,
+    }).then(r => r.json());
+
+    if (res.status === 'ok') {
+      const s = res.summary;
+      let msg = `✅ ${res.broker} ${res.tax_year}: ${s.trades} operaciones, ${s.dividends} dividendos`;
+      if (res.investments_imported) {
+        msg += ` · Importado a cartera`;
+      }
+      statusEl.innerHTML = msg;
+      statusEl.style.color = 'var(--success)';
+      showToast('CSV importado correctamente');
+      refreshAll();
+    } else {
+      statusEl.innerHTML = '❌ ' + (res.message || 'Error al procesar');
+      statusEl.style.color = 'var(--danger)';
+    }
+  } catch (e) {
+    statusEl.innerHTML = '❌ Error de conexión';
+    statusEl.style.color = 'var(--danger)';
+  }
+
+  // Reset file input so same file can be re-uploaded
+  input.value = '';
 }
 
 // ── Form submissions ─────────────────────────────────────────────────────────

@@ -313,7 +313,7 @@ def generate_html(email, tax_year):
 </table>
 
 <p style="margin-top:30px;font-size:8pt;color:#999;text-align:center">
-  Documento generado automáticamente por Small Smart Tools — Importador Fiscal. Los datos proceden de los extractos importados y deben ser revisados por un profesional.
+  Documento generado automáticamente por Small Smart Tools — Fiscal. Los datos proceden de los extractos importados y deben ser revisados por un profesional.
 </p>
 </body>
 </html>'''

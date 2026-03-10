@@ -190,6 +190,8 @@
     .spinner { display: inline-block; width: 24px; height: 24px; border: 3px solid var(--border); border-top-color: var(--primary-text); border-radius: 50%; animation: spin .6s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    .upload-zone-inv.dragover { border-color: var(--primary-text); background: var(--info-bg); }
+
     @media (max-width: 900px) {
       .position-row { grid-template-columns: 1fr 1fr; }
       .detail-grid { grid-template-columns: 1fr; }
@@ -210,7 +212,7 @@
     <ul class="nav-links" id="navMenu">
       <li><a href="/">Inicio</a></li>
       <li><a href="/dashboard">Options Monitor</a></li>
-      <li><a href="/fiscal">Importador Fiscal</a></li>
+      <li><a href="/fiscal">Fiscal</a></li>
       <li><a href="/investments" style="color:var(--primary-text)">Inversiones</a></li>
       <li><a href="/account">Mi Cuenta</a></li>
     </ul>
@@ -450,15 +452,42 @@
   <div class="modal-overlay" id="importModal">
     <div class="modal-box" style="max-width:600px;">
       <h3>📥 Importar Datos</h3>
-      <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:1rem;">
-        Importa operaciones y dividendos desde tus extractos fiscales ya procesados.
-      </p>
-      <div id="fiscalStatements">
-        <div class="loading"><div class="spinner"></div></div>
+
+      <!-- Import sub-tabs -->
+      <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:1rem;">
+        <button class="tab-btn active" id="importTabUpload" onclick="switchImportTab('upload')" style="border-bottom:2px solid var(--primary-text);margin-bottom:-2px;">📤 Subir CSV</button>
+        <button class="tab-btn" id="importTabFiscal" onclick="switchImportTab('fiscal')" style="margin-bottom:-2px;">🧾 Desde Fiscal</button>
       </div>
+
+      <!-- Sub-tab: Upload CSV -->
+      <div id="importPanelUpload">
+        <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:1rem;">
+          Sube un extracto CSV de tu broker (IBKR). Se procesará automáticamente y las operaciones se importarán a tu cartera.
+        </p>
+        <div class="upload-zone-inv" id="uploadZoneInv" role="button" tabindex="0"
+             style="border:2px dashed var(--border);border-radius:12px;padding:2rem;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;"
+             onclick="document.getElementById('csvFileInput').click()">
+          <div style="font-size:2rem;margin-bottom:.5rem;">📤</div>
+          <p style="font-weight:600;margin-bottom:.25rem;">Arrastra un archivo CSV o haz clic</p>
+          <p style="font-size:.8rem;color:var(--text-muted);">Máx 5 MB · Formato CSV de IBKR</p>
+          <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="handleCsvUpload(this)">
+        </div>
+        <div id="uploadStatus" style="margin-top:.75rem;font-size:.85rem;display:none;"></div>
+      </div>
+
+      <!-- Sub-tab: From Fiscal statements -->
+      <div id="importPanelFiscal" style="display:none;">
+        <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:1rem;">
+          Importa operaciones y dividendos desde tus extractos fiscales ya procesados.
+        </p>
+        <div id="fiscalStatements">
+          <div class="loading"><div class="spinner"></div></div>
+        </div>
+      </div>
+
       <div class="form-actions">
         <button type="button" class="btn btn-outline" onclick="closeModal('importModal')">Cerrar</button>
-        <button type="button" class="btn btn-primary" id="importBtn" onclick="doFiscalImport()" disabled>Importar seleccionados</button>
+        <button type="button" class="btn btn-primary" id="importBtn" onclick="doFiscalImport()" style="display:none;" disabled>Importar seleccionados</button>
       </div>
     </div>
   </div>
