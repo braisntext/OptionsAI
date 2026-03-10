@@ -58,6 +58,8 @@ class IBKRParser(BrokerParser):
 
     def detect(self, content):
         """Detect IBKR CSV by looking for characteristic headers."""
+        if isinstance(content, (bytes, bytearray)):
+            return False  # IBKR only handles text CSV
         first_lines = content[:500]
         return 'BrokerName' in first_lines and 'Activity Statement' in first_lines
 

@@ -80,3 +80,8 @@ def get_parser(broker_name: str) -> Optional[BrokerParser]:
 def available_brokers() -> list[str]:
     """Return list of supported broker names."""
     return [p.broker_name for p in _PARSERS]
+
+
+# Auto-import parser modules so @register_parser decorators fire
+from . import ibkr_parser   # noqa: F401, E402
+from . import tr_parser     # noqa: F401, E402

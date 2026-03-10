@@ -16,7 +16,6 @@ if _THIS_DIR not in sys.path:
 from . import database as db
 from .exchange_rates import to_eur, ensure_rates_cached
 from .parsers import detect_broker, get_parser, available_brokers
-from .parsers import ibkr_parser  # register IBKR parser
 from .tax_engine import calculate_taxes, get_tax_summary, get_aggregated_summary, CASILLA_DESCRIPTIONS
 from .export import generate_csv, generate_html
 
@@ -37,7 +36,7 @@ def _check_fiscal_access():
 
 # Max upload size: 5 MB
 MAX_FILE_SIZE = 5 * 1024 * 1024
-ALLOWED_EXTENSIONS = {'.csv'}
+ALLOWED_EXTENSIONS = {'.csv', '.pdf'}
 
 
 def _get_email():
@@ -45,14 +44,17 @@ def _get_email():
 
 
 def _validate_file(file_obj):
-    """Validate uploaded file. Returns (content, error)."""
+    """Validate uploaded file. Returns (content, error).
+    For PDFs: returns raw bytes.
+    For CSVs: returns decoded text string.
+    """
     if not file_obj or not file_obj.filename:
         return None, 'No se ha seleccionado ningún archivo'
 
     filename = file_obj.filename
     ext = os.path.splitext(filename)[1].lower()
     if ext not in ALLOWED_EXTENSIONS:
-        return None, f'Formato no soportado: {ext}. Use CSV.'
+        return None, f'Formato no soportado: {ext}. Use CSV o PDF.'
 
     content = file_obj.read()
     if len(content) > MAX_FILE_SIZE:
@@ -61,6 +63,11 @@ def _validate_file(file_obj):
     if len(content) == 0:
         return None, 'El archivo está vacío'
 
+    # PDF files: return raw bytes (parsers handle binary directly)
+    if ext == '.pdf':
+        return content, None
+
+    # CSV files: decode to text
     try:
         text = content.decode('utf-8')
     except UnicodeDecodeError:
