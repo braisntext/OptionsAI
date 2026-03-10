@@ -744,10 +744,10 @@ def upsert_symbol_cache(symbol, name=None, currency=None, exchange=None,
                 last_price, last_price_eur, dividend_yield, last_updated)
                VALUES (?,?,?,?,?,?,?,?,?)
                ON CONFLICT(symbol) DO UPDATE SET
-                 name = COALESCE(excluded.name, name),
-                 currency = COALESCE(excluded.currency, currency),
-                 exchange = COALESCE(excluded.exchange, exchange),
-                 asset_type = COALESCE(excluded.asset_type, asset_type),
+                 name = COALESCE(excluded.name, investment_symbols_cache.name),
+                 currency = COALESCE(excluded.currency, investment_symbols_cache.currency),
+                 exchange = COALESCE(excluded.exchange, investment_symbols_cache.exchange),
+                 asset_type = COALESCE(excluded.asset_type, investment_symbols_cache.asset_type),
                  last_price = excluded.last_price,
                  last_price_eur = excluded.last_price_eur,
                  dividend_yield = excluded.dividend_yield,
