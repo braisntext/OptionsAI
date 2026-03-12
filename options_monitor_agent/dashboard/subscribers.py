@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, timedelta
+from werkzeug.security import generate_password_hash, check_password_hash
 from options_monitor_agent.db_utils import get_conn
 
 _SQLITE_PATH = os.path.join(os.path.dirname(__file__), 'subscribers.db')
@@ -357,6 +358,43 @@ def get_all_spike_configs() -> list:
         ).fetchall()
     return [dict(r) for r in rows]
 
+# ── Password authentication ──────────────────────────────────────────────────
+def set_password(email: str, password: str):
+    """Set or update the password for a subscriber."""
+    email = email.strip().lower()
+    hashed = generate_password_hash(password)
+    with _conn() as c:
+        c.execute(
+            "UPDATE subscribers SET password_hash = ? WHERE email = ? COLLATE NOCASE",
+            (hashed, email)
+        )
+        c.commit()
+
+
+def verify_password(email: str, password: str) -> bool:
+    """Verify email/password credentials. Returns True if valid."""
+    email = email.strip().lower()
+    with _conn() as c:
+        row = c.execute(
+            "SELECT password_hash FROM subscribers WHERE email = ? COLLATE NOCASE",
+            (email,)
+        ).fetchone()
+    if not row or not row['password_hash']:
+        return False
+    return check_password_hash(row['password_hash'], password)
+
+
+def has_password(email: str) -> bool:
+    """Check if user has a password set."""
+    email = email.strip().lower()
+    with _conn() as c:
+        row = c.execute(
+            "SELECT password_hash FROM subscribers WHERE email = ? COLLATE NOCASE",
+            (email,)
+        ).fetchone()
+    return bool(row and row['password_hash'])
+
+
 def store_magic_token(token: str, email: str, expires_at):
     """Persist a magic-link token to the database."""
     with _conn() as c:
@@ -379,10 +417,20 @@ def consume_magic_token(token: str):
         c.commit()
     return {'email': row['email'], 'expires_at': datetime.fromisoformat(row['expires_at'])}
 
+def _init_password_column():
+    """Add password_hash column to subscribers table if it doesn't exist."""
+    with _conn() as c:
+        try:
+            c.execute("SELECT password_hash FROM subscribers LIMIT 1")
+        except Exception:
+            c.execute("ALTER TABLE subscribers ADD COLUMN password_hash TEXT")
+            c.commit()
+
 _init_usage_table()
 _init_tokens_table()
 _init_user_watchlists_table()
 _init_user_spike_configs_table()
+_init_password_column()
 
 
 def get_daily_usage(email: str, usage_type: str) -> int:

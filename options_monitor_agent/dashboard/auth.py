@@ -7,7 +7,7 @@ from functools import wraps
 from urllib.parse import urlparse
 from flask import (
     Blueprint, redirect, render_template, request,
-    session, url_for, flash, jsonify
+    session, url_for, jsonify
 )
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -18,7 +18,7 @@ except ImportError:
     BREVO_SENDER_EMAIL = os.getenv('BREVO_SENDER_EMAIL', '')
     BREVO_SENDER_NAME = os.getenv('BREVO_SENDER_NAME', 'Small Smart Tools')
 
-from subscribers import is_subscribed, add_free_subscriber, store_magic_token, consume_magic_token
+from subscribers import is_subscribed, add_free_subscriber, store_magic_token, consume_magic_token, verify_password, has_password, set_password
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -114,7 +114,7 @@ def login_required(f):
 @auth_bp.route('/login', methods=['GET'])
 def login():
     if session.get('authenticated'):
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('home'))
     return render_template('login.html')
 
 @auth_bp.route('/auth/request', methods=['POST'])
@@ -167,8 +167,55 @@ def auth_verify(token):
     # Validate redirect URL to prevent open redirect
     next_url = request.args.get('next', '')
     if not _is_safe_redirect(next_url):
-        next_url = url_for('dashboard')
+        next_url = url_for('home')
     return redirect(next_url)
+
+@auth_bp.route('/auth/login-password', methods=['POST'])
+def auth_login_password():
+    """Authenticate with email + password."""
+    if not _check_rate_limit(request.remote_addr):
+        return jsonify({'ok': False, 'error': 'Demasiadas solicitudes. Espera unos minutos.'}), 429
+    data = request.get_json(silent=True) or {}
+    email = (data.get('email') or '').strip().lower()
+    password = data.get('password') or ''
+    if not email or '@' not in email:
+        return jsonify({'ok': False, 'error': 'Email inválido'}), 400
+    if not password:
+        return jsonify({'ok': False, 'error': 'Contraseña requerida'}), 400
+    if not _is_allowed(email):
+        return jsonify({'ok': False, 'error': 'Credenciales incorrectas'}), 401
+    if not is_subscribed(email):
+        return jsonify({'ok': False, 'error': 'Credenciales incorrectas'}), 401
+    if not verify_password(email, password):
+        return jsonify({'ok': False, 'error': 'Credenciales incorrectas'}), 401
+    session.clear()
+    session.permanent = True
+    session['authenticated'] = True
+    session['email'] = email
+    return jsonify({'ok': True})
+
+@auth_bp.route('/auth/set-password', methods=['POST'])
+def auth_set_password():
+    """Set or update password for the logged-in user."""
+    if not session.get('authenticated'):
+        return jsonify({'ok': False, 'error': 'No autenticado'}), 401
+    data = request.get_json(silent=True) or {}
+    password = data.get('password') or ''
+    if len(password) < 8:
+        return jsonify({'ok': False, 'error': 'La contraseña debe tener al menos 8 caracteres'}), 400
+    email = session.get('email', '')
+    if not email:
+        return jsonify({'ok': False, 'error': 'Sesión inválida'}), 401
+    set_password(email, password)
+    return jsonify({'ok': True, 'message': 'Contraseña actualizada'})
+
+@auth_bp.route('/auth/has-password')
+def auth_has_password():
+    """Check if logged-in user has a password set."""
+    if not session.get('authenticated'):
+        return jsonify({'has_password': False})
+    email = session.get('email', '')
+    return jsonify({'has_password': has_password(email) if email else False})
 
 @auth_bp.route('/logout')
 def logout():

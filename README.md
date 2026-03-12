@@ -18,7 +18,7 @@ Multi-app financial tools platform built with Flask. Each app solves a specific 
 - **Backend**: Python 3.11 / Flask (app factory pattern)
 - **Frontend**: Jinja2 templates, vanilla CSS (pastel theme + dark mode), vanilla JS
 - **Database**: PostgreSQL (production via Render), SQLite (local dev)
-- **Auth**: Magic links via Brevo transactional email, session-based
+- **Auth**: Magic links via Brevo + email/password login, session-based
 - **Prices**: Yahoo Finance HTTP API + yfinance fallback
 - **AI**: Anthropic Claude (options analysis chat)
 - **Deployment**: Render (see `render.yaml`)
@@ -57,15 +57,16 @@ python -m options_monitor_agent.dashboard.app
 ├── options_monitor_agent/
 │   ├── dashboard/
 │   │   ├── app.py                       # Flask app factory + all routes
-│   │   ├── auth.py                      # Magic-link authentication
+│   │   ├── auth.py                      # Authentication (magic-link + password)
 │   │   ├── billing.py                   # Subscription & payment routes
 │   │   ├── subscribers.py               # User management, plans, limits
 │   │   ├── templates/                   # Jinja2 HTML templates
 │   │   │   ├── landing.html             # Public landing page
-│   │   │   ├── login.html               # Magic-link login
+│   │   │   ├── login.html               # Login (magic-link + password)
+│   │   │   ├── home.html                # Post-login hub (app launcher)
 │   │   │   ├── subscribe.html           # Pricing / plan selection
 │   │   │   ├── index.html               # Options Monitor dashboard
-│   │   │   ├── account.html             # User account hub
+│   │   │   ├── account.html             # User account & password mgmt
 │   │   │   └── ...
 │   │   └── static/
 │   │       ├── landing.css              # Shared pastel theme (CSS custom vars)

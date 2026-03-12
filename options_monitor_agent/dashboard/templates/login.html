@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Acceder — Small Smart Tools</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧰</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -30,46 +30,89 @@
         <span style="font-size:1.8rem">🧰</span>
         <span style="font-size:1.3rem;font-weight:800;color:var(--primary-text)">Small Smart Tools</span>
       </div>
-      <p style="color:var(--text-muted);font-size:.875rem;margin-bottom:2rem">Secure access via magic link</p>
+      <p style="color:var(--text-muted);font-size:.875rem;margin-bottom:1.5rem">Accede a tu cuenta</p>
       {% if error %}<div class="alert-info" style="border-color:var(--danger);background:var(--danger-bg);color:var(--danger)">⚠ {{ error }}</div>{% endif %}
-      <label class="form-label" for="email">Your email address</label>
-      <input type="email" id="email" class="form-input" placeholder="you@example.com" autocomplete="email">
-      <div id="msg" class="msg"></div>
-      <button class="btn btn-block" id="btn" onclick="sendLink()" style="margin-top:16px">⚡ Send Magic Link</button>
+
+      <!-- Login method tabs -->
+      <div style="display:flex;gap:0;margin-bottom:1.5rem;border-radius:10px;overflow:hidden;border:1px solid var(--border)">
+        <button id="tab-magic" onclick="switchTab('magic')" style="flex:1;padding:10px;font-size:.85rem;font-weight:600;border:none;cursor:pointer;background:var(--primary);color:#fff;transition:all .2s">⚡ Magic Link</button>
+        <button id="tab-password" onclick="switchTab('password')" style="flex:1;padding:10px;font-size:.85rem;font-weight:600;border:none;cursor:pointer;background:var(--card);color:var(--text-muted);transition:all .2s">🔑 Contraseña</button>
+      </div>
+
+      <!-- Magic Link form -->
+      <div id="form-magic">
+        <label class="form-label" for="email">Tu correo electrónico</label>
+        <input type="email" id="email" class="form-input" placeholder="tu@ejemplo.com" autocomplete="email">
+        <div id="msg" class="msg"></div>
+        <button class="btn btn-block" id="btn" onclick="sendLink()" style="margin-top:16px">⚡ Enviar Magic Link</button>
+        <div style="margin-top:16px;text-align:center;color:var(--text-muted);font-size:.8rem">
+          🔒 Sin contraseña — enlace único y seguro, expira en 15 min.
+        </div>
+      </div>
+
+      <!-- Password form -->
+      <div id="form-password" style="display:none">
+        <label class="form-label" for="email-pw">Tu correo electrónico</label>
+        <input type="email" id="email-pw" class="form-input" placeholder="tu@ejemplo.com" autocomplete="email">
+        <label class="form-label" for="pw" style="margin-top:12px">Contraseña</label>
+        <input type="password" id="pw" class="form-input" placeholder="••••••••" autocomplete="current-password">
+        <div id="msg-pw" class="msg"></div>
+        <button class="btn btn-block" id="btn-pw" onclick="loginPassword()" style="margin-top:16px">🔑 Acceder</button>
+        <div style="margin-top:16px;text-align:center;color:var(--text-muted);font-size:.8rem">
+          ¿No tienes contraseña? Accede con Magic Link y configúrala en tu cuenta.
+        </div>
+      </div>
+
       <div style="margin-top:24px;text-align:center;color:var(--text-muted);font-size:.8rem">
-        <span>🔒 No password needed — one-time secure link, expires in 15 min.</span>
-        <br><br>
-        <a href="/subscribe" style="color:var(--primary-text);text-decoration:none">Subscribe for €0.95/mo</a> · <a href="/account" style="color:var(--primary-text);text-decoration:none">My Account</a>
+        <a href="/subscribe" style="color:var(--primary-text);text-decoration:none">Suscribirse por €0,95/mes</a> · <a href="/account" style="color:var(--primary-text);text-decoration:none">Mi Cuenta</a>
       </div>
     </div>
   </div>
 
   <footer class="site-footer">
-    <p>&copy; <span id="year">2025</span> Small Smart Tools. All rights reserved.</p>
+    <p>&copy; <span id="year">2025</span> Small Smart Tools. Todos los derechos reservados.</p>
   </footer>
 
   <script>
     document.getElementById('year').textContent = new Date().getFullYear();
+
+    async function _csrf() {
+      let token = '{{ csrf_token() }}';
+      try {
+        const r = await fetch('/api/csrf-token');
+        if (r.ok) { const d = await r.json(); if (d.csrf_token) token = d.csrf_token; }
+      } catch(_) {}
+      return token;
+    }
+
+    function switchTab(tab) {
+      const tabMagic = document.getElementById('tab-magic');
+      const tabPw    = document.getElementById('tab-password');
+      const formMagic = document.getElementById('form-magic');
+      const formPw    = document.getElementById('form-password');
+      if (tab === 'magic') {
+        tabMagic.style.background = 'var(--primary)'; tabMagic.style.color = '#fff';
+        tabPw.style.background = 'var(--card)'; tabPw.style.color = 'var(--text-muted)';
+        formMagic.style.display = ''; formPw.style.display = 'none';
+      } else {
+        tabPw.style.background = 'var(--primary)'; tabPw.style.color = '#fff';
+        tabMagic.style.background = 'var(--card)'; tabMagic.style.color = 'var(--text-muted)';
+        formPw.style.display = ''; formMagic.style.display = 'none';
+      }
+    }
+
     async function sendLink() {
       const email = document.getElementById('email').value.trim();
       const btn   = document.getElementById('btn');
       const msg   = document.getElementById('msg');
       if (!email || !email.includes('@')) {
-        showMsg('Please enter a valid email address.', 'error'); return;
+        showMsg('msg', 'Introduce un email válido.', 'error'); return;
       }
       btn.disabled = true;
-      btn.textContent = 'Sending...';
+      btn.textContent = 'Enviando...';
       msg.style.display = 'none';
       try {
-        // Fetch a fresh CSRF token before sending to avoid stale-token errors
-        let csrfToken = '{{ csrf_token() }}';
-        try {
-          const csrfRes = await fetch('/api/csrf-token');
-          if (csrfRes.ok) {
-            const csrfData = await csrfRes.json();
-            if (csrfData.csrf_token) csrfToken = csrfData.csrf_token;
-          }
-        } catch(_) {}
+        const csrfToken = await _csrf();
 
         const res  = await fetch('/auth/request', {
           method: 'POST',
@@ -78,38 +121,77 @@
         });
 
         let data;
-        try {
-          data = await res.json();
-        } catch(_) {
-          // Server returned non-JSON (HTML error, 502, etc.)
-          showMsg('\u26a0 Server error (' + res.status + '). Please try again.', 'error');
-          btn.disabled = false;
-          btn.textContent = '\u26a1 Send Magic Link';
-          return;
+        try { data = await res.json(); } catch(_) {
+          showMsg('msg', '\u26a0 Error del servidor (' + res.status + '). Inténtalo de nuevo.', 'error');
+          btn.disabled = false; btn.textContent = '\u26a1 Enviar Magic Link'; return;
         }
 
         if (data.ok) {
-          showMsg('\u2713 Magic link sent! Check your inbox (and spam folder).', 'success');
-          btn.textContent = '\u2713 Email Sent';
+          showMsg('msg', '\u2713 ¡Magic link enviado! Revisa tu bandeja de entrada (y spam).', 'success');
+          btn.textContent = '\u2713 Email Enviado';
         } else {
-          showMsg('\u26a0 ' + (data.error || data.message || 'Something went wrong.'), 'error');
-          btn.disabled = false;
-          btn.textContent = '\u26a1 Send Magic Link';
+          showMsg('msg', '\u26a0 ' + (data.error || data.message || 'Algo salió mal.'), 'error');
+          btn.disabled = false; btn.textContent = '\u26a1 Enviar Magic Link';
         }
       } catch(e) {
-        showMsg('\u26a0 Connection error. Check your internet and try again.', 'error');
-        btn.disabled = false;
-        btn.textContent = '\u26a1 Send Magic Link';
+        showMsg('msg', '\u26a0 Error de conexión. Comprueba tu internet e inténtalo de nuevo.', 'error');
+        btn.disabled = false; btn.textContent = '\u26a1 Enviar Magic Link';
       }
     }
-    function showMsg(text, type) {
-      const el = document.getElementById('msg');
+
+    async function loginPassword() {
+      const email = document.getElementById('email-pw').value.trim();
+      const pw    = document.getElementById('pw').value;
+      const btn   = document.getElementById('btn-pw');
+      const msg   = document.getElementById('msg-pw');
+      if (!email || !email.includes('@')) {
+        showMsg('msg-pw', 'Introduce un email válido.', 'error'); return;
+      }
+      if (!pw) {
+        showMsg('msg-pw', 'Introduce tu contraseña.', 'error'); return;
+      }
+      btn.disabled = true;
+      btn.textContent = 'Accediendo...';
+      msg.style.display = 'none';
+      try {
+        const csrfToken = await _csrf();
+
+        const res = await fetch('/auth/login-password', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken},
+          body: JSON.stringify({email, password: pw})
+        });
+        let data;
+        try { data = await res.json(); } catch(_) {
+          showMsg('msg-pw', '\u26a0 Error del servidor (' + res.status + ').', 'error');
+          btn.disabled = false; btn.textContent = '\ud83d\udd11 Acceder'; return;
+        }
+        if (data.ok) {
+          window.location.href = '/home';
+        } else {
+          showMsg('msg-pw', '\u26a0 ' + (data.error || 'Credenciales incorrectas'), 'error');
+          btn.disabled = false; btn.textContent = '\ud83d\udd11 Acceder';
+        }
+      } catch(e) {
+        showMsg('msg-pw', '\u26a0 Error de conexión.', 'error');
+        btn.disabled = false; btn.textContent = '\ud83d\udd11 Acceder';
+      }
+    }
+
+    function showMsg(id, text, type) {
+      const el = document.getElementById(id);
       el.textContent = text;
       el.className = 'msg ' + type;
       el.style.display = 'block';
     }
     document.getElementById('email').addEventListener('keydown', e => {
       if (e.key === 'Enter') sendLink();
+    });
+    document.getElementById('email-pw').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('pw').focus();
+    });
+    document.getElementById('pw').addEventListener('keydown', e => {
+      if (e.key === 'Enter') loginPassword();
     });
 
     // Hamburger menu

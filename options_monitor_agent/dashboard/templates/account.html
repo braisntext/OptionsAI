@@ -70,9 +70,9 @@
 <body>
 
   <nav class="site-nav" aria-label="Navegación principal">
-    <a href="/" class="logo">Small Smart Tools</a>
+    <a href="/home" class="logo">Small Smart Tools</a>
     <ul class="nav-links" id="navMenu">
-      <li><a href="/">Inicio</a></li>
+      <li><a href="/home">Inicio</a></li>
       <li><a href="/dashboard">Opciones</a></li>
       <li><a href="/fiscal">Fiscal</a></li>
       <li><a href="/investments">Inversiones</a></li>
@@ -181,6 +181,22 @@
 
     </div>
 
+    <!-- Password management -->
+    <h2 class="section-title" style="margin-top:2rem">🔑 Contraseña</h2>
+    <div class="sub-card" style="flex-direction:column;align-items:stretch">
+      <p id="pw-status" style="font-size:.88rem;color:var(--text-muted);margin-bottom:1rem">Cargando...</p>
+      <div style="max-width:400px">
+        <label for="new-pw" style="display:block;font-size:.8rem;color:var(--text-muted);font-weight:600;letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px">Nueva contraseña (mín. 8 caracteres)</label>
+        <input type="password" id="new-pw" placeholder="••••••••" autocomplete="new-password"
+               style="width:100%;padding:12px 14px;background:var(--bg);border:2px solid var(--border);border-radius:10px;color:var(--text);font-size:.95rem;outline:none">
+        <label for="confirm-pw" style="display:block;font-size:.8rem;color:var(--text-muted);font-weight:600;letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px;margin-top:10px">Confirmar contraseña</label>
+        <input type="password" id="confirm-pw" placeholder="••••••••" autocomplete="new-password"
+               style="width:100%;padding:12px 14px;background:var(--bg);border:2px solid var(--border);border-radius:10px;color:var(--text);font-size:.95rem;outline:none">
+        <div id="pw-msg" style="display:none;margin-top:10px;padding:10px 14px;border-radius:8px;font-size:.85rem"></div>
+        <button class="btn btn-sm" id="pw-btn" onclick="savePassword()" style="margin-top:12px">💾 Guardar contraseña</button>
+      </div>
+    </div>
+
     {% if not has_all_apps %}
     <div style="background:var(--info-bg);border:1px solid var(--info-border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:2rem;font-size:.88rem;color:var(--info-text);">
       💡 <strong>¿Quieres acceso a todas las apps?</strong> Con el plan <strong>Unlimited</strong> por €9,95/mes accedes a todas las aplicaciones actuales y futuras, sin límites.
@@ -214,6 +230,79 @@
       toggle.setAttribute('aria-expanded', open);
     });
     menu.querySelectorAll('a').forEach(l => l.addEventListener('click', () => { menu.classList.remove('active'); toggle.classList.remove('active'); }));
+
+    // Password management
+    (async function checkPwStatus() {
+      try {
+        const res = await fetch('/auth/has-password');
+        const data = await res.json();
+        const el = document.getElementById('pw-status');
+        if (data.has_password) {
+          el.innerHTML = '✅ Tienes una contraseña configurada. Puedes usarla para acceder directamente.';
+        } else {
+          el.innerHTML = '⚠️ No tienes contraseña configurada. Configúrala para acceder sin magic link.';
+          el.style.color = 'var(--warning, #f59e0b)';
+        }
+      } catch(e) {}
+    })();
+
+    async function savePassword() {
+      const pw = document.getElementById('new-pw').value;
+      const confirm = document.getElementById('confirm-pw').value;
+      const btn = document.getElementById('pw-btn');
+      const msg = document.getElementById('pw-msg');
+      if (!pw || pw.length < 8) {
+        showPwMsg('La contraseña debe tener al menos 8 caracteres.', 'error'); return;
+      }
+      if (pw !== confirm) {
+        showPwMsg('Las contraseñas no coinciden.', 'error'); return;
+      }
+      btn.disabled = true; btn.textContent = 'Guardando...';
+      try {
+        let csrfToken = '';
+        try {
+          const csrfRes = await fetch('/api/csrf-token');
+          if (csrfRes.ok) { const d = await csrfRes.json(); csrfToken = d.csrf_token || ''; }
+        } catch(_) {}
+        const res = await fetch('/auth/set-password', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken},
+          body: JSON.stringify({password: pw})
+        });
+        const data = await res.json();
+        if (data.ok) {
+          showPwMsg('✅ Contraseña actualizada correctamente.', 'success');
+          document.getElementById('pw-status').innerHTML = '✅ Tienes una contraseña configurada. Puedes usarla para acceder directamente.';
+          document.getElementById('pw-status').style.color = '';
+          document.getElementById('new-pw').value = '';
+          document.getElementById('confirm-pw').value = '';
+        } else {
+          showPwMsg(data.error || 'Error al guardar.', 'error');
+        }
+      } catch(e) {
+        showPwMsg('Error de conexión.', 'error');
+      }
+      btn.disabled = false; btn.textContent = '💾 Guardar contraseña';
+    }
+
+    function showPwMsg(text, type) {
+      const el = document.getElementById('pw-msg');
+      el.textContent = text;
+      el.style.display = 'block';
+      if (type === 'error') {
+        el.style.background = 'var(--danger-bg, #450a0a)';
+        el.style.border = '1px solid var(--danger, #ef4444)';
+        el.style.color = 'var(--danger, #fca5a5)';
+      } else {
+        el.style.background = 'var(--success-bg, #052e16)';
+        el.style.border = '1px solid var(--success, #22c55e)';
+        el.style.color = 'var(--success, #86efac)';
+      }
+    }
+
+    document.getElementById('confirm-pw').addEventListener('keydown', e => {
+      if (e.key === 'Enter') savePassword();
+    });
   </script>
 </body>
 </html>

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inicio — Small Smart Tools</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧰</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/landing.css">
+  <style>
+    .home-container { max-width:1000px; margin:0 auto; padding:2rem 1.5rem 4rem; }
+    .home-header { text-align:center; margin-bottom:2.5rem; }
+    .home-header h1 { font-size:2rem; font-weight:800; margin-bottom:.25rem; }
+    .home-header .greeting { color:var(--text-muted); font-size:1rem; }
+
+    .apps-grid {
+      display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+      gap:1.5rem; margin-bottom:2.5rem;
+    }
+    .app-card {
+      background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
+      padding:1.75rem; display:flex; flex-direction:column; transition:transform .2s, box-shadow .2s;
+      position:relative;
+    }
+    .app-card:hover { transform:translateY(-3px); box-shadow:var(--shadow-md); }
+    .app-card.locked { opacity:.65; }
+    .app-card .app-icon { font-size:2.5rem; margin-bottom:1rem; }
+    .app-card h3 { font-size:1.15rem; font-weight:700; margin:0 0 .5rem; }
+    .app-card p { font-size:.88rem; color:var(--text-muted); flex:1; margin:0 0 1.25rem; line-height:1.55; }
+    .app-card .lock-badge {
+      position:absolute; top:14px; right:14px;
+      font-size:.72rem; font-weight:600; background:var(--border);
+      padding:3px 10px; border-radius:8px; color:var(--text-muted);
+    }
+    .app-card .available-badge {
+      position:absolute; top:14px; right:14px;
+      font-size:.72rem; font-weight:600; background:var(--success-bg);
+      padding:3px 10px; border-radius:8px; color:var(--success);
+    }
+    .app-card .soon-badge {
+      position:absolute; top:14px; right:14px;
+      font-size:.72rem; font-weight:600; background:var(--info-bg);
+      padding:3px 10px; border-radius:8px; color:var(--info-text);
+    }
+
+    .quick-links {
+      display:flex; gap:.75rem; flex-wrap:wrap; justify-content:center;
+      padding-top:1.5rem; border-top:1px solid var(--border);
+    }
+
+    @media (max-width:600px) {
+      .home-container { padding:1rem; }
+      .apps-grid { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="site-nav" aria-label="Navegación principal">
+    <a href="/home" class="logo">Small Smart Tools</a>
+    <ul class="nav-links" id="navMenu">
+      <li><a href="/home" style="color:var(--primary-text)">Inicio</a></li>
+      <li><a href="/dashboard">Opciones</a></li>
+      <li><a href="/fiscal">Fiscal</a></li>
+      <li><a href="/investments">Inversiones</a></li>
+      <li><a href="/account">Mi Cuenta</a></li>
+    </ul>
+    <button class="menu-toggle" aria-label="Abrir menú" aria-expanded="false" aria-controls="navMenu" id="menuToggle">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <div class="home-container">
+
+    <div class="home-header">
+      <h1>🧰 Tus Herramientas</h1>
+      <p class="greeting">Bienvenido, {{ email }}</p>
+    </div>
+
+    <div class="apps-grid">
+
+      <!-- Options Monitor -->
+      <div class="app-card {{ '' if can_options else 'locked' }}">
+        <div class="app-icon">📊</div>
+        {% if can_options %}<div class="available-badge">✓ Activa</div>
+        {% else %}<div class="lock-badge">🔒 No incluida</div>{% endif %}
+        <h3>Options Monitor</h3>
+        <p>Monitoriza opciones en tiempo real con IA. Alertas de spikes, cadena de opciones, backtesting y chat con Claude AI.</p>
+        <div style="margin-top:auto;">
+          {% if can_options %}
+          <a href="/dashboard" class="btn btn-sm btn-block">Abrir Dashboard →</a>
+          {% else %}
+          <a href="/subscribe" class="btn btn-outline btn-sm btn-block">Desbloquear →</a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Fiscal -->
+      <div class="app-card {{ '' if can_fiscal else 'locked' }}">
+        <div class="app-icon">🧾</div>
+        {% if can_fiscal %}<div class="available-badge">✓ Activa</div>
+        {% else %}<div class="lock-badge">🔒 No incluida</div>{% endif %}
+        <h3>Fiscal</h3>
+        <p>Importa extractos del broker, calcula impuestos y obtén las casillas exactas para tu Declaración de la Renta.</p>
+        <div style="margin-top:auto;">
+          {% if can_fiscal %}
+          <a href="/fiscal" class="btn btn-sm btn-block">Abrir Fiscal →</a>
+          {% else %}
+          <a href="/subscribe" class="btn btn-outline btn-sm btn-block">Desbloquear →</a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Gestión de Inversiones -->
+      <div class="app-card {{ '' if can_investments else 'locked' }}">
+        <div class="app-icon">💼</div>
+        {% if can_investments %}<div class="available-badge">✓ Activa</div>
+        {% else %}<div class="lock-badge">🔒 No incluida</div>{% endif %}
+        <h3>Gestión de Inversiones</h3>
+        <p>Cartera de inversiones con FIFO, seguimiento de dividendos, gráficas e importación desde Fiscal.</p>
+        <div style="margin-top:auto;">
+          {% if can_investments %}
+          <a href="/investments" class="btn btn-sm btn-block">Abrir Inversiones →</a>
+          {% else %}
+          <a href="/subscribe" class="btn btn-outline btn-sm btn-block">Desbloquear →</a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Alt Investments (Coming Soon) -->
+      <div class="app-card locked">
+        <div class="app-icon">🏦</div>
+        <div class="soon-badge">Próximamente</div>
+        <h3>Alt Investments Tracker</h3>
+        <p>Seguimiento de inversiones alternativas: private equity, venture capital, real estate y más.</p>
+        <div style="margin-top:auto;">
+          <a href="/alt-investments" class="btn btn-outline btn-sm btn-block" style="opacity:.6">Saber más →</a>
+        </div>
+      </div>
+
+    </div>
+
+    {% if not has_all_apps %}
+    <div style="background:var(--info-bg);border:1px solid var(--info-border);border-radius:var(--radius-sm);padding:1rem 1.25rem;margin-bottom:2rem;font-size:.88rem;color:var(--info-text);">
+      💡 <strong>¿Quieres acceso a todas las apps?</strong> Con el plan <strong>Unlimited</strong> por €9,95/mes accedes a todas las aplicaciones actuales y futuras, sin límites.
+      <a href="/subscribe" style="color:var(--primary-text);font-weight:600;margin-left:.5rem;">Ver planes →</a>
+    </div>
+    {% endif %}
+
+    <div class="quick-links">
+      <a href="/account" class="btn btn-outline btn-sm">👤 Mi Cuenta</a>
+      <a href="/subscribe" class="btn btn-outline btn-sm">⬆️ Mejorar plan</a>
+      <a href="/logout" class="btn btn-outline btn-sm" style="border-color:var(--text-muted);color:var(--text-muted)">🔓 Cerrar sesión</a>
+    </div>
+
+  </div>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year">2025</span> Small Smart Tools. Todos los derechos reservados.</p>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+    const toggle = document.getElementById('menuToggle');
+    const menu   = document.getElementById('navMenu');
+    toggle.addEventListener('click', () => {
+      const open = menu.classList.toggle('active');
+      toggle.classList.toggle('active');
+      toggle.setAttribute('aria-expanded', open);
+    });
+    menu.querySelectorAll('a').forEach(l => l.addEventListener('click', () => { menu.classList.remove('active'); toggle.classList.remove('active'); }));
+  </script>
+</body>
+</html>

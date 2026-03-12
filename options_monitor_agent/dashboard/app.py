@@ -27,6 +27,7 @@ from subscribers import (
     get_all_watched_tickers, seed_user_watchlist, user_has_watchlist,
     get_user_spike_configs, add_user_spike_config,
     delete_user_spike_config, toggle_user_spike_config,
+    has_app_access,
 )
 
 # ── Constants ─────────────────────────────────────────────────────────────────
@@ -120,7 +121,7 @@ def create_app(database=None, agent=None):
     def _inject_csrf():
         return dict(csrf_token=_generate_csrf_token)
 
-    CSRF_EXEMPT_ENDPOINTS = {'billing.stripe_webhook', 'auth.auth_request'}
+    CSRF_EXEMPT_ENDPOINTS = {'billing.stripe_webhook', 'auth.auth_request', 'auth.auth_login_password'}
 
     @app.before_request
     def _check_csrf():
@@ -240,8 +241,21 @@ def create_app(database=None, agent=None):
     def landing():
         """Public landing page — entry point for all visitors."""
         if session.get('authenticated'):
-            return redirect(url_for('dashboard'))
+            return redirect(url_for('home'))
         return render_template("landing.html")
+
+    @app.route("/home")
+    @login_required
+    def home():
+        """Authenticated user hub — see and launch all apps."""
+        email = session.get('email', '')
+        can_options = has_app_access(email, 'options')
+        can_fiscal = has_app_access(email, 'fiscal')
+        can_investments = has_app_access(email, 'investments')
+        has_all = can_options and can_fiscal and can_investments
+        return render_template('home.html', email=email,
+                               can_options=can_options, can_fiscal=can_fiscal,
+                               can_investments=can_investments, has_all_apps=has_all)
 
     @app.route("/alt-investments")
     def alt_investments():
@@ -1019,8 +1033,8 @@ def create_app(database=None, agent=None):
     # MARKET-HOURS SCHEDULER
     # =========================================================================
     # Collection times (CET / Europe-Madrid):
-    #   Spain (.MC): 09:10, 14:00, 17:25  (market 09:00–17:30)
-    #   US:          15:40, 20:30, 21:55  (market 15:30–22:00 CET = 09:30–16:00 ET)
+    #   Spain (.MC): 09:10, 13:10, 17:10  (market 09:00 → +10min, +4h, +4h)
+    #   US:          15:40, 19:40          (market 15:30 → +10min, +4h)
 
     _CET = timezone(timedelta(hours=1))   # CET (winter); adjust +1 for CEST
     try:
@@ -1029,8 +1043,8 @@ def create_app(database=None, agent=None):
     except ImportError:
         _MADRID = _CET  # fallback
     _SCHEDULE = {
-        "ES": [(9, 10), (14, 0), (17, 25)],   # Spanish market schedule
-        "US": [(15, 40), (20, 30), (21, 55)],  # US market schedule in CET
+        "ES": [(9, 10), (13, 10), (17, 10)],   # market 09:00: +10min, +4h, +4h
+        "US": [(15, 40), (19, 40)],              # market 15:30: +10min, +4h
     }
     _TICKER_MARKET = {}  # filled lazily
 
