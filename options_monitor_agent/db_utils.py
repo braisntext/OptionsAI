@@ -1,7 +1,7 @@
 """
 Shared database connection layer.
 
-- PostgreSQL when DATABASE_URL is set (production on Render).
+- PostgreSQL when DATABASE_URL is set (production — Neon.tech).
 - SQLite when DATABASE_URL is absent (local development).
 
 Each module calls get_conn(sqlite_path) to obtain a ConnectionWrapper
@@ -35,7 +35,10 @@ def _get_pool():
         with _pool_lock:
             if _pool is None:
                 import psycopg2.pool
-                _pool = psycopg2.pool.ThreadedConnectionPool(1, 5, DATABASE_URL)
+                # Neon requires SSL; keep pool small (Neon pooler handles scaling)
+                _pool = psycopg2.pool.ThreadedConnectionPool(
+                    1, 5, DATABASE_URL, sslmode="require",
+                )
     return _pool
 
 
@@ -50,7 +53,7 @@ def get_conn(sqlite_path=None):
     if IS_POSTGRES:
         pool = _get_pool()
         raw = pool.getconn()
-        # Validate connection — Render free-tier drops idle connections
+        # Validate connection — Neon autosuspends after 5 min idle
         try:
             raw.rollback()  # resets state + checks liveness
         except Exception:

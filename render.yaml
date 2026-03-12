@@ -1,9 +1,3 @@
-databases:
-  - name: optionsai-db
-    plan: free
-    databaseName: optionsai
-    user: optionsai_user
-
 services:
   - type: web
     name: optionsai
@@ -20,6 +14,4 @@ services:
       - key: ANTHROPIC_API_KEY
         sync: false
       - key: DATABASE_URL
-        fromDatabase:
-          name: optionsai-db
-          property: connectionString
+        sync: false  # Neon.tech PostgreSQL connection string
