@@ -423,6 +423,7 @@ def _init_password_column():
         try:
             c.execute("SELECT password_hash FROM subscribers LIMIT 1")
         except Exception:
+            c.rollback()  # PostgreSQL requires rollback after failed query
             c.execute("ALTER TABLE subscribers ADD COLUMN password_hash TEXT")
             c.commit()
 
