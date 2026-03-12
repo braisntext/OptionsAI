@@ -68,6 +68,7 @@ def init_db():
                 ON CONFLICT(email) DO NOTHING
             ''', (email, datetime.utcnow().isoformat()))
         c.commit()
+    _init_password_column()
 
 def is_subscribed(email: str) -> bool:
     """Return True if this email has an active subscription (or is superuser)."""
@@ -431,7 +432,6 @@ _init_usage_table()
 _init_tokens_table()
 _init_user_watchlists_table()
 _init_user_spike_configs_table()
-_init_password_column()
 
 
 def get_daily_usage(email: str, usage_type: str) -> int:
