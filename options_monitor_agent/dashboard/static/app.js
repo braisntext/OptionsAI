@@ -28,16 +28,16 @@ function _postHeaders(){return{"Content-Type":"application/json","X-CSRF-Token":
 document.addEventListener("DOMContentLoaded",()=>{_loadCsrf().then?_loadCsrf().then(()=>{checkMarketAndRefresh();setInterval(refreshData,60000)}):(_loadCsrf(),checkMarketAndRefresh(),setInterval(refreshData,60000))});
 
 async function checkMarketAndRefresh(){
-    // Fetch market status and auto-refresh if needed
+    // Fire market-status and refreshData in parallel — don't block rendering
+    const msPromise=fetchJSON("/api/market-status");
+    refreshData();
     try{
-        const ms=await fetchJSON("/api/market-status");
+        const ms=await msPromise;
         if(ms.status==="ok"&&ms.market){
             updateMarketBadge(ms.market);
-            // Auto-trigger cycle if market open and data stale
             if(ms.market.should_refresh){
                 showNotif("Updating data...","info");
                 await fetch("/api/run-cycle",{method:"POST",headers:{"X-CSRF-Token":_csrfToken}});
-                // Poll for completion then refresh
                 let pollCount=0;
                 const pollId=setInterval(async()=>{
                     pollCount++;
@@ -53,7 +53,6 @@ async function checkMarketAndRefresh(){
             }
         }
     }catch(e){}
-    refreshData();
 }
 
 function updateMarketBadge(market){

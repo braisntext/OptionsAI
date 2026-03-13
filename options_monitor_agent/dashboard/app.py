@@ -6,6 +6,7 @@ import json
 import secrets
 import threading
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import timedelta, datetime, timezone
 
 import yfinance as yf
@@ -73,6 +74,21 @@ def _validate_ticker(ticker: str) -> bool:
     return bool(re.match(r'^[A-Z0-9]+(?:\.[A-Z]{1,4})?$', ticker)) and len(ticker) <= 12
 
 
+# ── In-memory TTL cache for expensive operations ─────────────────────────────
+_cache: dict = {}   # key -> (timestamp, data)
+_CACHE_TTL = 30     # seconds
+
+def _cached(key: str, ttl: int = _CACHE_TTL):
+    """Return cached value if fresh, else None."""
+    entry = _cache.get(key)
+    if entry and (time.time() - entry[0]) < ttl:
+        return entry[1]
+    return None
+
+def _set_cache(key: str, data):
+    _cache[key] = (time.time(), data)
+
+
 def create_app(database=None, agent=None):
     """
     Application factory.  Called by the WSGI entry-point with live
@@ -102,6 +118,12 @@ def create_app(database=None, agent=None):
 
     # ── Flask app ─────────────────────────────────────────────────────────────
     app = Flask(__name__, template_folder="templates", static_folder="static")
+
+    # Trust Render's reverse-proxy headers so url_for(_external=True)
+    # generates https:// links and Flask sees the real client IP.
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY") or secrets.token_hex(32)
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
     app.config['SESSION_COOKIE_SECURE'] = os.getenv('RENDER', '') != ''  # True on Render (HTTPS)
@@ -224,14 +246,17 @@ def create_app(database=None, agent=None):
     def api_market_status():
         """Return market open/closed status and data freshness info."""
         status = _is_market_open()
-        # Check when data was last updated
         last_update = None
         try:
             db = _require_db()
             email = session.get('email', '')
             user_tickers = set(_load_user_watchlist_or_seed(email))
             if user_tickers:
-                latest = db.get_all_tickers_latest()
+                cache_key = 'all_tickers_latest'
+                latest = _cached(cache_key)
+                if latest is None:
+                    latest = db.get_all_tickers_latest()
+                    _set_cache(cache_key, latest)
                 user_latest = [d for d in latest if d['ticker'] in user_tickers]
                 if user_latest:
                     timestamps = [d.get('timestamp', '') for d in user_latest if d.get('timestamp')]
@@ -422,7 +447,11 @@ def create_app(database=None, agent=None):
             db = _require_db()
             email = session.get('email', '')
             user_tickers = set(_load_user_watchlist_or_seed(email))
-            all_data = db.get_all_tickers_latest()
+            cache_key = 'all_tickers_latest'
+            all_data = _cached(cache_key)
+            if all_data is None:
+                all_data = db.get_all_tickers_latest()
+                _set_cache(cache_key, all_data)
             data = [d for d in all_data if d['ticker'] in user_tickers]
             return jsonify({"status": "ok", "data": data})
         except RuntimeError as exc:
@@ -491,7 +520,12 @@ def create_app(database=None, agent=None):
     def api_stats():
         try:
             db = _require_db()
-            return jsonify({"status": "ok", "data": db.get_database_stats()})
+            cache_key = 'db_stats'
+            stats = _cached(cache_key, ttl=60)
+            if stats is None:
+                stats = db.get_database_stats()
+                _set_cache(cache_key, stats)
+            return jsonify({"status": "ok", "data": stats})
         except RuntimeError as exc:
             return _make_error(str(exc)), 503
 
@@ -633,10 +667,17 @@ def create_app(database=None, agent=None):
                 }
 
             calls_list, puts_list = [], []
-            for exp_date in expirations[:6]:
-                chain = stock.option_chain(exp_date)
-                calls_list.extend(_row(r, "CALL", exp_date) for _, r in chain.calls.iterrows())
-                puts_list.extend( _row(r, "PUT",  exp_date) for _, r in chain.puts.iterrows())
+            def _fetch_chain(exp_date):
+                c = stock.option_chain(exp_date)
+                cl = [_row(r, "CALL", exp_date) for _, r in c.calls.iterrows()]
+                pl = [_row(r, "PUT",  exp_date) for _, r in c.puts.iterrows()]
+                return cl, pl
+            exps = list(expirations[:6])
+            with ThreadPoolExecutor(max_workers=min(len(exps), 4)) as pool:
+                results = pool.map(_fetch_chain, exps)
+            for cl, pl in results:
+                calls_list.extend(cl)
+                puts_list.extend(pl)
 
             return jsonify({"status": "ok", "ticker": ticker,
                             "calls": calls_list, "puts": puts_list,
@@ -953,23 +994,39 @@ def create_app(database=None, agent=None):
     @app.route("/api/watchlist-quotes")
     @login_required
     def api_watchlist_quotes():
-        """Return live price for every watchlist ticker via yfinance fast_info."""
+        """Return live price for every watchlist ticker via yfinance (parallel)."""
         email = session.get('email', '')
         if not is_superuser(email) and not _check_ext_api_rate(email):
             return _make_error("Too many requests. Please wait a minute."), 429
         wl = _load_user_watchlist_or_seed(email)
+        # Return cached quotes if fresh (30s TTL)
+        cache_key = f'quotes:{email}'
+        cached = _cached(cache_key)
+        if cached is not None:
+            return jsonify({"status": "ok", "quotes": cached})
         quotes = {}
+        def _fetch_one(ticker):
+            try:
+                fi = yf.Ticker(ticker).fast_info
+                p = getattr(fi, 'last_price', None) or getattr(fi, 'previous_close', None)
+                if p and p > 0:
+                    return ticker, round(p, 2)
+            except Exception:
+                pass
+            return ticker, None
         try:
-            for ticker in wl:
-                try:
-                    fi = yf.Ticker(ticker).fast_info
-                    p = getattr(fi, 'last_price', None) or getattr(fi, 'previous_close', None)
-                    if p and p > 0:
-                        quotes[ticker] = round(p, 2)
-                except Exception:
-                    pass
+            with ThreadPoolExecutor(max_workers=min(len(wl), 8)) as pool:
+                futures = {pool.submit(_fetch_one, t): t for t in wl}
+                for future in as_completed(futures, timeout=10):
+                    try:
+                        ticker, price = future.result()
+                        if price is not None:
+                            quotes[ticker] = price
+                    except Exception:
+                        pass
         except Exception:
             pass
+        _set_cache(cache_key, quotes)
         return jsonify({"status": "ok", "quotes": quotes})
 
     @app.route("/api/search-ticker")
