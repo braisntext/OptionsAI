@@ -126,13 +126,12 @@ function updateTable(data,watchlist,quotes){
         const delBtn=`<button onclick="event.stopPropagation();removeTicker('${ticker}',this)" title="Remove ${ticker}" class="btn-delete-ticker">✖</button>`;
         if(d){
             const p=d.pcr_volume||0,pc=p>1.2?"badge-bearish":p<0.8?"badge-bullish":"badge-neutral",pe=p>1.2?"🐻":p<0.8?"🐂":"😐";
-            const sc=d.sentiment?.includes("BEAR")?"badge-bearish":d.sentiment?.includes("BULL")?"badge-bullish":"badge-neutral";
             const price=d.price||quotes[ticker]||0;
-            return`<tr onclick="selectTicker('${d.ticker}')" style="cursor:pointer"><td><b>${d.ticker}</b></td><td>${price.toLocaleString("en-US",{minimumFractionDigits:2})}</td><td><span class="badge ${pc}">${p.toFixed(2)} ${pe}</span></td><td>${(d.call_iv||0).toFixed(1)}%</td><td>${(d.put_iv||0).toFixed(1)}%</td><td>${(d.iv_skew||0).toFixed(1)}%</td><td><span class="badge ${sc}">${d.sentiment||"-"}</span></td><td class="alert-time">${d.timestamp?new Date(d.timestamp).toLocaleString():"-"}</td><td>${delBtn}</td></tr>`;
+            return`<tr onclick="selectTicker('${d.ticker}')" style="cursor:pointer"><td><b>${d.ticker}</b></td><td>${price.toLocaleString("en-US",{minimumFractionDigits:2})}</td><td><span class="badge ${pc}">${p.toFixed(2)} ${pe}</span></td><td>${(d.call_iv||0).toFixed(1)}%</td><td>${(d.put_iv||0).toFixed(1)}%</td><td>${(d.iv_skew||0).toFixed(1)}%</td><td>${delBtn}</td></tr>`;
         }
         const qp=quotes[ticker];
         const priceCell=qp?qp.toLocaleString("en-US",{minimumFractionDigits:2}):'<span style="color:var(--text-secondary)">-</span>';
-        return`<tr onclick="selectTicker('${ticker}')" style="cursor:pointer"><td><b>${ticker}</b></td><td>${priceCell}</td><td colspan="5" style="color:var(--text-secondary);font-style:italic">Pending — run cycle for full data</td><td class="alert-time">-</td><td>${delBtn}</td></tr>`;
+        return`<tr onclick="selectTicker('${ticker}')" style="cursor:pointer"><td><b>${ticker}</b></td><td>${priceCell}</td><td colspan="3" style="color:var(--text-secondary);font-style:italic">Pending — run cycle for full data</td><td>${delBtn}</td></tr>`;
     }).join("")
 }
 
@@ -205,7 +204,7 @@ function selectTicker(t){
 async function loadTickerHistory(){
     const t=document.getElementById("ticker-select").value;if(!t)return;
     const r=await fetchJSON(`/api/history/${t}?days=30`);if(r.status!=="ok"||!r.data.length)return;
-    const d=r.data,l=d.map(x=>new Date(x.timestamp).toLocaleString()),p=d.map(x=>x.price),ci=d.map(x=>x.call_iv),pi=d.map(x=>x.put_iv);
+    const d=r.data,l=d.map(x=>{const s=Math.round((Date.now()-new Date(x.timestamp))/1e3);if(s<60)return s+"s ago";if(s<3600)return Math.round(s/60)+"min ago";if(s<86400)return Math.round(s/3600)+"h ago";return Math.round(s/86400)+"d ago";}),p=d.map(x=>x.price),ci=d.map(x=>x.call_iv),pi=d.map(x=>x.put_iv);
     // Calculate y-axis ranges with padding for flat data
     const pMin=Math.min(...p),pMax=Math.max(...p),pPad=pMax===pMin?Math.max(pMax*0.05,0.5):0;
     const ivAll=ci.concat(pi).filter(v=>v>0),ivMin=ivAll.length?Math.min(...ivAll):0,ivMax=ivAll.length?Math.max(...ivAll):100,ivPad=ivMax===ivMin?Math.max(ivMax*0.1,1):0;
