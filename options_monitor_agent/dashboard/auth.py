@@ -19,6 +19,7 @@ except ImportError:
     BREVO_SENDER_NAME = os.getenv('BREVO_SENDER_NAME', 'Small Smart Tools')
 
 from subscribers import is_subscribed, add_free_subscriber, store_magic_token, consume_magic_token, verify_password, has_password, set_password
+from security import record_failed_login
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -156,8 +157,10 @@ def auth_verify(token):
         print(f'[auth] DB error consuming token: {exc}')
         return render_template('login.html', error='Server error. Please request a new link.')
     if not entry:
+        record_failed_login(request.remote_addr)
         return render_template('login.html', error='Invalid or already used link.')
     if datetime.utcnow() > entry['expires_at']:
+        record_failed_login(request.remote_addr)
         return render_template('login.html', error='This link has expired. Please request a new one.')
     # Regenerate session to prevent session fixation
     session.clear()
@@ -183,10 +186,13 @@ def auth_login_password():
     if not password:
         return jsonify({'ok': False, 'error': 'Contraseña requerida'}), 400
     if not _is_allowed(email):
+        record_failed_login(request.remote_addr)
         return jsonify({'ok': False, 'error': 'Credenciales incorrectas'}), 401
     if not is_subscribed(email):
+        record_failed_login(request.remote_addr)
         return jsonify({'ok': False, 'error': 'Credenciales incorrectas'}), 401
     if not verify_password(email, password):
+        record_failed_login(request.remote_addr)
         return jsonify({'ok': False, 'error': 'Credenciales incorrectas'}), 401
     session.clear()
     session.permanent = True

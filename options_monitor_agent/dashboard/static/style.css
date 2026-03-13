@@ -320,4 +320,18 @@ tr:hover { background: var(--bg-card-hover); }
     canvas { max-height: 200px; }
     .footer { font-size: 0.75rem; }
 }
+
+/* ── Two-tap confirm (mobile-friendly destructive actions) ──────────────── */
+.two-tap-armed {
+    background: var(--danger, #ef4444) !important;
+    color: #fff !important;
+    border-color: var(--danger, #ef4444) !important;
+    opacity: 1 !important;
+    animation: two-tap-pulse .4s ease;
+}
+@keyframes two-tap-pulse {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.06); }
+    100% { transform: scale(1); }
+}
 }

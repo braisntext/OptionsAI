@@ -302,7 +302,7 @@
 
         // Initialize click handlers when page loads
         // (ticker click is handled by selectTicker in app.js)
-    </script><script src="/static/app.js?v=14"></script>
+    </script><script src="/static/two-tap.js?v=1"></script><script src="/static/app.js?v=15"></script>
 
 <script>
 // ── Spike alert configs ─────────────────────────────────────────────────────
@@ -335,7 +335,7 @@ async function loadSpikeConfigs() {
           `<td style="padding:6px;">${c.notify_push ? '✅' : '—'}</td>` +
           `<td style="padding:6px;">${c.notify_email ? '✅' : '—'}</td>` +
           `<td style="padding:6px;text-align:center;"><button onclick="toggleSpikeConfig(${c.id})" style="background:none;border:none;color:${statusColor};cursor:pointer;font-size:0.8rem;font-weight:600;">${statusText}</button></td>` +
-          `<td style="padding:6px;text-align:center;"><button onclick="deleteSpikeConfig(${c.id},'${c.ticker}')" class="btn-delete-ticker" title="Delete" style="font-size:0.75rem;">✖</button></td>` +
+          `<td style="padding:6px;text-align:center;"><button onclick="deleteSpikeConfig(${c.id},'${c.ticker}',this)" class="btn-delete-ticker" title="Delete" style="font-size:0.75rem;">✖</button></td>` +
           `</tr>`;
       }).join('') + '</tbody></table>';
   } catch(e) { console.error("spike-configs:", e); }
@@ -364,8 +364,14 @@ async function addSpikeConfig() {
   } catch(e) { if (typeof showNotif === 'function') showNotif("Connection error", "error"); }
 }
 
-async function deleteSpikeConfig(id, ticker) {
-  if (!confirm(`Delete alert rule for ${ticker}?`)) return;
+async function deleteSpikeConfig(id, ticker, btn) {
+  if (btn) {
+    twoTapAction(btn, btn.textContent.trim(), function(){ _doDeleteSpikeConfig(id, ticker); });
+    return;
+  }
+  _doDeleteSpikeConfig(id, ticker);
+}
+async function _doDeleteSpikeConfig(id, ticker) {
   try {
     await fetch(API + `/api/spike-configs/${id}`, {method: "DELETE", headers:{"X-CSRF-Token":_csrfToken}});
     loadSpikeConfigs();

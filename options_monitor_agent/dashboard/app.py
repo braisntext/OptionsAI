@@ -21,6 +21,10 @@ if BASE_DIR not in sys.path:
 
 from auth import auth_bp, login_required
 from flask import Flask, render_template, jsonify, request, session, redirect, url_for
+from security import (
+    record_request, record_failed_login, is_ip_blocked,
+    get_security_stats, start_security_agent,
+)
 from subscribers import (
     is_superuser, check_limit, increment_usage, LIMITS,
     get_user_watchlist, add_user_ticker, remove_user_ticker,
@@ -133,6 +137,18 @@ def create_app(database=None, agent=None):
         if not token or token != session.get('_csrf_token'):
             return jsonify({'status': 'error', 'message': 'CSRF token missing or invalid'}), 403
 
+    # ── Security agent: track requests + block abusive IPs ───────────────
+    _SECURITY_SKIP = ('/health', '/static/')
+
+    @app.before_request
+    def _security_gate():
+        if request.path.startswith(_SECURITY_SKIP):
+            return
+        ip = request.remote_addr
+        if is_ip_blocked(ip):
+            return jsonify({'status': 'error', 'message': 'Too many requests. Try again later.'}), 429
+        record_request(ip)
+
     # ── Security headers ─────────────────────────────────────────────────────
     @app.after_request
     def _set_security_headers(response):
@@ -155,6 +171,11 @@ def create_app(database=None, agent=None):
         if request.path.startswith('/api/'):
             return jsonify({'status': 'error', 'message': 'Internal server error'}), 500
         return render_template('login.html', error='Error del servidor (500). Inténtalo de nuevo.'), 500
+
+    # ── Health endpoint (for Render + UptimeRobot + self-ping) ────────────────
+    @app.route("/health")
+    def health():
+        return jsonify({"status": "ok", "ts": datetime.now(timezone.utc).isoformat()})
 
     # ── Helper: DB guard ──────────────────────────────────────────────────────
     def _require_db():
@@ -550,6 +571,9 @@ def create_app(database=None, agent=None):
     @app.route("/api/options-chain")
     @login_required
     def api_options_chain():
+        email = session.get('email', '')
+        if not is_superuser(email) and not _check_ext_api_rate(email):
+            return _make_error("Too many requests. Please wait a minute."), 429
         ticker = request.args.get("ticker", "").strip().upper()
         if not ticker or not _validate_ticker(ticker):
             return _make_error("Invalid ticker format"), 400
@@ -624,7 +648,7 @@ def create_app(database=None, agent=None):
     # ROUTES – AI CHAT
     # =========================================================================
 
-    # Per-user rate limiting for /api/ask (max 3 requests per 60 seconds)
+    # ── Per-user rate limiting for /api/ask (max 3 requests per 60 seconds)
     _ask_rate: dict = defaultdict(list)
     ASK_RATE_LIMIT = 3
     ASK_RATE_WINDOW = 60  # seconds
@@ -636,6 +660,21 @@ def create_app(database=None, agent=None):
         if len(_ask_rate[email]) >= ASK_RATE_LIMIT:
             return False
         _ask_rate[email].append(now)
+        return True
+
+    # ── Rate limiting for external API calls (yfinance, etc.) ────────────────
+    _ext_api_rate: dict = defaultdict(list)
+    EXT_API_RATE_LIMIT = 10   # max calls per user
+    EXT_API_RATE_WINDOW = 60  # per 60 seconds
+
+    def _check_ext_api_rate(email: str) -> bool:
+        """Rate-limit user access to yfinance-heavy endpoints."""
+        now = time.time()
+        cutoff = now - EXT_API_RATE_WINDOW
+        _ext_api_rate[email] = [t for t in _ext_api_rate[email] if t > cutoff]
+        if len(_ext_api_rate[email]) >= EXT_API_RATE_LIMIT:
+            return False
+        _ext_api_rate[email].append(now)
         return True
 
     def _build_user_context(email):
@@ -916,6 +955,8 @@ def create_app(database=None, agent=None):
     def api_watchlist_quotes():
         """Return live price for every watchlist ticker via yfinance fast_info."""
         email = session.get('email', '')
+        if not is_superuser(email) and not _check_ext_api_rate(email):
+            return _make_error("Too many requests. Please wait a minute."), 429
         wl = _load_user_watchlist_or_seed(email)
         quotes = {}
         try:
@@ -934,6 +975,9 @@ def create_app(database=None, agent=None):
     @app.route("/api/search-ticker")
     @login_required
     def api_search_ticker():
+        email = session.get('email', '')
+        if not is_superuser(email) and not _check_ext_api_rate(email):
+            return _make_error("Too many requests. Please wait a minute."), 429
         q = request.args.get("q", "").strip()
         if len(q) < 1:
             return jsonify({"status": "ok", "results": []})
@@ -1185,6 +1229,29 @@ def create_app(database=None, agent=None):
 
     # Start the scheduler thread
     threading.Thread(target=_scheduler_loop, daemon=True, name="market-scheduler").start()
+
+    # Start background security agent
+    start_security_agent()
+
+    # ── Self-ping keepalive (Render free tier) ────────────────────────────────
+    def _self_ping_loop():
+        """Ping /health every 10 min to prevent Render free tier spin-down."""
+        import urllib.request
+        base_url = os.getenv('RENDER_EXTERNAL_URL', '')
+        if not base_url:
+            print("[keepalive] RENDER_EXTERNAL_URL not set — self-ping disabled")
+            return
+        health_url = f"{base_url.rstrip('/')}/health"
+        print(f"[keepalive] Self-ping started → {health_url}")
+        while True:
+            time.sleep(600)  # 10 minutes
+            try:
+                urllib.request.urlopen(health_url, timeout=10)
+            except Exception as exc:
+                print(f"[keepalive] Ping failed: {exc}")
+
+    if os.getenv('RENDER', ''):
+        threading.Thread(target=_self_ping_loop, daemon=True, name="self-ping").start()
 
     return app
 

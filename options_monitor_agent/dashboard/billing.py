@@ -7,8 +7,9 @@ from flask import (
 from subscribers import (
     is_subscribed, get_subscriber, add_subscriber,
     cancel_subscriber, list_subscribers, list_payments,
-    has_app_access
+    has_app_access, delete_user_data
 )
+from security import get_security_stats
 
 billing_bp = Blueprint('billing', __name__)
 
@@ -132,6 +133,17 @@ def cancel():
     session.clear()
     return redirect(url_for('billing.subscribe') + '?cancelled=1')
 
+@billing_bp.route('/account/delete', methods=['POST'])
+def delete_account():
+    """Permanently delete all user data (GDPR right to erasure)."""
+    if not session.get('authenticated'):
+        return redirect(url_for('auth.login'))
+    email = session.get('email', '')
+    counts = delete_user_data(email)
+    print(f'[audit] USER_DELETE: email={email} counts={counts} ip={request.remote_addr}')
+    session.clear()
+    return redirect(url_for('auth.login'))
+
 # ──────────────────────────────────────────────────────────
 # ADMIN PANEL (superadmin only)
 # ──────────────────────────────────────────────────────────
@@ -163,3 +175,9 @@ def admin_cancel():
         admin = session.get('email', '')
         print(f'[audit] ADMIN_CANCEL: admin={admin} cancelled user={email} ip={request.remote_addr}')
     return redirect(url_for('billing.admin_subscribers'))
+
+@billing_bp.route('/admin/security')
+@_superadmin_required
+def admin_security():
+    """JSON view of security agent state (blocked IPs, failed logins, rate anomalies)."""
+    return jsonify(get_security_stats())

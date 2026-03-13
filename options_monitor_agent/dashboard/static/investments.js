@@ -396,7 +396,7 @@ async function loadTransactions() {
       <td>${t.commission_eur ? fmtEur(t.commission_eur) : '—'}</td>
       <td>${t.broker || ''}</td>
       <td><span style="font-size:.75rem;color:var(--text-muted)">${t.source || ''}</span></td>
-      <td><button class="btn btn-sm" style="background:transparent;color:var(--danger);border:1px solid var(--danger);padding:2px 8px;font-size:.7rem;" onclick="deleteTx(${t.id})">✕</button></td>
+      <td><button class="btn btn-sm" style="background:transparent;color:var(--danger);border:1px solid var(--danger);padding:2px 8px;font-size:.7rem;" onclick="deleteTx(${t.id},this)">✕</button></td>
     </tr>`;
   }
   html += '</tbody></table></div>';
@@ -404,8 +404,14 @@ async function loadTransactions() {
   container.innerHTML = html;
 }
 
-async function deleteTx(id) {
-  if (!confirm('¿Eliminar esta operación? Se recalculará el FIFO.')) return;
+async function deleteTx(id, btn) {
+  if (btn) {
+    twoTapAction(btn, btn.textContent.trim(), function(){ _doDeleteTx(id); });
+    return;
+  }
+  _doDeleteTx(id);
+}
+async function _doDeleteTx(id) {
   const res = await api('/api/investments/transactions/' + id, { method: 'DELETE' });
   if (res.status === 'ok') {
     showToast('Operación eliminada');
@@ -700,8 +706,14 @@ async function submitAccount(e) {
   return false;
 }
 
-async function deleteAccount(id) {
-  if (!confirm('¿Eliminar esta cuenta? Se borrarán TODAS sus operaciones, posiciones y dividendos.')) return;
+async function deleteAccount(id, btn) {
+  if (btn) {
+    twoTapAction(btn, btn.textContent.trim(), function(){ _doDeleteAccount(id); });
+    return;
+  }
+  _doDeleteAccount(id);
+}
+async function _doDeleteAccount(id) {
   const res = await api('/api/investments/accounts/' + id, { method: 'DELETE' });
   if (res.status === 'ok') {
     showToast('Cuenta eliminada');
@@ -726,7 +738,7 @@ function renderAccountsList() {
         <div style="font-size:.75rem;color:var(--text-muted);">Creada: ${a.created_at ? a.created_at.split('T')[0] : ''}</div>
       </div>
       <button class="btn btn-sm" style="background:transparent;color:var(--danger);border:1px solid var(--danger);font-size:.75rem;padding:2px 8px;"
-              onclick="deleteAccount(${a.id})">Eliminar</button>
+              onclick="deleteAccount(${a.id},this)">Eliminar</button>
     </div>`).join('');
 }
 

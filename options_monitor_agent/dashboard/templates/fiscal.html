@@ -334,7 +334,7 @@
     <div class="stmt-selector" id="stmtSelector" style="display:none;">
       <label for="stmtSelect" style="font-weight:600;font-size:.9rem;">Extracto:</label>
       <select id="stmtSelect" onchange="loadStatement()"></select>
-      <button class="btn-delete" onclick="deleteStatement()" title="Eliminar extracto">🗑️ Eliminar</button>
+      <button class="btn-delete" id="deleteStmtBtn" onclick="deleteStatement()" title="Eliminar extracto">🗑️ Eliminar</button>
     </div>
 
     <!-- Year Selector -->
@@ -467,6 +467,7 @@
 
   </div><!-- /fiscal-container -->
 
+  <script src="/static/two-tap.js?v=1"></script>
   <script>
   /* ── Globals ────────────────────────────────────────────────── */
   const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
@@ -752,7 +753,7 @@
         <span class="broker-status ${statusClass}">${statusLabel}</span>
         <div class="broker-actions">
           <button onclick="viewBrokerStatement(${s.id})" title="Ver detalle">📋 Ver</button>
-          <button onclick="deleteBrokerStatement(${s.id})" title="Eliminar">🗑️</button>
+          <button onclick="deleteBrokerStatement(${s.id},this)" title="Eliminar">🗑️</button>
         </div>
       </div>`;
     }).join('');
@@ -776,8 +777,14 @@
     }
   }
 
-  function deleteBrokerStatement(stmtId) {
-    if (!confirm('¿Eliminar este extracto y todos sus datos?')) return;
+  function deleteBrokerStatement(stmtId, btn) {
+    if (btn) {
+      twoTapAction(btn, btn.textContent.trim(), function(){ _doDeleteBrokerStmt(stmtId); });
+      return;
+    }
+    _doDeleteBrokerStmt(stmtId);
+  }
+  function _doDeleteBrokerStmt(stmtId) {
     fetch(`/api/fiscal/statement/${stmtId}`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF },
@@ -853,7 +860,14 @@
 
   function deleteStatement() {
     if (!currentStmtId) return;
-    if (!confirm('¿Eliminar este extracto y todos sus datos?')) return;
+    var btn = document.getElementById('deleteStmtBtn');
+    if (btn) {
+      twoTapAction(btn, btn.textContent.trim(), function(){ _doDeleteStmt(); });
+      return;
+    }
+    _doDeleteStmt();
+  }
+  function _doDeleteStmt() {
     fetch(`/api/fiscal/statement/${currentStmtId}`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF },

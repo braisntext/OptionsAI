@@ -145,6 +145,66 @@ def cancel_subscriber(email: str):
         c.execute("UPDATE subscribers SET status='cancelled' WHERE email = ? COLLATE NOCASE", (email,))
         c.commit()
 
+
+def delete_user_data(email: str) -> dict:
+    """Permanently delete ALL user data across every table (GDPR-compliant).
+
+    Returns a dict with per-table deletion counts for audit logging.
+    """
+    email = email.strip().lower()
+    counts = {}
+    # ── Main subscribers DB tables ────────────────────────────────────────
+    with _conn() as c:
+        for table in ('user_watchlists', 'user_spike_configs', 'daily_usage',
+                      'magic_tokens', 'payments', 'subscribers'):
+            try:
+                c.execute(f"DELETE FROM {table} WHERE email = ? COLLATE NOCASE", (email,))
+                counts[table] = c.total_changes
+            except Exception:
+                counts[table] = 0
+        c.commit()
+    # ── Investments DB (separate database, same db_utils conn) ────────────
+    try:
+        from options_monitor_agent.investments.database import _conn as inv_conn
+        with inv_conn() as c:
+            for table in ('investment_dividends', 'investment_closed',
+                          'investment_lots', 'investment_positions',
+                          'investment_transactions', 'investment_accounts'):
+                try:
+                    c.execute(f"DELETE FROM {table} WHERE email = ? COLLATE NOCASE", (email,))
+                    counts[f"inv.{table}"] = c.total_changes
+                except Exception:
+                    counts[f"inv.{table}"] = 0
+            c.commit()
+    except Exception as exc:
+        counts['investments_error'] = str(exc)
+    # ── Fiscal DB (separate database) ─────────────────────────────────────
+    try:
+        from options_monitor_agent.fiscal.database import (
+            _conn as fis_conn,
+        )
+        with fis_conn() as c:
+            # Get statement IDs first (tax_results FK cascade depends on schema)
+            ids = [r[0] for r in c.execute(
+                "SELECT id FROM fiscal_statements WHERE email = ? COLLATE NOCASE", (email,)
+            ).fetchall()]
+            if ids:
+                ph = ','.join('?' * len(ids))
+                for child in ('fiscal_trades', 'fiscal_dividends', 'fiscal_interest',
+                              'fiscal_withholdings', 'fiscal_forex',
+                              'fiscal_positions', 'fiscal_tax_results'):
+                    try:
+                        c.execute(f"DELETE FROM {child} WHERE statement_id IN ({ph})", ids)
+                    except Exception:
+                        pass
+                c.execute(f"DELETE FROM fiscal_statements WHERE id IN ({ph})", ids)
+            counts['fiscal_statements'] = len(ids)
+            c.commit()
+    except Exception as exc:
+        counts['fiscal_error'] = str(exc)
+    return counts
+
+
 def list_subscribers():
     with _conn() as c:
         return c.execute("SELECT * FROM subscribers ORDER BY subscribed_at DESC").fetchall()

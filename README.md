@@ -59,7 +59,8 @@ python -m options_monitor_agent.dashboard.app
 │   │   ├── app.py                       # Flask app factory + all routes
 │   │   ├── auth.py                      # Authentication (magic-link + password)
 │   │   ├── billing.py                   # Subscription & payment routes
-│   │   ├── subscribers.py               # User management, plans, limits
+│   │   ├── subscribers.py               # User management, plans, limits, GDPR delete
+│   │   ├── security.py                  # Background security agent (brute-force, rate anomaly)
 │   │   ├── templates/                   # Jinja2 HTML templates
 │   │   │   ├── landing.html             # Public landing page
 │   │   │   ├── login.html               # Login (magic-link + password)
@@ -73,6 +74,7 @@ python -m options_monitor_agent.dashboard.app
 │   │       ├── style.css                # Dashboard-specific styles
 │   │       ├── app.js                   # Options Monitor JS
 │   │       ├── investments.js           # Investments app JS
+│   │       ├── two-tap.js               # Mobile-friendly two-tap confirm for destructive actions
 │   │       └── i18n.js                  # EN/ES language switcher
 │   │
 │   ├── fiscal/
@@ -144,7 +146,11 @@ Services:
 - **Code** (variables, functions, comments): English
 - **CSS**: Custom properties defined in `landing.css`; dark mode via `prefers-color-scheme`
 - **Auth**: `@login_required` decorator, CSRF on all mutating requests
-- **Rate limiting**: On public APIs (login: 5/5min, contact: 3/10min)
+- **Rate limiting**: Login (5/5min), contact (3/10min), external APIs (10/min per user)
+- **Security**: Background agent — brute-force block (10 fails → 15 min ban), request anomaly detection, expired token cleanup
+- **GDPR**: Full cascade delete of user data (subscribers, watchlists, spike configs, investments, fiscal)
+- **Infra**: Self-ping keepalive for Render free tier, `/health` endpoint for uptime monitoring
+- **Mobile UX**: Two-tap confirm pattern replaces `window.confirm()` on all destructive actions
 
 ## Contributing
 

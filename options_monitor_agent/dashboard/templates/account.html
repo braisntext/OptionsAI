@@ -208,11 +208,20 @@
     <div class="bottom-actions">
       <a href="/logout" class="btn btn-outline btn-sm" style="border-color:var(--text-muted);color:var(--text-muted)">🔓 Cerrar sesión</a>
       {% if sub and sub['status'] == 'active' and not sub['superuser'] %}
-      <form method="POST" action="/account/cancel" style="margin:0;" onsubmit="return confirm('¿Cancelar suscripción? Perderás acceso al final del período actual.')">
+      <form method="POST" action="/account/cancel" style="margin:0;" id="cancelSubForm">
         <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-        <button type="submit" class="btn btn-sm" style="background:transparent;color:var(--danger);border:1px solid var(--danger);">✖ Cancelar suscripción</button>
+        <button type="button" class="btn btn-sm" style="background:transparent;color:var(--danger);border:1px solid var(--danger);"
+                onclick="twoTapAction(this, '✖ Cancelar suscripción', function(){ document.getElementById('cancelSubForm').submit(); })">✖ Cancelar suscripción</button>
       </form>
       {% endif %}
+      <form method="POST" action="/account/delete" style="margin:0;" id="deleteAccountForm">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <button type="button" class="btn btn-sm" id="deleteAccountBtn"
+                style="background:transparent;color:var(--danger);border:1px solid var(--danger);opacity:.7;font-size:.8rem;"
+                onclick="twoTapAction(this, '🗑️ Eliminar mi cuenta y datos', function(){ document.getElementById('deleteAccountForm').submit(); })">
+          🗑️ Eliminar mi cuenta y datos
+        </button>
+      </form>
     </div>
   </div>
 
@@ -220,6 +229,7 @@
     <p>&copy; <span id="year">2025</span> Small Smart Tools. Todos los derechos reservados.</p>
   </footer>
 
+  <script src="/static/two-tap.js?v=1"></script>
   <script>
     document.getElementById('year').textContent = new Date().getFullYear();
     const toggle = document.getElementById('menuToggle');

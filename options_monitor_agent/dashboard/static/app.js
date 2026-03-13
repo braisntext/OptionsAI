@@ -123,7 +123,7 @@ function updateTable(data,watchlist,quotes){
     document.getElementById("tickers-count").textContent=allTickers.length;
     tb.innerHTML=allTickers.map(ticker=>{
         const d=dataMap[ticker];
-        const delBtn=`<button onclick="event.stopPropagation();removeTicker('${ticker}')" title="Remove ${ticker}" class="btn-delete-ticker">✖</button>`;
+        const delBtn=`<button onclick="event.stopPropagation();removeTicker('${ticker}',this)" title="Remove ${ticker}" class="btn-delete-ticker">✖</button>`;
         if(d){
             const p=d.pcr_volume||0,pc=p>1.2?"badge-bearish":p<0.8?"badge-bullish":"badge-neutral",pe=p>1.2?"🐻":p<0.8?"🐂":"😐";
             const sc=d.sentiment?.includes("BEAR")?"badge-bearish":d.sentiment?.includes("BULL")?"badge-bullish":"badge-neutral";
@@ -314,8 +314,14 @@ async function addTicker(){
     inp.focus();
 }
 
-async function removeTicker(ticker){
-    if(!confirm(`Remove ${ticker} from watchlist?`))return;
+async function removeTicker(ticker, btn){
+    if (btn) {
+        twoTapAction(btn, btn.textContent.trim(), function(){ _doRemoveTicker(ticker); });
+        return;
+    }
+    _doRemoveTicker(ticker);
+}
+async function _doRemoveTicker(ticker){
     try{
         const r=await fetch(`/api/watchlist/${encodeURIComponent(ticker)}`,{method:"DELETE",headers:{"X-CSRF-Token":_csrfToken}});
         const d=await r.json();
